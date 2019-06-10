@@ -16,8 +16,8 @@ Online control panel webpage uses JavaScript WebSocket client to send custom fRG
     - Pins connected to LED strip through N-channel MOSFET [TO-220](https://www.amazon.com/gp/product/B07CTJFG7M) transistors
     - LED strip connected to external +12V power source
 
-## HTTP/WebSocket Server
- - Runs on [anuv.me:3002&3003](http://anuv.me)
+## WebSocket/HTTP Server
+ - Runs on [anuv.me:3002 & 3003](http://anuv.me)
  - Built with node.js (express & WebSocket)
 
 ## Control Panel
