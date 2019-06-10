@@ -22,4 +22,4 @@ Online control panel webpage uses JavaScript WebSocket client to send custom fRG
 
 ## Control Panel
  - Hosted at [http://leds.anuv.me](leds.anuv.me)
- - Built with [block.js](https://github.com/anuvgupta/block.js), WebSocket
+ - Built with [block.js](https://github.com/anuvgupta/block.js), jQuery, WebSocket
