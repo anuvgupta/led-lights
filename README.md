@@ -17,7 +17,7 @@ Online control panel webpage uses JavaScript WebSocket client to send custom fRG
     - LED strip connected to external +12V power source
 
 ## WebSocket/HTTP Server
- - Runs on [anuv.me:3002 & 3003](http://anuv.me)
+ - Runs on [anuv.me:3002&nbsp;&amp;&nbsp;3003](http://anuv.me)
  - Built with node.js (express & WebSocket)
 
 ## Control Panel
