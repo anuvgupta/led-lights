@@ -1,0 +1,16 @@
+{
+  "name": "rgblights",
+  "version": "1.0.0",
+  "description": "RGB LED strip control panel",
+  "main": "rgb.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Anuv Gupta",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "random-number": "0.0.9",
+    "ws": "^7.0.0"
+  }
+}

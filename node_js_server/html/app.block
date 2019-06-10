@@ -1,0 +1,197 @@
+    *
+
+// lights control blockfile
+
+// define custom blocks
+!break
+    init
+        {
+            return Block('span').add('br');
+        }
+    load
+        {
+            data('val', function (val) {
+                for (var i = 1; i < val; i++)
+                    block.add('br');
+            });
+        }
+!text
+    init
+        {
+            return Block('span');
+        }
+    load
+        {
+            data('val', function (val) {
+                block.node().appendChild(document.createTextNode(val));
+            });
+            data('html', function (html) {
+                block.html(html);
+            });
+        }
+!image
+    init
+        {
+            return Block('div');
+        }
+    load
+        {
+            var src = data('src');
+            var height = data('height');
+            var width = data('width');
+            var alt = data('alt');
+            if (src != null) {
+                block.css('background-image', "url('" + src + "')")
+                    .css('background-repeat', 'no-repeat')
+                    .css('background-size', 'contain')
+                ;
+            }
+            if (height !== null) block.css('height', height);
+            else block.css('height', 'auto');
+            if (width !== null) block.css('width', width);
+            else block.css('width', 'auto');
+            if (alt !== null) block.attribute('title', alt);
+        }
+// app UI content layer
+app
+    css
+        opacity 0
+        transition opacity 0.4s
+        height 100%
+        width 100%
+        overflow hidden
+    #rgb
+        {
+
+        }
+    :login
+        {
+            block.child('loginform').css('display', 'table').sibling('controlpanel').css('display', 'none');
+        }
+    :panel
+        {
+            block.child('controlpanel').css('display', 'table').sibling('loginform').css('display', 'none');
+        }
+    block loginform
+        div image
+            img img
+                src img/icon.png
+                height 160px
+                width 160px
+            css
+                height 160px
+                width 160px
+                margin 0 auto
+                margin-bottom 0px
+        input password
+            type password
+            placeholder password
+            css
+                padding 4px 1px 6px
+                text-align center
+                letter-spacing 1px
+                outline none
+                font-size 15px
+                opacity 0.8
+                border 0.5px solid #ccc
+                border-radius 2px
+            :keyup
+                {
+                    var val = block.$().val().trim();
+                    if (val != null && val != '') {
+                        app.login(val);
+                    }
+                }
+        // text t1
+        //     html R&nbsp;&nbsp;&nbsp;
+        // input redinput
+        //     type range
+        //     min 0
+        //     max 100
+        //     css
+        //         margin 2px 0
+        //         padding 0
+        //         outline none
+        //     $active true
+        //     :input
+        //         {
+        //             if (block.key('active')) {
+        //                 block.key('active', false)
+        //                 var val = parseInt(block.$().val().trim());
+        //                 if (!isNaN(val)) {
+        //                     if (val < 0) val = 0;
+        //                     if (val > 100) val = 100;
+        //                     app.red(val);
+        //                 }
+        //                 setTimeout(function () {
+        //                     block.key('active', true);
+        //                 }, 50);
+        //             }
+        //         }
+        // break br2
+        //     // br2
+        // text t2
+        //     html G&nbsp;&nbsp;&nbsp;
+        // input greeninput
+        //     type range
+        //     min 0
+        //     max 100
+        //     css
+        //         margin 2px 0
+        //         padding 0
+        //         outline none
+        //     $active true
+        //     :input
+        //         {
+        //             if (block.key('active')) {
+        //                 block.key('active', false)
+        //                 var val = parseInt(block.$().val().trim());
+        //                 if (!isNaN(val)) {
+        //                     if (val < 0) val = 0;
+        //                     if (val > 100) val = 100;
+        //                     app.green(val);
+        //                 }
+        //                 setTimeout(function () {
+        //                     block.key('active', true);
+        //                 }, 50);
+        //             }
+        //         }
+        // break br3
+        //     // br3
+        // text t3
+        //     html B&nbsp;&nbsp;&nbsp;
+        // input blueinput
+        //     type range
+        //     min 0
+        //     max 100
+        //     css
+        //         margin 2px 0
+        //         padding 0
+        //         outline none
+        //     $active true
+        //     :input
+        //         {
+        //             if (block.key('active')) {
+        //                 block.key('active', false)
+        //                 var val = parseInt(block.$().val().trim());
+        //                 if (!isNaN(val)) {
+        //                     if (val < 0) val = 0;
+        //                     if (val > 100) val = 100;
+        //                     app.blue(val);
+        //                 }
+        //                 setTimeout(function () {
+        //                     block.key('active', true);
+        //                 }, 50);
+        //             }
+        //         }
+        // break br4
+        //     // br4
+        div spacer
+            css
+                width 20%
+                margin 0 auto
+                height 50px
+    block controlpanel
+        css
+            display none
+            
