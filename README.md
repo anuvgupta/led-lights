@@ -15,8 +15,8 @@ Online control panel webpage uses JavaScript WebSocket client to send custom fRG
 
 ## Arduino
  - Model: [Elegoo Uno R3](https://www.amazon.com/Elegoo-EL-CB-001-ATmega328P-ATMEGA16U2-Arduino/dp/B01EWOE0UU) ([kit](https://www.elegoo.com/product/elegoo-uno-project-super-starter-kit/))
- - Uses SoftwareSerial (modified slightly to accommodate longer messages) on pins 6-7 to read patterns from ESP8266
- - Uses `analogWrite()` on digital pins 9-11 to write color values to LED strip
+ - Uses SoftwareSerial (modified slightly to hold longer messages) on pins 6-7 to read patterns from ESP8266
+ - Uses PWM on digital pins 9-11 to write color values to LED strip
     - Pins connected to LED strip through N-channel MOSFET [TO-220](https://www.amazon.com/gp/product/B07CTJFG7M) transistors
     - LED strip connected to external +12V power source
 
