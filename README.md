@@ -5,7 +5,7 @@ IoT RGB LED strip lights driven by Arduino &amp; ESP8266 WebSockets, with online
 Online control panel webpage uses JavaScript WebSocket client to send custom fRGBt patterns (fade time, red, green, blue, hold time) to node.js WebSocket server. When ESP8266 connects to WiFi, server forwards pattern to ESP8266's WebSocket client. ESP8266 forwards pattern to Arduino over hardware serial. Arduino receives pattern over SoftwareSerial and parses into series of fRGBt settings. Arduino drives RGB LED strip according to pattern, using PWM, transistors, and external power.
 
 ## Schematic
-
+![Fritzing Schematic](https://rawcdn.githack.com/anuvgupta/led-lights/c14cc283c60d811c712debd8daacecd9c4bc2f68/circuit_schematics/esp_led_lights_bb.png)
 
 ## ESP8266
  - Model: [DIYmall ESP8266 ESP-01S](https://www.amazon.com/gp/product/B00O34AGSU/) with 1MB flash
