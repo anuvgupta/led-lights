@@ -6,6 +6,8 @@
 #define GREENPIN 10
 #define BLUEPIN 11
 
+#define DEBUG true
+
 // parsing data
 int mb_i = 0;
 char msgbuff[500]; // extra size just in case
@@ -24,14 +26,17 @@ double n_b = 0; // new hue blue
 double r_st = 0; // hue red fade
 double g_st = 0; // hue green fade
 double b_st = 0; // hue blue fade
+double brightness = 100; // brightness
+double speedmult = 100; // speed mult
 int fade = 0; // transition (ms)
+#define PRECISION 5 
 
 void setup() {
   // init hardware and software serials
   Serial.begin(9600);
   ESP8266.begin(9600);
 
-  Serial.println(F("LED Strip Driver"));
+  if (DEBUG) Serial.println(F("LED Strip Driver"));
 
   // init LED PWM pins
   pinMode(REDPIN, OUTPUT);
@@ -39,7 +44,7 @@ void setup() {
   pinMode(BLUEPIN, OUTPUT);
   red(0); green(0); blue(0);
 
-  Serial.println(F("connecting to ESP8266"));
+  if (DEBUG) Serial.println(F("connecting to ESP8266"));
 }
 
 void loop() {
@@ -47,11 +52,10 @@ void loop() {
   red(r); green(g); blue(b);
   
   // read serial
-  if (ESP8266.available() > 0 || Serial.available()) {
-    // Serial.write(ESP8266.read());
+  if (ESP8266.available() || Serial.available()) {
     if (mb_i >= 500) {
       msgbuff[499] = '\n';
-      Serial.println(msgbuff);
+      if (DEBUG) Serial.println(msgbuff);
       mb_i = 0;
     } else {
       char c;
@@ -62,19 +66,34 @@ void loop() {
         if (c == '\n') {
           msgbuff[mb_i] = '\0';
           if (!ready && mb_i >= 5 && memcmp(msgbuff + mb_i - 5, "ready", 5) == 0) {
-            Serial.println(F("connected to ESP8266"));
+            if (DEBUG) Serial.println(F("connected to ESP8266"));
             ready = true;
           } else if (ready) {
-            Serial.print(F("new hue pattern: "));
-            Serial.println(msgbuff);
-            bool f = 1;
-            while (ESP8266.available() <= 0) {
-              pattern(f);
-              if (f) f = 0;
+            if (msgbuff[0] == 'h') {
+              if (DEBUG) Serial.print(F("new hue: "));
+              if (DEBUG) Serial.println(msgbuff);
+              bool f = 1;
+              while (ESP8266.available() <= 0) {
+                hue(f && DEBUG);
+                if (f) f = 0;
+              }
+            } else if (msgbuff[0] == 'p') {
+              if (DEBUG) Serial.print(F("new pattern: "));
+              if (DEBUG) Serial.println(msgbuff);
+              bool f = 1;
+              while (ESP8266.available() <= 0) {
+                pattern(f && DEBUG);
+                if (f) f = 0;
+              }
+            } else if (msgbuff[0] == 'b') {
+              if (DEBUG) Serial.print(F("new brightness: "));
+              if (DEBUG) Serial.println(msgbuff);
+              bright(DEBUG);
+            } else if (msgbuff[0] == 's') {
+              if (DEBUG) Serial.print(F("new speed: "));
+              if (DEBUG) Serial.println(msgbuff);
+              speedm(DEBUG);
             }
-            n_r = 0; n_g = 0; n_b = 0; t = 10;
-            fade = 50;
-            fadeColor();
           }
           mb_i = 0;
         } else if (c != 0) {
@@ -87,9 +106,56 @@ void loop() {
   }
 }
 
+// process brightness from msgbuff
+void bright(bool v) {
+  int i, j;
+  for (i = 1, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  brightness = atoi(databuff);
+  if (v) { Serial.print("brightness – "); Serial.println(brightness); }
+  red(r); green(g); blue(b);
+}
+
+// process speed from msgbuff
+void speedm(bool v) {
+  int i, j;
+  for (i = 1, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  speedmult = atoi(databuff);
+  if (v) { Serial.print("speed – "); Serial.println(speedmult); }
+  red(r); green(g); blue(b);
+}
+
+// process hue from msgbuff
+void hue(bool v) {
+  // parse message data
+  int i, j;
+  for (i = 1, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_r = atoi(databuff);
+  for (i = 4, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_g = atoi(databuff);
+  for (i = 7, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_b = atoi(databuff);
+  if (v) { Serial.print(F("hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.println(")"); }
+  // change color
+  while (ESP8266.available() <= 0) {
+    r = n_r; red(r);
+    g = n_g; green(g);
+    b = n_b; blue(b);
+  }
+}
+
 // process pattern from msgbuff
 void pattern(bool v) {
-  for (int z = 1; ESP8266.available() <= 0 && tokenize(tokenbuff, msgbuff, ',', z); z++) {
+  for (int z = 1; ESP8266.available() <= 0 && tokenize(tokenbuff, msgbuff + 1, ',', z); z++) {
     fade = 0; // reset fade to default (none)
     // parse message data
     int i, j;
@@ -114,30 +180,31 @@ void pattern(bool v) {
     databuff[5] = '\0';
     t = atoi(databuff);
     if (v) { Serial.print(F("fade – ")); Serial.print(fade); Serial.println(F("ms")); }
-    if (v) { Serial.print(F("rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.print(")"); Serial.print(" – "); Serial.print(t); Serial.println("ms"); }
+    if (v) { Serial.print(F("hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.print(")"); Serial.print(" – "); Serial.print(t); Serial.println("ms"); }
     // fade into color
     fadeColor();
     // hold color for time
-    for (j = t / 10; j > 0; j--) {
-      delay(10);
+    for (j = t / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && j > 0; j--) {
+      delay(PRECISION);
     }
   }
+  if (v) Serial.println("repeat");
 }
 
 // fade into current color
 void fadeColor() {
   // perform fade if exists
   if (fade != 0) {
-    r_st = 10.0 * (n_r - r) / ((double) fade);
-    g_st = 10.0 * (n_g - g) / ((double) fade);
-    b_st = 10.0 * (n_b - b) / ((double) fade);
-    for (int z = fade / 10; z > 0; z--) {
+    r_st = ((double) PRECISION) * (n_r - r) / ((double) fade);
+    g_st = ((double) PRECISION) * (n_g - g) / ((double) fade);
+    b_st = ((double) PRECISION) * (n_b - b) / ((double) fade);
+    for (int z = fade / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && z > 0; z--) {
       r += r_st; g += g_st; b += b_st;
       if (r < 0) r = 0; if (r > 255) r = 255;
       if (g < 0) g = 0; if (g > 255) g = 255;
       if (b < 0) b = 0; if (b > 255) b = 255;
       red(r); green(g); blue(b);
-      delay(10);
+      delay(PRECISION);
     }
   }
   // change final color
@@ -148,13 +215,13 @@ void fadeColor() {
 
 // LED PWM functions
 void red(int v) {
-  analogWrite(REDPIN, v);
+  analogWrite(REDPIN, (int) (brightness / 100.0 * ((double) v)));
 }
 void green(int v) {
-  analogWrite(GREENPIN, v);
+  analogWrite(GREENPIN, (int) (brightness / 100.0 * ((double) v)));
 }
 void blue(int v) {
-  analogWrite(BLUEPIN, v);
+  analogWrite(BLUEPIN, (int) (brightness / 100.0 * ((double) v)));
 }
 
 // convenience custom tokenizer

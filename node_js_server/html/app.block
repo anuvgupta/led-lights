@@ -54,16 +54,13 @@
         }
 // app UI content layer
 app
+    id app
     css
         opacity 0
         transition opacity 0.4s
         height 100%
         width 100%
         overflow hidden
-    #rgb
-        {
-
-        }
     :login
         {
             block.child('loginform').css('display', 'table').sibling('controlpanel').css('display', 'none');
@@ -102,90 +99,6 @@ app
                         app.login(val);
                     }
                 }
-        // text t1
-        //     html R&nbsp;&nbsp;&nbsp;
-        // input redinput
-        //     type range
-        //     min 0
-        //     max 100
-        //     css
-        //         margin 2px 0
-        //         padding 0
-        //         outline none
-        //     $active true
-        //     :input
-        //         {
-        //             if (block.key('active')) {
-        //                 block.key('active', false)
-        //                 var val = parseInt(block.$().val().trim());
-        //                 if (!isNaN(val)) {
-        //                     if (val < 0) val = 0;
-        //                     if (val > 100) val = 100;
-        //                     app.red(val);
-        //                 }
-        //                 setTimeout(function () {
-        //                     block.key('active', true);
-        //                 }, 50);
-        //             }
-        //         }
-        // break br2
-        //     // br2
-        // text t2
-        //     html G&nbsp;&nbsp;&nbsp;
-        // input greeninput
-        //     type range
-        //     min 0
-        //     max 100
-        //     css
-        //         margin 2px 0
-        //         padding 0
-        //         outline none
-        //     $active true
-        //     :input
-        //         {
-        //             if (block.key('active')) {
-        //                 block.key('active', false)
-        //                 var val = parseInt(block.$().val().trim());
-        //                 if (!isNaN(val)) {
-        //                     if (val < 0) val = 0;
-        //                     if (val > 100) val = 100;
-        //                     app.green(val);
-        //                 }
-        //                 setTimeout(function () {
-        //                     block.key('active', true);
-        //                 }, 50);
-        //             }
-        //         }
-        // break br3
-        //     // br3
-        // text t3
-        //     html B&nbsp;&nbsp;&nbsp;
-        // input blueinput
-        //     type range
-        //     min 0
-        //     max 100
-        //     css
-        //         margin 2px 0
-        //         padding 0
-        //         outline none
-        //     $active true
-        //     :input
-        //         {
-        //             if (block.key('active')) {
-        //                 block.key('active', false)
-        //                 var val = parseInt(block.$().val().trim());
-        //                 if (!isNaN(val)) {
-        //                     if (val < 0) val = 0;
-        //                     if (val > 100) val = 100;
-        //                     app.blue(val);
-        //                 }
-        //                 setTimeout(function () {
-        //                     block.key('active', true);
-        //                 }, 50);
-        //             }
-        //         }
-        // break br4
-        //     // br4
         div spacer
             css
                 width 20%
@@ -194,4 +107,1447 @@ app
     block controlpanel
         css
             display none
-            
+            position relative
+        block titlebar
+            css
+                width 100%
+                height 65px
+                position absolute
+                top 0
+                left 0
+                border-bottom 1px solid #eee
+                background-color #f6f6f6
+            text title
+                val Live LEDs
+                css
+                    font-family ModernSansRegular
+                    font-size 30px
+                    color #4a4a4a
+                    margin-top 8px
+                    text-transform uppercase
+                    display block
+            block logout
+                css
+                    position absolute
+                    top 2px
+                    right 20px
+                    width 50px
+                    opacity 0.6
+                    transition opacity 0.1s ease
+                    cursor pointer
+                :mouseover
+                    css
+                        opacity 0.7
+                :mouseout
+                    css
+                        opacity 0.6
+                :click
+                    {
+                        app.logout();
+                    }
+                img icon
+                    src img/exit.png
+                    height 35px
+                    width 35px
+            block github
+                css
+                    position absolute
+                    top 2px
+                    left 20px
+                    width 50px
+                    opacity 0.65
+                    transition opacity 0.1s ease
+                    cursor pointer
+                :mouseover
+                    css
+                        opacity 0.75
+                :mouseout
+                    css
+                        opacity 0.65
+                a link
+                    target _blank
+                    href https://github.com/anuvgupta/led-lights
+                    img icon
+                        src img/github.svg
+                        height 35px
+                        width 35px
+        div colors
+            css
+                width 500px
+                top 66px
+                right 0
+                position absolute
+                border-left 1px solid #eee
+                text-align left
+                font-size 0
+            @query window height != 0
+                {
+                    block.css('height', (window.innerHeight - 65 - 1) + 'px');
+                }
+            div picker
+                #color
+                    {
+                        var number = block.child('numbers');
+                        number.child('redinput').$().val(color.r);
+                        number.child('t1R').html(String(parseInt(color.r)));
+                        number.child('greeninput').$().val(color.g);
+                        number.child('t2R').html(String(parseInt(color.g)));
+                        number.child('blueinput').$().val(color.b);
+                        number.child('t3R').html(String(parseInt(color.b)));
+                        number.child('hexinput').$().val(color.hex);
+                    }
+                css
+                    height 480px
+                button rect
+                    css
+                        height 250px
+                        width 100%
+                        outline none
+                        cursor pointer
+                        border none
+                        border-bottom 1px solid #eee
+                    class jscolor {valueElement:null,value:'000000',position:'bottom',width:293,height:222,onFineChange:'app.colorPickerUpdate(this)'}
+                div numbers
+                    css
+                        padding 14px 8px 0 16px
+                        font-size 17px
+                        width 53%
+                        float left
+                        height 130px
+                    div spacer1
+                        css
+                            height 5px
+                    text t1
+                        html R
+                    input redinput
+                        type range
+                        min 0
+                        max 255
+                        value 0
+                        css
+                            margin 2px 10px 2px 15px
+                            padding 0
+                            outline none
+                            width 205px
+                            cursor pointer
+                            opacity 0.8
+                        :input
+                            {
+                                var val = parseInt(block.$().val().trim());
+                                if (!isNaN(val)) {
+                                    if (val < 0) val = 0;
+                                    if (val > 255) val = 255;
+                                    block.sibling('t1R').html('' + val);
+                                    app.rgb.r = val;
+                                    var picker = block.parent().sibling('rect').node().jscolor;
+                                    picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                                    app.colorPickerUpdate(picker);
+                                }
+                            }
+                        :mouseup
+                            {
+                                block.on('input');
+                            }
+                    text t1R
+                        html 0
+                    div spacer2
+                        css
+                            height 5px
+                    text t2
+                        html G
+                    input greeninput
+                        type range
+                        min 0
+                        max 255
+                        value 0
+                        css
+                            margin 2px 10px 2px 15px
+                            padding 0
+                            outline none
+                            width 205px
+                            cursor pointer
+                            opacity 0.8
+                        :input
+                            {
+                                var val = parseInt(block.$().val().trim());
+                                if (!isNaN(val)) {
+                                    if (val < 0) val = 0;
+                                    if (val > 255) val = 255;
+                                    block.sibling('t2R').html('' + val);
+                                    app.rgb.g = val;
+                                    var picker = block.parent().sibling('rect').node().jscolor;
+                                    picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                                    app.colorPickerUpdate(picker);
+                                }
+                            }
+                        :mouseup
+                            {
+                                block.on('input');
+                            }
+                    text t2R
+                        html 0
+                    div spacer3
+                        css
+                            height 5px
+                    text t3
+                        html B
+                    input blueinput
+                        type range
+                        min 0
+                        max 255
+                        value 0
+                        css
+                            margin 2px 10px 2px 15px
+                            padding 0
+                            outline none
+                            width 205px
+                            cursor pointer
+                            opacity 0.8
+                        :input
+                            {
+                                var val = parseInt(block.$().val().trim());
+                                if (!isNaN(val)) {
+                                    if (val < 0) val = 0;
+                                    if (val > 255) val = 255;
+                                    block.sibling('t3R').html('' + val);
+                                    app.rgb.b = val;
+                                    var picker = block.parent().sibling('rect').node().jscolor;
+                                    picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                                    app.colorPickerUpdate(picker);
+                                }
+                            }
+                    text t3R
+                        html 0
+                    div spacer4
+                        css
+                            height 10px
+                    text t4
+                        html HEX
+                    input hexinput
+                        type text
+                        value #000000
+                        css
+                            margin 0 0 0 12px
+                            padding 2px 5px
+                            font-size 15px
+                            outline none
+                            width 175px
+                        :input
+                            {
+                                var val = block.$().val().trim();
+                                if (val.length == 7) {
+                                    var picker = block.parent().sibling('rect').node().jscolor;
+                                    picker.fromString(val);
+                                    app.colorPickerUpdate(picker);
+                                }
+                            }
+                        :mouseup
+                            {
+                                block.on('input');
+                            }
+                    div spacer5
+                        css
+                            height 5px
+                div buttons
+                    css
+                        float left
+                        height 140px
+                        width 195px
+                    div spacer1
+                        css
+                            height 30px
+                    div button1
+                        css
+                            margin 0 auto
+                            background-color #afafaf
+                            padding 6px 0
+                            width 150px
+                            text-align center
+                            border-radius 4px
+                            cursor pointer
+                            color white
+                            transition background-color 0.15s ease
+                            -moz-box-shadow inset 0px 39px 0px -18px #bbb
+                            -webkit-box-shadow inset 0px 39px 0px -18px #bbb
+                            box-shadow inset 0px 39px 0px -18px #bbb
+                            border 1px solid #ffffff
+                        :mouseover
+                            css
+                                background-color #a3a3a3
+                        :mouseout
+                            css
+                                background-color #afafaf
+                        :mousedown
+                            css
+                                background-color #c3c3c3
+                        :mouseup
+                            css
+                                background-color #a3a3a3
+                        text text
+                            val new
+                            css
+                                font-size 20px
+                                letter-spacing 1.5px
+                                text-transform uppercase
+                        :click
+                            {
+                                app.newColor();
+                            }
+                    div spacer2
+                        css
+                            height 7px
+                    div button2
+                        {
+                            block.key('enabled', false);
+                        }
+                        css
+                            margin 0 auto
+                            background-color #afafaf
+                            padding 6px 0
+                            width 150px
+                            text-align center
+                            border-radius 4px
+                            cursor pointer
+                            color white
+                            transition background-color 0.15s ease
+                            -moz-box-shadow inset 0px 39px 0px -18px #bbb
+                            -webkit-box-shadow inset 0px 39px 0px -18px #bbb
+                            box-shadow inset 0px 39px 0px -18px #bbb
+                            border 1px solid #ffffff
+                            opacity 0.5
+                        :mouseover
+                            {
+                                if (block.key('enabled'))
+                                    block.css('background-color', '#a3a3a3');
+                            }
+                        :mouseout
+                            {
+                                if (block.key('enabled'))
+                                    block.css('background-color', '#afafaf');
+                            }
+                        :mousedown
+                            {
+                                if (block.key('enabled'))
+                                    block.css('background-color', '#c3c3c3');
+                            }
+                        :mouseup
+                            {
+                                if (block.key('enabled'))
+                                    block.css('background-color', '#a3a3a3');
+                            }
+                        :click
+                            {
+                                if (block.key('enabled')) {
+                                    app.deleteColor();
+                                }
+                            }
+                        :enable
+                            {
+                                block.key('enabled', true);
+                                block.css('opacity', '1');
+                            }
+                        :disable
+                            {
+                                block.key('enabled', false);
+                                block.css('opacity', '0.5');
+                            }
+                        text text
+                            val delete
+                            css
+                                font-size 20px
+                                letter-spacing 1.5px
+                                text-transform uppercase
+                div sync
+                    css
+                        margin-top 10px
+                        width 100%
+                        height 60px
+                        float left
+                    div push
+                        css
+                            margin-left 95px
+                            display inline-block
+                            width auto
+                            height 42px
+                            float left
+                        div button3
+                            css
+                                margin 0 auto
+                                background-color #afafaf
+                                padding 6px 0
+                                width 150px
+                                text-align center
+                                border-radius 4px
+                                cursor pointer
+                                color white
+                                transition background-color 0.15s ease
+                                -moz-box-shadow inset 0px 39px 0px -18px #bbb
+                                -webkit-box-shadow inset 0px 39px 0px -18px #bbb
+                                box-shadow inset 0px 39px 0px -18px #bbb
+                                border 1px solid #ffffff
+                            :mouseover
+                                css
+                                    background-color #a3a3a3
+                            :mouseout
+                                css
+                                    background-color #afafaf
+                            :mousedown
+                                css
+                                    background-color #c3c3c3
+                            :mouseup
+                                css
+                                    background-color #a3a3a3
+                            text text
+                                val push
+                                css
+                                    font-size 20px
+                                    letter-spacing 1.5px
+                                    text-transform uppercase
+                            :click
+                                {
+                                    app.testColor();
+                                }
+                    div track
+                        css
+                            width 180px
+                            cursor pointer
+                            display inline-block
+                            height 33px
+                            padding-top 9px
+                            float left
+                            margin-left 25px
+                        input input
+                            id track-checkbox
+                            type checkbox
+                            css
+                                display inline-block
+                                cursor pointer
+                            :input, click
+                                {
+                                    var val = block.node().checked;
+                                    app.trackLiveUpdates = val == true;
+                                }
+                        label label
+                            for track-checkbox
+                            text text
+                                val Track Live Updates
+                                css
+                                    margin-left 7px
+                                    font-size 15px
+                                    letter-spacing 1px
+                                    display inline-block
+                                    height 20px
+                                    cursor pointer
+                                    text-transform uppercase
+            !preset
+                init
+                    {
+                        return Block('div')
+                            .key('red', 0)
+                            .key('green', 0)
+                            .key('blue', 0)
+                            .key('id', '')
+                            .key('selected', false)
+                            .css({
+                                backgroundColor: 'black',
+                                display: 'inline-block',
+                                border: '4px solid black',
+                                cursor: 'pointer'
+                            })
+                            .query('window height != 0', function (event, block, data) {
+                                var width = block.parent().$().width() / block.parent().key('squaresPerRow') - 8;
+                                block.css({
+                                    width: width + 'px',
+                                    height: width + 'px'
+                                });
+                            })
+                            .on('recolor', function (e, b, d) {
+                                var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
+                                b.css('background-color', rgb);
+                                if (!b.key('selected'))
+                                    b.css('border', '4px solid ' + rgb)
+                            })
+                            .on('mouseover', function (e, b, d) {
+                                if (!b.key('selected'))
+                                    b.css('border', '4px solid #fff');
+                            })
+                            .on('mouseout', function (e, b, d) {
+                                if (!b.key('selected')) {
+                                    var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
+                                    b.css('border', '4px solid ' + rgb);
+                                }
+                            })
+                            .on('select', function (e, b, d) {
+                                var siblings = b.parent().children();
+                                for (var s in siblings) {
+                                    if (siblings.hasOwnProperty(s)) {
+                                        siblings[s].on('deselect');
+                                    }
+                                }
+                                b.key('selected', true);
+                                b.css('border', '4px solid #444');
+                                app.rgb.r = b.key('red');
+                                app.rgb.g = b.key('green');
+                                app.rgb.b = b.key('blue');
+                                app.rgb.id = b.key('id');
+                                if (app.rgb.id.trim().length > 1) {
+                                    var picker = b.parent().sibling('picker').child('rect').node().jscolor;
+                                    picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                                    app.colorPickerUpdate(picker, false);
+                                    b.parent().sibling('picker').child('buttons/button2').on('enable');
+                                }
+                            })
+                            .on('deselect', function (e, b, d) {
+                                b.key('selected', false);
+                                var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
+                                b.css('border', '4px solid ' + rgb);
+                                app.rgb.id = '';
+                                b.parent().sibling('picker').child('buttons/button2').on('disable');
+                            })
+                            .on('click', function (e, b, d) {
+                                if (b.key('selected'))
+                                    b.on('deselect');
+                                else b.on('select');
+                            })
+                        ;
+                    }
+                load
+                    {
+                        data('r', function (v) {
+                            if (v > 255) v = 255;
+                            if (v < 0) v = 0;
+                            block.key('red', v);
+                            block.on('recolor');
+                        });
+                        data('g', function (v) {
+                            if (v > 255) v = 255;
+                            if (v < 0) v = 0;
+                            block.key('green', v);
+                            block.on('recolor');
+                        });
+                        data('b', function (v) {
+                            if (v > 255) v = 255;
+                            if (v < 0) v = 0;
+                            block.key('blue', v);
+                            block.on('recolor');
+                        });
+                        data('id', function (id) {
+                            block.key('id', id);
+                        });
+                        data('sw', function (sw) {
+                            if (sw) {
+                                block.on('select');
+                            }
+                        });
+                    }
+            div presets
+                {
+                    block.key('squaresPerRow', 8);
+                }
+                css
+                    overflow-y scroll
+                    height 425px
+                :clear
+                    {
+                        var children = block.children;
+                        for (var c in children) {
+                            if (c != 'spacer')
+                                block.remove(c);
+                        }
+                        if (data.callback) data.callback();
+                    }
+                #newpreset
+                    {
+                        if (!block.children().hasOwnProperty(newpreset.id)) {
+                            block.add(Block('preset', newpreset.id), 'spacer');
+                            Block.queries();
+                            block.child(newpreset.id).data(newpreset);
+                        }
+                    }
+                #updatepreset
+                    {
+                        if (block.children().hasOwnProperty(updatepreset.id)) {
+                            block.child(updatepreset.id).data({
+                                r: updatepreset.r,
+                                g: updatepreset.g,
+                                b: updatepreset.b
+                            });
+                        }
+                        if (updatepreset.id == app.rgb.id) {
+                            app.rgb.r = updatepreset.r;
+                            app.rgb.g = updatepreset.g;
+                            app.rgb.b = updatepreset.b;
+                            var picker = block.sibling('picker').child('rect').node().jscolor;
+                            picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                            app.colorPickerUpdate(picker, false);
+                        }
+                    }
+                #deletepreset
+                    {
+                        if (block.children().hasOwnProperty(deletepreset.id)) {
+                            if (deletepreset.id == app.rgb.id) {
+                                block.child(deletepreset.id).on('deselect');
+                            }
+                            block.remove(deletepreset.id);
+                        }
+                    }
+                div spacer
+                    css
+                        height 0px
+                    // @query window height != 0
+                    //     {
+                    //         var width = block.parent().$().width() / block.parent().key('squaresPerRow');
+                    //         block.css('height', (width) + 'px');
+                    //     }
+        div patterns
+            css
+                top 66px
+                left 0
+                position absolute
+            @query window height != 0
+                {
+                    block.css('height', (window.innerHeight - 65 - 1) + 'px');
+                    block.css('width', (window.innerWidth - 500 - 1) + 'px');
+                }
+            !menu-item
+                init
+                    {
+                        var block;
+                        block = Block('div')
+                            .key('name', '')
+                            .add(Block('a', 'link')
+                                .add(Block('text', 1)
+                                    .data('pattern title')
+                                    .css({
+                                        letterSpacing: '0.5px',
+                                        color: '#555'
+                                    })
+                                )
+                            )
+                            .css({
+                                marginBottom: '2px',
+                                cursor: 'pointer'
+                            })
+                            .on('mouseover', function (e, b, d) {
+                                block.child('link/text').css('color', '#777');
+                            })
+                            .on('mouseout', function (e, b, d) {
+                                block.child('link/text').css('color', '#555');
+                            })
+                            .on('click', function (e, b, d) {
+                                app.loadPattern(block.mark(), block.key('name'));
+                            })
+                        ;
+                        return block;
+                    }
+                load
+                    {
+                        data('name', function (name) {
+                            block.key('name', name).child('link/text').html('').data(name);
+                        });
+                    }
+            #newpattern
+                {
+                    block.child('menu/list').add(Block('menu-item', newpattern.id).data({
+                        name: newpattern.name
+                    }));
+                }
+            #patternname
+                {
+                    block.child('menu/list/' + patternname.id).data({ name: patternname.name });
+                    if (app.currentPattern.id == patternname.id) {
+                        block.child('area/editor').data({ name: patternname.name });
+                    }
+                }
+            #deletepattern
+                {
+                    block.child('menu/list').remove(deletepattern.id);
+                }
+            div menu
+                css
+                    width 300px
+                    border-right 1px solid #eee
+                    height 100%
+                    position absolute
+                    left 0
+                    top 0
+                div title
+                    css
+                        margin-top 10px
+                        margin-left 22px
+                        text-align left
+                        position relative
+                        margin-bottom 2px
+                    text text
+                        val Patterns
+                        css
+                            font-size 26px
+                            letter-spacing 1.3px
+                            color #444
+                    div new
+                        css
+                            position absolute
+                            top 7px
+                            right 20px
+                            opacity 0.55
+                            cursor pointer
+                            transition opacity 0.2s ease
+                        :mouseover
+                            css
+                                opacity 0.65
+                        :mouseout
+                            css
+                                opacity 0.55
+                        image img
+                            src img/plus.png
+                            height 23px
+                            width 23px
+                        :click
+                            {
+                                app.newPattern();
+                            }
+                div list
+                    css
+                        margin-left 24px
+                        text-align left
+            div area
+                css
+                    height 100%
+                    position absolute
+                    left 301px
+                    top 0
+                @query window height != 0
+                    {
+                        block.css('width', (window.innerWidth - 500 - 1 - 300 - 1) + 'px');
+                    }
+                block placeholder
+                    css
+                        display table
+                    @query window height != 0
+                        {
+                            block.css('height', (block.parent().$().height() - 100) + 'px');
+                        }
+                    :show
+                        {
+                            block.sibling('editor').css('display', 'none');
+                            block.css('display', 'table');
+                        }
+                    text icon
+                        val { ... }
+                        css
+                            font-size 160px
+                            color #bbb
+                            letter-spacing 1px
+                            display block
+                            margin-bottom 5px
+                    text desc
+                        val create or edit pattern
+                        css
+                            font-size 25px
+                            color #bbb
+                            letter-spacing 1px
+                            display block
+                            margin-bottom 35px
+                div editor
+                    css
+                        display none
+                        position absolute
+                        top 0
+                        left 0
+                        width 100%
+                    @query window height != 0
+                        {
+                            block.css('height', (block.parent().$().height() - 100) + 'px');
+                        }
+                    :show
+                        {
+                            block.sibling('placeholder').css('display', 'none');
+                            block.css('display', 'block');
+                        }
+                    #name
+                        {
+                            if (name.trim() != '') {
+                                block.child('title/text').html('').data(name).sibling('input').$().val(name);
+                                block.child('title/input').css('display', 'none').sibling('text').css('display', 'inline-block');
+                            }
+                        }
+                    div title
+                        css
+                            text-align left
+                            margin-top 15px
+                            position relative
+                            height 46px
+                        text text
+                            val pattern title
+                            css
+                                font-size 35px
+                                color #444
+                                position absolute
+                                top 0
+                                left 40px
+                        input input
+                            type text
+                            css
+                                font-size 35px
+                                color #444
+                                position absolute
+                                top 0
+                                left 40px
+                                display none
+                                outline none
+                                border none
+                                padding 0
+                                margin 0
+                            value pattern title
+                            :keyup
+                                {
+                                    if (event.keyCode && event.keyCode == 13) {
+                                        var val = block.$().val().trim();
+                                        if (val != '') app.renamePattern(val);
+                                    }
+                                }
+                        div delete
+                            css
+                                position absolute
+                                right 30px
+                                top 8px
+                                opacity 0.65
+                                cursor pointer
+                                transition opacity 0.2s ease
+                            image icon
+                                src img/delete.png
+                                height 35px
+                                width 35px
+                            :mouseover
+                                css
+                                    opacity 0.75
+                            :mouseout
+                                css
+                                    opacity 0.65
+                            :click
+                                {
+                                    app.deletePattern();
+                                }
+                        div edit
+                            css
+                                position absolute
+                                right 75px
+                                top 8px
+                                opacity 0.65
+                                cursor pointer
+                                transition opacity 0.2s ease
+                            image icon
+                                src img/edit.png
+                                height 35px
+                                width 35px
+                            :mouseover
+                                css
+                                    opacity 0.75
+                            :mouseout
+                                css
+                                    opacity 0.65
+                            :click
+                                {
+                                    block.sibling('text').css('display', 'none')
+                                        .sibling('input').css('display', 'inline-block').$().focus().select();
+                                }
+                    hr hr1
+                        css
+                            width 20px
+                            opacity 0.2
+                            margin 3px 0 13px 39px
+                        @query window height != 0
+                            {
+                                block.css('width', (block.parent().$().width() - 40 - 30 - 6) + 'px');
+                            }
+                    !pattern-color
+                        init
+                            {
+                                var block = Block('div');
+                                return block
+                                    .css({
+                                        width: '30px',
+                                        marginLeft: '40px',
+                                        height: '50px',
+                                        marginBottom: '10px',
+                                        borderRadius: '3px',
+                                        backgroundColor: '#eee',
+                                        boxShadow: '3px 2px 7px rgba(0,0,0,0.12)',
+                                        // transition: 'box-ordinal-group 0.5s ease, -webkit-box-ordinal-group 0.5s ease, -moz-box-ordinal-group 0.5s ease',
+                                        transition: 'margin-left 0.1s ease, box-shadow 0.1s ease'
+                                    })
+                                    .key('editcolor', false)
+                                    .key('dragging', false)
+                                    .query('window height != 0', function (event, block, data) {
+                                        block.css('width', (block.parent().$().width() - 40 * 2) + 'px');
+                                    })
+                                    .add(Block('block', 'handle')
+                                        .css({
+                                            width: '70px',
+                                            float: 'left'
+                                        })
+                                        .add(Block('div', 'imgwrap')
+                                            .css({
+                                                width: '32px',
+                                                height: '32px',
+                                                cursor: 'pointer',
+                                                margin: '2px auto 0',
+                                                opacity: '0.55',
+                                                transition: 'opacity 0.1s ease'
+                                            })
+                                            .on('mouseover', function (e, b, d) {
+                                                b.css('opacity', '0.65');
+                                            })
+                                            .on('mouseout', function (e, b, d) {
+                                                b.css('opacity', '0.55');
+                                            })
+                                            .on('mousedown', function (e, b, d) {
+                                                console.log('dragging ' + block.key('id'));
+                                                block.key('dragging', true);
+                                                block.parent().key('draggingitem', block.key('id'));
+                                                block.css({
+                                                    boxShadow: '3px 4px 9px rgba(0,0,0,0.15)',
+                                                    marginLeft: '60px'
+                                                });
+                                            })
+                                            .on('mouseup', function (e, b, d) {
+                                                e.stopPropagation();
+                                                console.log('released ' + block.key('id'));
+                                                block.key('dragging', false);
+                                                block.parent().key('draggingitem', -1);
+                                                block.css({
+                                                    boxShadow: '3px 2px 7px rgba(0,0,0,0.12)',
+                                                    marginLeft: '40px'
+                                                });
+                                                setTimeout(function () {
+                                                    app.movePatternColor(block.key('id'), block.key('ordinalPos'));
+                                                }, 100);
+                                            })
+                                            .add(Block('image', 1)
+                                                .data({
+                                                    src: 'img/bars.png',
+                                                    width: '32px',
+                                                    height: '32px'
+                                                })
+                                            )
+                                        )
+                                    )
+                                    .add(Block('block', 'fade')
+                                        .css({
+                                            width: '85px',
+                                            height: '100%',
+                                            float: 'left',
+                                            marginRight: '15px'
+                                        })
+                                        .add(Block('div', 'wrapper')
+                                            .css({
+                                                width: '100%',
+                                                height: '31px',
+                                                textAlign: 'center',
+                                                cursor: 'pointer'
+                                            })
+                                            .add(Block('text', 'text')
+                                                .css({
+                                                    fontSize: '23px',
+                                                    width: 'auto',
+                                                    color: '#333'
+                                                })
+                                                .data('fade')
+                                            )
+                                            .add(Block('text', 'label')
+                                                .css({
+                                                    fontSize: '19px',
+                                                    color: '#333'
+                                                })
+                                                .data('ms')
+                                            )
+                                            .on('click', function (e, b, d) {
+                                                b.css('display', 'none').sibling('input').css('display', 'block').$().focus().select();
+                                            })
+                                        )
+                                        .add(Block('input', 1)
+                                            .data({
+                                                type: 'text',
+                                                placeholder: '10000'
+                                            })
+                                            .css({
+                                                fontSize: '23px',
+                                                width: '90%',
+                                                textAlign: 'center',
+                                                outline: 'none',
+                                                border: 'none',
+                                                backgroundColor: 'rgba(0, 0, 0, 0)',
+                                                display: 'none',
+                                                color: '#333'
+                                            })
+                                            .on('keyup', function (e, b, d) {
+                                                if (e.keyCode == 13) {
+                                                    var val = b.$().val().trim();
+                                                    val = parseInt(val);
+                                                    if (!isNaN(val) && val >= 0 && val <= 30000) {
+                                                        block.key('fade', val);
+                                                        block.on('sendUpdate');
+                                                    }
+                                                }
+                                            })
+                                        )
+                                    )
+                                    .add(Block('div', 'color')
+                                        .css({
+                                            float: 'left',
+                                            cursor: 'pointer',
+                                            border: '3px solid black'
+                                        })
+                                        .query('window height != 0', function (event, block, data) {
+                                            block.css('width', (block.parent().$().width() - 100 * 2 - 3 * 2 - 70 * 2) + 'px')
+                                                .css('height', (block.parent().$().height() - 3 * 2) + 'px');
+                                        })
+                                        .on('click', function (e, b, d) {
+                                            if (block.key('editcolor')) {
+                                                block.key('editcolor', false);
+                                                b.css('border', '3px solid ' + app.util.rgbcss(block.key('r'), block.key('g'), block.key('b')));
+                                                app.trackPatternColorBlock = null;
+                                                block.on('sendUpdate');
+                                            } else {
+                                                var prevent = false;
+                                                var siblings = block.parent().children();
+                                                for (var s in siblings) {
+                                                    if (siblings.hasOwnProperty(s) && siblings[s].key('editcolor')) {
+                                                        siblings[s].child('color').on('click');
+                                                        prevent = true;
+                                                    }
+                                                }
+                                                if (!prevent) {
+                                                    block.key('editcolor', true);
+                                                    b.css('border', '3px solid #c3c3c3');
+                                                    app.trackPatternColorBlock = block;
+                                                }
+                                            }
+                                        })
+                                    )
+                                    .add(Block('block', 'time')
+                                        .css({
+                                            width: '100px',
+                                            height: '100%',
+                                            float: 'left',
+                                            marginLeft: '10px'
+                                        })
+                                        .add(Block('div', 'wrapper')
+                                            .css({
+                                                width: '100%',
+                                                height: '31px',
+                                                textAlign: 'center',
+                                                cursor: 'pointer'
+                                            })
+                                            .add(Block('text', 'text')
+                                                .css({
+                                                    fontSize: '23px',
+                                                    width: 'auto',
+                                                    color: '#333'
+                                                })
+                                                .data('time')
+                                            )
+                                            .add(Block('text', 'label')
+                                                .css({
+                                                    fontSize: '19px',
+                                                    color: '#333'
+                                                })
+                                                .data('ms')
+                                            )
+                                            .on('click', function (e, b, d) {
+                                                b.css('display', 'none').sibling('input').css('display', 'block').$().focus().select();
+                                            })
+                                        )
+                                        .add(Block('input', 1)
+                                            .data({
+                                                type: 'text',
+                                                placeholder: '10000'
+                                            })
+                                            .css({
+                                                fontSize: '23px',
+                                                width: '90%',
+                                                textAlign: 'center',
+                                                outline: 'none',
+                                                border: 'none',
+                                                backgroundColor: 'rgba(0, 0, 0, 0)',
+                                                display: 'none',
+                                                color: '#333'
+                                            })
+                                            .on('keyup', function (e, b, d) {
+                                                if (e.keyCode == 13) {
+                                                    var val = b.$().val().trim();
+                                                    val = parseInt(val);
+                                                    if (!isNaN(val) && val >= 0 && val <= 30000) {
+                                                        block.key('time', val);
+                                                        block.on('sendUpdate');
+                                                    }
+                                                }
+                                            })
+                                        )
+                                    )
+                                    .add(Block('block', 'delete')
+                                        .css({
+                                            width: '55px',
+                                            float: 'left',
+                                            marginLeft: '5px'
+                                        })
+                                        .add(Block('div', 'imgwrap')
+                                            .css({
+                                                width: '23px',
+                                                height: '23px',
+                                                cursor: 'pointer',
+                                                margin: '2px auto 0',
+                                                opacity: '0.5',
+                                                transition: 'opacity 0.1s ease'
+                                            })
+                                            .on('mouseover', function (e, b, d) {
+                                                b.css('opacity', '0.6');
+                                            })
+                                            .on('mouseout', function (e, b, d) {
+                                                b.css('opacity', '0.5');
+                                            })
+                                            .add(Block('image', 1)
+                                                .data({
+                                                    src: 'img/x.png',
+                                                    width: '23px',
+                                                    height: '23px'
+                                                })
+                                            )
+                                        )
+                                        .on('click', function (e, b, d) {
+                                            app.deletePatternColor(block.key('id'));
+                                        })
+                                    )
+                                    .on('sendUpdate', function (e, b, d) {
+                                        app.updatePatternColor(block.key('id'), {
+                                            fade: block.key('fade'),
+                                            r: block.key('r'),
+                                            g: block.key('g'),
+                                            b: block.key('b'),
+                                            time: block.key('time')
+                                        });
+                                    })
+                                    .on('setOrdinalPos', function(e, b, d) {
+                                        d.pos = parseInt(d.pos);
+                                        // console.log('switching ' + block.key('ordinalPos') + ' to ' + d.pos);
+                                        if (block.key('ordinalPos') != d.pos) {
+                                            // console.log('moving ' + d.pos + ' to ' + block.key('ordinalPos'));
+                                            var siblings = block.parent().children();
+                                            for (var s in siblings) {
+                                                if (siblings.hasOwnProperty(s) && siblings[s].key('ordinalPos') == d.pos) {
+                                                    var sibling = siblings[s];
+                                                    sibling.key('ordinalPos', block.key('ordinalPos'));
+                                                    var stringpostemp = String(sibling.key('ordinalPos') + 1);
+                                                    sibling.css({
+                                                        '-webkit-box-ordinal-group': stringpostemp,
+                                                        '-moz-box-ordinal-group': stringpostemp,
+                                                        'box-ordinal-group': stringpostemp
+                                                    });
+                                                }
+                                            }
+                                        }
+                                        block.key('ordinalPos', d.pos);
+                                        var stringpos = String(d.pos + 1);
+                                        block.css({
+                                            '-webkit-box-ordinal-group': stringpos,
+                                            '-moz-box-ordinal-group': stringpos,
+                                            'box-ordinal-group': stringpos
+                                        });
+                                    })
+                                ;
+                            }
+                        load
+                            {
+                                data('fade', function (fade) {
+                                    block.key('fade', fade);
+                                    block.child('fade/input').$().val(String(fade));
+                                    block.child('fade/wrapper/text').html('').data(String(fade));
+                                });
+                                var rgbupdate = function () {
+                                    var currentrgbcss = app.util.rgbcss(block.key('r'), block.key('g'), block.key('b'));
+                                    block.child('color').css('background-color', currentrgbcss);
+                                    if (!block.key('editcolor'))
+                                        block.child('color').css('border', '3px solid ' + currentrgbcss);
+                                }
+                                data('r', function (r) {
+                                    block.key('r', r);
+                                    rgbupdate();
+                                });
+                                data('g', function (g) {
+                                    block.key('g', g);
+                                    rgbupdate();
+                                });
+                                data('b', function (b) {
+                                    block.key('b', b);
+                                    rgbupdate();
+                                });
+                                data('time', function (time) {
+                                    block.key('time', time);
+                                    block.child('time/input').$().val(String(time));
+                                    block.child('time/wrapper/text').html('').data(String(time));
+                                });
+                                data('id', function (id) {
+                                    block.key('id', id);
+                                    block.on('setOrdinalPos', { pos: id });
+                                });
+                            }
+                    div colors
+                        class flexcontainer
+                        css
+                            width 100%
+                            margin-bottom 5px
+                            overflow scroll
+                        {
+                            block.key('draggingitem', -1);
+                        }
+                        @query window height != 0
+                            {
+                                block.css('height', (block.parent().$().height() - 15 - 46 - 6 - 2 - 78 - 5 - 10) + 'px');
+                            }
+                        #list
+                            {
+                                block.html('');
+                                for (var l in list) {
+                                    block.add(Block('pattern-color', 'color_' + l));
+                                    block.child('color_' + l).data({ 'id': l }).data(list[l]);
+                                }
+                                Block.queries();
+                            }
+                    block addbutton
+                        css
+                            height 78px
+                            cursor pointer
+                            color white
+                            background-color #b2b2b2
+                            transition background-color 0.2s ease
+                            -moz-box-shadow inset 0px 60px 0px -16px #b5b5b5
+                            -webkit-box-shadow inset 0px 60px 0px -16px #b5b5b5
+                            box-shadow inset 0px 0px 60px 0px -16px #b5b5b5
+                            text-align center
+                            float left
+                        @query window height != 0
+                            {
+                                block.css('width', (block.parent().$().width() / 2) + 'px');
+                            }
+                        :mouseover
+                            css
+                                background-color #aeaeae
+                        :mouseout
+                            css
+                                background-color #b2b2b2
+                        :mousedown
+                            css
+                                background-color #bbb
+                        :mouseup
+                            css
+                                background-color #aeaeae
+                        :click
+                            {
+                                app.addPatternColor();
+                            }
+                        text text
+                            val +
+                            css
+                                font-size 60px
+                    block playbutton
+                        css
+                            height 78px
+                            cursor pointer
+                            color white
+                            background-color #b2b2b2
+                            border-left 1px solid #eee
+                            transition background-color 0.2s ease
+                            -moz-box-shadow inset 0px 60px 0px -16px #b5b5b5
+                            -webkit-box-shadow inset 0px 60px 0px -16px #b5b5b5
+                            box-shadow inset 0px 0px 60px 0px -16px #b5b5b5
+                            text-align center
+                            float left
+                        @query window height != 0
+                            {
+                                block.css('width', (block.parent().$().width() / 2 - 1) + 'px');
+                            }
+                        :mouseover
+                            css
+                                background-color #aeaeae
+                        :mouseout
+                            css
+                                background-color #b2b2b2
+                        :mousedown
+                            css
+                                background-color #bbb
+                        :mouseup
+                            css
+                                background-color #aeaeae
+                        :click
+                            {
+                                app.playPattern();
+                            }
+                        image img
+                            src img/play.png
+                            height 45px
+                            width 45px
+                            css
+                                margin 0 auto
+                div directpanel
+                    css
+                        width 100%
+                        height 99px
+                        border-top 1px solid #eee
+                        position absolute
+                        bottom 0
+                        left 0
+                    div brightslider
+                        css
+                            width 100%
+                            height 40px
+                            margin-top 7px
+                        block label
+                            css
+                                width 110px
+                                float left
+                                font-size 19px
+                            {
+                                block.__child('content').css('text-align', 'right');
+                            }
+                            text text
+                                val Brightness:
+                                css
+                                    color #333
+                        block slider
+                            css
+                                float left
+                                margin 0 20px 0 20px
+                            @query window height != 0
+                                {
+                                    block.css('width', (block.parent().$().width() - 230) + 'px');
+                                }
+                            input input
+                                type range
+                                min 0
+                                max 100
+                                value 100
+                                css
+                                    width 100%
+                                    margin-top 7px
+                                    cursor pointer
+                                    opacity 0.8
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            block.parent().sibling('value').child('text').html('' + val);
+                                            app.direct.brightness = val;
+                                            app.sendBrightness();
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input');
+                                        app.playPattern();
+                                    }
+                        block value
+                            css
+                                width 80px
+                                font-size 19px
+                                float left
+                            {
+                                block.__child('content').css('text-align', 'left');
+                            }
+                            text text
+                                val 100
+                                css
+                                    color #333
+                    div speedslider
+                        css
+                            width 100%
+                            height 40px
+                        block label
+                            css
+                                width 110px
+                                float left
+                                font-size 19px
+                            {
+                                block.__child('content').css('text-align', 'right');
+                            }
+                            text text
+                                val Speed Mult:
+                                css
+                                    color #333
+                        block slider
+                            css
+                                float left
+                                margin 0 20px 0 20px
+                            @query window height != 0
+                                {
+                                    block.css('width', (block.parent().$().width() - 230) + 'px');
+                                }
+                            input input
+                                type range
+                                min 0
+                                max 500
+                                value 100
+                                step 5
+                                css
+                                    width 100%
+                                    margin-top 7px
+                                    cursor pointer
+                                    opacity 0.8
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 500) val = 500;
+                                            block.parent().sibling('value').child('text').html('' + val);
+                                            app.direct.speed = val;
+                                            app.sendSpeed();
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input');
+                                        app.playPattern();
+                                    }
+                        block value
+                            css
+                                width 80px
+                                font-size 19px
+                                float left
+                            {
+                                block.__child('content').css('text-align', 'left');
+                            }
+                            text text
+                                val 100
+                                css
+                                    color #333
+    :mousemove
+        {
+            var colors = block.child('controlpanel/patterns/area/editor/colors');
+            var hlim = colors.$().height();
+            if (colors.key('$hr') == null) colors.key('$hr', colors.sibling('hr1').$());
+            if (colors.key('draggingitem') >= 0) {
+                var pattern_color = colors.child('color_' + colors.key('draggingitem'));
+                var $hr = colors.key('$hr');
+                var pos = event.clientY - ($hr.offset().top + $hr.outerHeight(true));
+                if (pos < 0) pos = -1000; if (pos > hlim) pos = hlim;
+                pos /= pattern_color.$().outerHeight(true);
+                pos = parseInt(pos);
+                var numpatterncolors = Object.keys(colors.children()).length;
+                if (pos >= numpatterncolors) pos = numpatterncolors - 1;
+                if (pos < 0) pos = -1;
+                pattern_color.on('setOrdinalPos', {
+                    pos: pos
+                });
+            }
+        }
+    :mouseup
+        {
+            var colors = block.child('controlpanel/patterns/area/editor/colors');
+            var children = colors.children();
+            for (var c in children) {
+                if (children.hasOwnProperty(c) && children[c].key('dragging'))
+                    children[c].child('handle/imgwrap').on('mouseup');
+            }
+        }

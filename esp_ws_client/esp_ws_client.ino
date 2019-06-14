@@ -33,9 +33,18 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
       } else if (memcmp(payload, "@auth", 5) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] authenticated\n");
         Serial.printf("ready\n");
+      } else if (memcmp(payload, "@p-", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new pattern – %s\n", payload + 3);
+        Serial.printf("p%s\n", payload + 3);
       } else if (memcmp(payload, "@h-", 3) == 0) {
-        if (DEBUG_MODE) SERIAL.printf("[ws] new hue pattern – %s\n", payload + 3);
-        Serial.printf("%s\n", payload + 3);
+        if (DEBUG_MODE) SERIAL.printf("[ws] new hue – %s\n", payload + 3);
+        Serial.printf("h%s\n", payload + 3);
+      } else if (memcmp(payload, "@b-", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new brightness – %s\n", payload + 3);
+        Serial.printf("b%s\n", payload + 3);
+      } else if (memcmp(payload, "@s-", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new speed mult – %s\n", payload + 3);
+        Serial.printf("s%s\n", payload + 3);
       }
       break;
     case WStype_BIN:

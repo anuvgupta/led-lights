@@ -9,6 +9,7 @@
   "author": "Anuv Gupta",
   "license": "ISC",
   "dependencies": {
+    "array-move": "^2.1.0",
     "express": "^4.17.1",
     "random-number": "0.0.9",
     "ws": "^7.0.0"
