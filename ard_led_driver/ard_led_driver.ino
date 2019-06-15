@@ -63,6 +63,7 @@ void loop() {
         c = ESP8266.read();
       else c = Serial.read();
       if (c != -1) {
+        // Serial.print(c);
         if (c == '\n') {
           msgbuff[mb_i] = '\0';
           if (!ready && mb_i >= 5 && memcmp(msgbuff + mb_i - 5, "ready", 5) == 0) {

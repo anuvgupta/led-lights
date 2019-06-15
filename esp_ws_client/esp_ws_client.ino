@@ -13,6 +13,8 @@ WebSocketsClient ws;
 #define DEBUG_MODE false
 #define SERVER "10.0.1.36"
 #define PORT 30003
+//#define SERVER "leds.anuv.me"
+//#define PORT 3003
 
 void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {

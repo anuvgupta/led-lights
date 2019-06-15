@@ -221,21 +221,34 @@ var app = {
         lastDetected: '',
         lastSent: ''
     },
-    testColor: function () {
+    testColor: function (override) {
         if (app.socket.readyState == 1) {
+            if (override == undefined) override = false;
             if (app.testColorData.allowed) {
                 app.testColorData.allowed = false;
                 setTimeout(function () {
                     app.testColorData.allowed = true;
                 }, app.testColorData.delayInterval);
                 app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.rgb.r, app.rgb.g, app.rgb.b)));
+            } else if (override) {
+                app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.rgb.r, app.rgb.g, app.rgb.b)));
             }
+            app.currentItem.type = 'hue';
+            app.currentItem.data = {
+                r: app.rgb.r,
+                g: app.rgb.g,
+                b: app.rgb.b
+            };
         }
     },
     currentPattern: {
         id: '',
         name: '',
         list: null
+    },
+    currentItem: {
+        type: '',
+        data: ''
     },
     trackPatternColorBlock: null,
     newPattern: function () {
@@ -280,6 +293,8 @@ var app = {
     },
     playPattern: function () {
         if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
+            app.currentItem.type = 'pattern';
+            app.currentItem.data = app.currentPattern.id;
             app.socket.send(app.encodeMSG('playpattern', { id: app.currentPattern.id }));
         }
     },
@@ -288,6 +303,15 @@ var app = {
             var conf = confirm('Delete pattern ' + app.currentPattern.name + '?');
             if (conf) {
                 app.socket.send(app.encodeMSG('deletepattern', { id: app.currentPattern.id }));
+            }
+        }
+    },
+    playCurrent: function () {
+        if (app.socket.readyState == 1) {
+            if (app.currentItem.type == 'pattern') {
+                app.playPattern();
+            } else if (app.currentItem.type == 'hue') {
+                app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.currentItem.data.r, app.currentItem.data.g, app.currentItem.data.b)));
             }
         }
     },
@@ -348,8 +372,9 @@ var app = {
         } });
         if (update == undefined || update == true)
             app.updateColor();
-        if (app.trackLiveUpdates)
+        if (app.trackLiveUpdates) {
             app.testColor();
+        }
         if (app.trackPatternColorBlock != null && app.trackPatternColorBlock) {
             app.trackPatternColorBlock.data({
                 r: app.rgb.r,

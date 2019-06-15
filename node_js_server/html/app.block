@@ -247,6 +247,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
+                                app.testColor(true);
                             }
                     text t1R
                         html 0
@@ -283,6 +284,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
+                                app.testColor(true);
                             }
                     text t2R
                         html 0
@@ -316,6 +318,11 @@ app
                                     app.colorPickerUpdate(picker);
                                 }
                             }
+                        :mouseup
+                            {
+                                block.on('input');
+                                app.testColor(true);
+                            }
                     text t3R
                         html 0
                     div spacer4
@@ -339,11 +346,8 @@ app
                                     var picker = block.parent().sibling('rect').node().jscolor;
                                     picker.fromString(val);
                                     app.colorPickerUpdate(picker);
+                                    app.testColor(true);
                                 }
-                            }
-                        :mouseup
-                            {
-                                block.on('input');
                             }
                     div spacer5
                         css
@@ -505,7 +509,7 @@ app
                                     text-transform uppercase
                             :click
                                 {
-                                    app.testColor();
+                                    app.testColor(true);
                                 }
                     div track
                         css
@@ -708,6 +712,18 @@ app
                 {
                     block.css('height', (window.innerHeight - 65 - 1) + 'px');
                     block.css('width', (window.innerWidth - 500 - 1) + 'px');
+                }
+            :click
+                {
+                    var colors = block.child('area/editor/colors');
+                    var children = colors.children();
+                    for (var c in children) {
+                        if (children.hasOwnProperty(c)) {
+                            if (children[c].key('editcolor')) {
+                                children[c].child('color').on('click');
+                            }
+                        }
+                    }
                 }
             !menu-item
                 init
@@ -1052,6 +1068,7 @@ app
                                                     width: 'auto',
                                                     color: '#333'
                                                 })
+                                                .class('select-disabled')
                                                 .data('fade')
                                             )
                                             .add(Block('text', 'label')
@@ -1059,9 +1076,11 @@ app
                                                     fontSize: '19px',
                                                     color: '#333'
                                                 })
+                                                .class('select-disabled')
                                                 .data('ms')
                                             )
                                             .on('click', function (e, b, d) {
+                                                e.stopPropagation();
                                                 b.css('display', 'none').sibling('input').css('display', 'block').$().focus().select();
                                             })
                                         )
@@ -1080,15 +1099,21 @@ app
                                                 display: 'none',
                                                 color: '#333'
                                             })
+                                            .on('sendVal', function (e, b, d) {
+                                                var val = b.$().val().trim();
+                                                val = parseInt(val);
+                                                if (!isNaN(val) && val >= 0 && val <= 30000) {
+                                                    block.key('fade', val);
+                                                    block.on('sendUpdate');
+                                                }
+                                            })
                                             .on('keyup', function (e, b, d) {
                                                 if (e.keyCode == 13) {
-                                                    var val = b.$().val().trim();
-                                                    val = parseInt(val);
-                                                    if (!isNaN(val) && val >= 0 && val <= 30000) {
-                                                        block.key('fade', val);
-                                                        block.on('sendUpdate');
-                                                    }
+                                                    b.on('sendVal');
                                                 }
+                                            })
+                                            .on('click', function (e, b, d) {
+                                                e.stopPropagation();
                                             })
                                         )
                                     )
@@ -1103,6 +1128,7 @@ app
                                                 .css('height', (block.parent().$().height() - 3 * 2) + 'px');
                                         })
                                         .on('click', function (e, b, d) {
+                                            e.stopPropagation();
                                             if (block.key('editcolor')) {
                                                 block.key('editcolor', false);
                                                 b.css('border', '3px solid ' + app.util.rgbcss(block.key('r'), block.key('g'), block.key('b')));
@@ -1145,6 +1171,7 @@ app
                                                     width: 'auto',
                                                     color: '#333'
                                                 })
+                                                .class('select-disabled')
                                                 .data('time')
                                             )
                                             .add(Block('text', 'label')
@@ -1152,9 +1179,11 @@ app
                                                     fontSize: '19px',
                                                     color: '#333'
                                                 })
+                                                .class('select-disabled')
                                                 .data('ms')
                                             )
                                             .on('click', function (e, b, d) {
+                                                e.stopPropagation();
                                                 b.css('display', 'none').sibling('input').css('display', 'block').$().focus().select();
                                             })
                                         )
@@ -1173,15 +1202,21 @@ app
                                                 display: 'none',
                                                 color: '#333'
                                             })
+                                            .on('sendVal', function (e, b, d) {
+                                                var val = b.$().val().trim();
+                                                val = parseInt(val);
+                                                if (!isNaN(val) && val >= 0 && val <= 30000) {
+                                                    block.key('time', val);
+                                                    block.on('sendUpdate');
+                                                }
+                                            })
                                             .on('keyup', function (e, b, d) {
                                                 if (e.keyCode == 13) {
-                                                    var val = b.$().val().trim();
-                                                    val = parseInt(val);
-                                                    if (!isNaN(val) && val >= 0 && val <= 30000) {
-                                                        block.key('time', val);
-                                                        block.on('sendUpdate');
-                                                    }
+                                                    b.on('sendVal');
                                                 }
+                                            })
+                                            .on('click', function (e, b, d) {
+                                                e.stopPropagation();
                                             })
                                         )
                                     )
@@ -1445,7 +1480,7 @@ app
                                 :mouseup
                                     {
                                         block.on('input');
-                                        app.playPattern();
+                                        app.playCurrent();
                                     }
                         block value
                             css
@@ -1508,7 +1543,7 @@ app
                                 :mouseup
                                     {
                                         block.on('input');
-                                        app.playPattern();
+                                        app.playCurrent();
                                     }
                         block value
                             css
@@ -1549,5 +1584,20 @@ app
             for (var c in children) {
                 if (children.hasOwnProperty(c) && children[c].key('dragging'))
                     children[c].child('handle/imgwrap').on('mouseup');
+            }
+        }
+    :click
+        {
+            var colors = block.child('controlpanel/patterns/area/editor/colors');
+            var children = colors.children();
+            for (var c in children) {
+                if (children.hasOwnProperty(c)) {
+                    if (children[c].child('fade/input').css('display') == 'block') {
+                        children[c].child('fade/input').on('sendVal');
+                    }
+                    if (children[c].child('time/input').css('display') == 'block') {
+                        children[c].child('time/input').on('sendVal');
+                    }
+                }
             }
         }
