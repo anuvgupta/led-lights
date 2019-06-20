@@ -115,14 +115,15 @@ app
                 position absolute
                 top 0
                 left 0
-                border-bottom 1px solid #eee
-                background-color #f6f6f6
+                border-bottom 1px solid #4a4a4a
+                background-color #3e3e3e
+                box-shadow rgb(210, 210, 210) 0px 2px 4px
             text title
                 val Live LEDs
                 css
                     font-family ModernSansRegular
                     font-size 30px
-                    color #4a4a4a
+                    color #fafafa
                     margin-top 8px
                     text-transform uppercase
                     display block
@@ -132,15 +133,15 @@ app
                     top 2px
                     right 20px
                     width 50px
-                    opacity 0.6
+                    opacity 0.85
                     transition opacity 0.1s ease
                     cursor pointer
                 :mouseover
                     css
-                        opacity 0.7
+                        opacity 1
                 :mouseout
                     css
-                        opacity 0.6
+                        opacity 0.85
                 :click
                     {
                         app.logout();
@@ -155,20 +156,20 @@ app
                     top 2px
                     left 20px
                     width 50px
-                    opacity 0.65
+                    opacity 0.85
                     transition opacity 0.1s ease
                     cursor pointer
                 :mouseover
                     css
-                        opacity 0.75
+                        opacity 1
                 :mouseout
                     css
-                        opacity 0.65
+                        opacity 0.85
                 a link
                     target _blank
                     href https://github.com/anuvgupta/led-lights
                     img icon
-                        src img/github.svg
+                        src img/github.png
                         height 35px
                         width 35px
         div colors
@@ -247,7 +248,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
-                                app.testColor(true);
+                                if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t1R
                         html 0
@@ -284,7 +285,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
-                                app.testColor(true);
+                                if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t2R
                         html 0
@@ -321,7 +322,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
-                                app.testColor(true);
+                                if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t3R
                         html 0
@@ -363,7 +364,8 @@ app
                     div button1
                         css
                             margin 0 auto
-                            background-color #afafaf
+                            // background-color #afafaf
+                            background-color rgb(76, 76, 76)
                             padding 6px 0
                             width 150px
                             text-align center
@@ -371,22 +373,25 @@ app
                             cursor pointer
                             color white
                             transition background-color 0.15s ease
-                            -moz-box-shadow inset 0px 39px 0px -18px #bbb
-                            -webkit-box-shadow inset 0px 39px 0px -18px #bbb
-                            box-shadow inset 0px 39px 0px -18px #bbb
+                            -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
                             border 1px solid #ffffff
+                            opacity 0.9
                         :mouseover
                             css
-                                background-color #a3a3a3
+                                background-color rgb(88, 88, 88)
                         :mouseout
                             css
-                                background-color #afafaf
+                                // background-color #afafaf
+                                background-color rgb(76, 76, 76)
                         :mousedown
                             css
-                                background-color #c3c3c3
+                                // background-color #c3c3c3
+                                background-color rgb(98, 98, 98)
                         :mouseup
                             css
-                                background-color #a3a3a3
+                                background-color rgb(88, 88, 88)
                         text text
                             val new
                             css
@@ -406,38 +411,38 @@ app
                         }
                         css
                             margin 0 auto
-                            background-color #afafaf
+                            background-color rgb(76, 76, 76)
                             padding 6px 0
                             width 150px
                             text-align center
                             border-radius 4px
                             cursor pointer
                             color white
-                            transition background-color 0.15s ease
-                            -moz-box-shadow inset 0px 39px 0px -18px #bbb
-                            -webkit-box-shadow inset 0px 39px 0px -18px #bbb
-                            box-shadow inset 0px 39px 0px -18px #bbb
+                            transition background-color 0.15s ease, opacity 0.1s ease
+                            -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
                             border 1px solid #ffffff
                             opacity 0.5
                         :mouseover
                             {
                                 if (block.key('enabled'))
-                                    block.css('background-color', '#a3a3a3');
+                                    block.css('background-color', 'rgb(88, 88, 88)');
                             }
                         :mouseout
                             {
                                 if (block.key('enabled'))
-                                    block.css('background-color', '#afafaf');
+                                    block.css('background-color', 'rgb(76, 76, 76)');
                             }
                         :mousedown
                             {
                                 if (block.key('enabled'))
-                                    block.css('background-color', '#c3c3c3');
+                                    block.css('background-color', 'rgb(98, 98, 98)');
                             }
                         :mouseup
                             {
                                 if (block.key('enabled'))
-                                    block.css('background-color', '#a3a3a3');
+                                    block.css('background-color', 'rgb(88, 88, 88)');
                             }
                         :click
                             {
@@ -448,7 +453,7 @@ app
                         :enable
                             {
                                 block.key('enabled', true);
-                                block.css('opacity', '1');
+                                block.css('opacity', '0.9');
                             }
                         :disable
                             {
@@ -477,7 +482,7 @@ app
                         div button3
                             css
                                 margin 0 auto
-                                background-color #afafaf
+                                background-color rgb(76, 76, 76)
                                 padding 6px 0
                                 width 150px
                                 text-align center
@@ -485,22 +490,23 @@ app
                                 cursor pointer
                                 color white
                                 transition background-color 0.15s ease
-                                -moz-box-shadow inset 0px 39px 0px -18px #bbb
-                                -webkit-box-shadow inset 0px 39px 0px -18px #bbb
-                                box-shadow inset 0px 39px 0px -18px #bbb
+                                -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                                -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                                box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
                                 border 1px solid #ffffff
+                                opacity 0.9
                             :mouseover
                                 css
-                                    background-color #a3a3a3
+                                    background-color rgb(88, 88, 88)
                             :mouseout
                                 css
-                                    background-color #afafaf
+                                    background-color rgb(76, 76, 76)
                             :mousedown
                                 css
-                                    background-color #c3c3c3
+                                    background-color rgb(98, 98, 98)
                             :mouseup
                                 css
-                                    background-color #a3a3a3
+                                    background-color rgb(88, 88, 88)
                             text text
                                 val push
                                 css
@@ -735,8 +741,8 @@ app
                                 .add(Block('text', 1)
                                     .data('pattern title')
                                     .css({
-                                        letterSpacing: '0.5px',
-                                        color: '#555'
+                                        letterSpacing: '0.2px',
+                                        color: '#111'
                                     })
                                 )
                             )
@@ -798,22 +804,22 @@ app
                         val Patterns
                         css
                             font-size 26px
-                            letter-spacing 1.3px
-                            color #444
+                            letter-spacing 0.5px
+                            color #000
                     div new
                         css
                             position absolute
                             top 7px
                             right 20px
-                            opacity 0.55
+                            opacity 0.6
                             cursor pointer
                             transition opacity 0.2s ease
                         :mouseover
                             css
-                                opacity 0.65
+                                opacity 0.75
                         :mouseout
                             css
-                                opacity 0.55
+                                opacity 0.6
                         image img
                             src img/plus.png
                             height 23px
@@ -852,7 +858,7 @@ app
                         val { ... }
                         css
                             font-size 160px
-                            color #bbb
+                            color #888
                             letter-spacing 1px
                             display block
                             margin-bottom 5px
@@ -860,7 +866,7 @@ app
                         val create or edit pattern
                         css
                             font-size 25px
-                            color #bbb
+                            color #666
                             letter-spacing 1px
                             display block
                             margin-bottom 35px
@@ -984,13 +990,13 @@ app
                                     .css({
                                         width: '30px',
                                         marginLeft: '40px',
-                                        height: '50px',
+                                        height: '60px',
                                         marginBottom: '10px',
                                         borderRadius: '3px',
-                                        backgroundColor: '#eee',
+                                        backgroundColor: '#fdfdfd',
                                         boxShadow: '3px 2px 7px rgba(0,0,0,0.12)',
-                                        // transition: 'box-ordinal-group 0.5s ease, -webkit-box-ordinal-group 0.5s ease, -moz-box-ordinal-group 0.5s ease',
-                                        transition: 'margin-left 0.1s ease, box-shadow 0.1s ease'
+                                        transition: 'margin-left 0.1s ease, box-shadow 0.1s ease',
+                                        border: '1px solid #efefef'
                                     })
                                     .key('editcolor', false)
                                     .key('dragging', false)
@@ -1009,7 +1015,7 @@ app
                                                 cursor: 'pointer',
                                                 margin: '2px auto 0',
                                                 opacity: '0.55',
-                                                transition: 'opacity 0.1s ease'
+                                                transition: 'opacity 0.1s ease, background-color 0.1s ease'
                                             })
                                             .on('mouseover', function (e, b, d) {
                                                 b.css('opacity', '0.65');
@@ -1023,7 +1029,8 @@ app
                                                 block.parent().key('draggingitem', block.key('id'));
                                                 block.css({
                                                     boxShadow: '3px 4px 9px rgba(0,0,0,0.15)',
-                                                    marginLeft: '60px'
+                                                    marginLeft: '60px',
+                                                    backgroundColor: '#eee'
                                                 });
                                             })
                                             .on('mouseup', function (e, b, d) {
@@ -1033,7 +1040,8 @@ app
                                                 block.parent().key('draggingitem', -1);
                                                 block.css({
                                                     boxShadow: '3px 2px 7px rgba(0,0,0,0.12)',
-                                                    marginLeft: '40px'
+                                                    marginLeft: '40px',
+                                                    backgroundColor: '#fdfdfd'
                                                 });
                                                 setTimeout(function () {
                                                     app.movePatternColor(block.key('id'), block.key('ordinalPos'));
@@ -1433,7 +1441,7 @@ app
                         left 0
                     div brightslider
                         css
-                            width 100%
+                            width 70%
                             height 40px
                             margin-top 7px
                         block label
@@ -1496,7 +1504,7 @@ app
                                     color #333
                     div speedslider
                         css
-                            width 100%
+                            width 70%
                             height 40px
                         block label
                             css
@@ -1557,6 +1565,51 @@ app
                                 val 100
                                 css
                                     color #333
+                    block musictoggle
+                        css
+                            width 30%
+                            position absolute
+                            top 0
+                            right 0
+                        block button
+                            css
+                                margin 0 auto
+                                background-color rgb(76, 76, 76)
+                                padding 6px 0
+                                width 120px
+                                height 35px
+                                text-align center
+                                border-radius 4px
+                                cursor pointer
+                                color white
+                                transition background-color 0.15s ease
+                                -moz-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                -webkit-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                border 1px solid #ffffff
+                                opacity 0.9
+                            :mouseover
+                                css
+                                    background-color rgb(88, 88, 88)
+                            :mouseout
+                                css
+                                    background-color rgb(76, 76, 76)
+                            :mousedown
+                                css
+                                    background-color rgb(98, 98, 98)
+                            :mouseup
+                                css
+                                    background-color rgb(88, 88, 88)
+                            text text
+                                val music
+                                css
+                                    font-size 22px
+                                    letter-spacing 1.5px
+                                    text-transform uppercase
+                            :click
+                                {
+                                    console.log('toggle music reactive mode');
+                                }
     :mousemove
         {
             var colors = block.child('controlpanel/patterns/area/editor/colors');
