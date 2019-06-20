@@ -223,6 +223,7 @@ var app = {
     },
     testColor: function (override) {
         if (app.socket.readyState == 1) {
+            // console.log("testing color")
             if (override == undefined) override = false;
             if (app.testColorData.allowed) {
                 app.testColorData.allowed = false;
