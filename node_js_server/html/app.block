@@ -1361,29 +1361,30 @@ app
                             height 78px
                             cursor pointer
                             color white
-                            background-color #b2b2b2
+                            background-color rgb(76, 76, 76)
                             transition background-color 0.2s ease
-                            -moz-box-shadow inset 0px 60px 0px -16px #b5b5b5
-                            -webkit-box-shadow inset 0px 60px 0px -16px #b5b5b5
-                            box-shadow inset 0px 0px 60px 0px -16px #b5b5b5
+                            -moz-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
+                            -webkit-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
+                            box-shadow inset 0px 0px 60px 0px -16px rgb(84, 84, 84)
                             text-align center
                             float left
+                            opacity 0.9
                         @query window height != 0
                             {
                                 block.css('width', (block.parent().$().width() / 2) + 'px');
                             }
                         :mouseover
                             css
-                                background-color #aeaeae
+                                background-color rgb(88, 88, 88)
                         :mouseout
                             css
-                                background-color #b2b2b2
+                                background-color rgb(76, 76, 76)
                         :mousedown
                             css
-                                background-color #bbb
+                                background-color rgb(98, 98, 98)
                         :mouseup
                             css
-                                background-color #aeaeae
+                                background-color rgb(88, 88, 88)
                         :click
                             {
                                 app.addPatternColor();
@@ -1397,30 +1398,31 @@ app
                             height 78px
                             cursor pointer
                             color white
-                            background-color #b2b2b2
+                            background-color rgb(76, 76, 76)
                             border-left 1px solid #eee
                             transition background-color 0.2s ease
-                            -moz-box-shadow inset 0px 60px 0px -16px #b5b5b5
-                            -webkit-box-shadow inset 0px 60px 0px -16px #b5b5b5
-                            box-shadow inset 0px 0px 60px 0px -16px #b5b5b5
+                            -moz-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
+                            -webkit-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
+                            box-shadow inset 0px 0px 60px 0px -16px rgb(84, 84, 84)
                             text-align center
                             float left
+                            opacity 0.9
                         @query window height != 0
                             {
                                 block.css('width', (block.parent().$().width() / 2 - 1) + 'px');
                             }
                         :mouseover
                             css
-                                background-color #aeaeae
+                                background-color rgb(88, 88, 88)
                         :mouseout
                             css
-                                background-color #b2b2b2
+                                background-color rgb(76, 76, 76)
                         :mousedown
                             css
-                                background-color #bbb
+                                background-color rgb(98, 98, 98)
                         :mouseup
                             css
-                                background-color #aeaeae
+                                background-color rgb(88, 88, 88)
                         :click
                             {
                                 app.playPattern();
