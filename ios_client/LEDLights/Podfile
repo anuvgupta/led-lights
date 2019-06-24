@@ -1,0 +1,10 @@
+source 'https://github.com/CocoaPods/Specs.git'
+platform :ios, '10.0'
+use_frameworks!
+
+target 'LEDLights' do
+  pod 'Starscream', '~> 3.0.2'
+  pod 'SwiftyJSON', '~> 4.0'
+  pod 'HueKit', '~> 1.0'
+#  pod 'ChromaColorPicker', '1.7.2'
+end
