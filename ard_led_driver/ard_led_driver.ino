@@ -15,6 +15,7 @@ char tokenbuff[20]; // 5(f) + 3(r) + 3(g) + 3(b) + 5(t) + 1(\0)
 char databuff[6]; // 5(int dig max) + 1(\0)
 bool ready = false;
 SoftwareSerial ESP8266(6, 7);
+unsigned long lastTimestamp = 0;
 // rgb data
 double r = 0; // hue red
 double g = 0; // hue green
@@ -29,7 +30,8 @@ double b_st = 0; // hue blue fade
 double brightness = 100; // brightness
 double speedmult = 100; // speed mult
 int fade = 0; // transition (ms)
-#define PRECISION 5 
+#define PRECISION 5 // 5 millisecond precision for fades
+#define RESET_INTERVAL 10 // reset ESP8266 every 5 minutes
 
 void setup() {
   // init hardware and software serials
@@ -44,18 +46,31 @@ void setup() {
   pinMode(BLUEPIN, OUTPUT);
   red(0); green(0); blue(0);
 
-  if (DEBUG) Serial.println(F("connecting to ESP8266"));
+  if (DEBUG) Serial.println(F("[nano] connecting to ESP8266"));
 }
 
 void loop() {
   // drive LED's
   red(r); green(g); blue(b);
+
+  // check time interval and send reset message
+  unsigned long newTimestamp = millis();
+  unsigned long interval = 60000;
+  interval *= RESET_INTERVAL;
+  if (ready && newTimestamp - lastTimestamp >= interval) {
+    if (lastTimestamp > 0) {
+      Serial.println("[nano] resetting ESP8266");
+      ready = false;
+      ESP8266.println("reset");
+    }
+    lastTimestamp = newTimestamp;
+  }
   
   // read serial
   if (ESP8266.available() || Serial.available()) {
     if (mb_i >= 500) {
-      msgbuff[499] = '\n';
-      if (DEBUG) Serial.println(msgbuff);
+      msgbuff[499] = '\0';
+      if (DEBUG) writeBuffer();
       mb_i = 0;
     } else {
       char c;
@@ -63,15 +78,15 @@ void loop() {
         c = ESP8266.read();
       else c = Serial.read();
       if (c != -1) {
-        // Serial.print(c);
         if (c == '\n') {
           msgbuff[mb_i] = '\0';
-          if (!ready && mb_i >= 5 && memcmp(msgbuff + mb_i - 5, "ready", 5) == 0) {
-            if (DEBUG) Serial.println(F("connected to ESP8266"));
+          if (DEBUG) writeBuffer();
+          if (/*!ready &&*/ mb_i >= 5 && memcmp(msgbuff + mb_i - 5, "ready", 5) == 0) {
+            if (DEBUG) Serial.println(F("[nano] connected to ESP8266"));
             ready = true;
           } else if (ready) {
             if (msgbuff[0] == 'h') {
-              if (DEBUG) Serial.print(F("new hue: "));
+              if (DEBUG) Serial.print(F("[update] new hue: "));
               if (DEBUG) Serial.println(msgbuff);
               bool f = 1;
               while (ESP8266.available() <= 0) {
@@ -79,7 +94,7 @@ void loop() {
                 if (f) f = 0;
               }
             } else if (msgbuff[0] == 'p') {
-              if (DEBUG) Serial.print(F("new pattern: "));
+              if (DEBUG) Serial.print(F("[update] new pattern: "));
               if (DEBUG) Serial.println(msgbuff);
               bool f = 1;
               while (ESP8266.available() <= 0) {
@@ -87,19 +102,19 @@ void loop() {
                 if (f) f = 0;
               }
             } else if (msgbuff[0] == 'b') {
-              if (DEBUG) Serial.print(F("new brightness: "));
+              if (DEBUG) Serial.print(F("[update] new brightness: "));
               if (DEBUG) Serial.println(msgbuff);
               bright(DEBUG);
             } else if (msgbuff[0] == 's') {
-              if (DEBUG) Serial.print(F("new speed: "));
+              if (DEBUG) Serial.print(F("[update] new speed: "));
               if (DEBUG) Serial.println(msgbuff);
               speedm(DEBUG);
             }
           }
           mb_i = 0;
-        } else if (c != 0) {
+        } else if (c != 0 && c >= 32 && c <= 126) {
           msgbuff[mb_i] = c;
-          // Serial.println("msgbuff[" + String(mb_i) + "] " + String(msgbuff[mb_i]) + " (" + String((uint8_t) msgbuff[mb_i]) + ")");
+          // Serial.println("[esp] msgbuff[" + String(mb_i) + "] " + String(msgbuff[mb_i]) + " (" + String((uint8_t) msgbuff[mb_i]) + ")");
           mb_i++;
         }
       }
@@ -114,7 +129,7 @@ void bright(bool v) {
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   brightness = atoi(databuff);
-  if (v) { Serial.print("brightness – "); Serial.println(brightness); }
+  if (v) { Serial.print("[nano] brightness – "); Serial.println(brightness); }
   red(r); green(g); blue(b);
 }
 
@@ -125,7 +140,7 @@ void speedm(bool v) {
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   speedmult = atoi(databuff);
-  if (v) { Serial.print("speed – "); Serial.println(speedmult); }
+  if (v) { Serial.print("[nano] speed – "); Serial.println(speedmult); }
   red(r); green(g); blue(b);
 }
 
@@ -145,7 +160,7 @@ void hue(bool v) {
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_b = atoi(databuff);
-  if (v) { Serial.print(F("hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.println(")"); }
+  if (v) { Serial.print(F("[nano] hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.println(")"); }
   // change color
   while (ESP8266.available() <= 0) {
     r = n_r; red(r);
@@ -180,8 +195,8 @@ void pattern(bool v) {
       databuff[j] = tokenbuff[i];
     databuff[5] = '\0';
     t = atoi(databuff);
-    if (v) { Serial.print(F("fade – ")); Serial.print(fade); Serial.println(F("ms")); }
-    if (v) { Serial.print(F("hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.print(")"); Serial.print(" – "); Serial.print(t); Serial.println("ms"); }
+    if (v) { Serial.print(F("[nano] fade – ")); Serial.print(fade); Serial.println(F("ms")); }
+    if (v) { Serial.print(F("[nano] hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.print(")"); Serial.print(" – "); Serial.print(t); Serial.println("ms"); }
     // fade into color
     fadeColor();
     // hold color for time
@@ -189,7 +204,7 @@ void pattern(bool v) {
       delay(PRECISION);
     }
   }
-  if (v) Serial.println("repeat");
+  if (v) Serial.println("[nano] repeat");
 }
 
 // fade into current color
@@ -238,4 +253,15 @@ int tokenize(char* dst, char* src, char delim, int occ) {
   strncpy(dst, src + b, e - b);
   dst[e - b] = '\0';
   return 1;
+}
+
+// write message buffer to output serial
+void writeBuffer() {
+  if (msgbuff[0] == '[') {
+    Serial.print(F("[esp:"));
+    Serial.println(msgbuff + 1);
+  } else {
+    Serial.print(F("[serial] "));
+    Serial.println(msgbuff);
+  }
 }
