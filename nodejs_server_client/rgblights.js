@@ -13,10 +13,58 @@ if (process.argv.slice(2)[0] == 'test') {
     wss_port = 30003;
     http_port = 30002;
 }
-const password = 'password';
+const password = 'control';
 
 // ws server
 const wss = new WebSocket.Server({ port: wss_port });
+var clients = {};
+var database;
+try {
+    fs.readFile('database.json', function (err, data) {
+      if (err) throw err;
+      database = JSON.parse(data);
+    });
+} catch (e) {
+    console.log(e);
+    database = {
+        colors: {
+
+        },
+        patterns: {
+
+        },
+        currentPattern: '',
+        currentHue: ''
+    };
+}
+// save database on exit
+function saveDB() {
+    var dbjson = JSON.stringify(database);
+    fs.writeFile('database.json', dbjson, function (err) {
+        if (err) {
+            return console.log(err);
+        }
+        console.log('[db] file saved');
+    });
+}
+function saveDBSync() {
+    var dbjson = JSON.stringify(database);
+    fs.writeFileSync('database.json', dbjson);
+    console.log('[db] file saved');
+}
+process.stdin.resume();
+function exitHandler(options, code) {
+    if (options.cleanup) console.log('clean');
+    saveDBSync();
+    if (code || code === 0) console.log(code);
+    if (options.exit) process.exit();
+}
+process.on('exit', exitHandler.bind(null, { cleanup: true })); // app exit
+process.on('SIGINT', exitHandler.bind(null, { exit: true })); // ctrl+c
+process.on('SIGUSR1', exitHandler.bind(null, { exit: true })); // kill pid
+process.on('SIGUSR2', exitHandler.bind(null, { exit: true })); // kill pid
+process.on('uncaughtException', exitHandler.bind(null, { exit: true })); // catch exception
+// convenience functions
 function encodeMSG(e, d) {
     return JSON.stringify({
         event: e,
@@ -47,26 +95,6 @@ function lpad(s, width, char) {
 function rgbstring(r, g, b) {
     return lpad(String(parseInt(r)), 3, '0') + lpad(String(parseInt(g)), 3, '0') + lpad(String(parseInt(b)), 3, '0');
 }
-
-var clients = {};
-var database;
-try {
-    fs.readFile('database.json', function (err, data) {
-      if (err) throw err;
-      database = JSON.parse(data);
-    });
-} catch (e) {
-    console.log(e);
-    database = {
-        colors: {
-
-        },
-        patterns: {
-
-        },
-        current: ''
-    };
-}
 function sendToAll(event, data) {
     for (var c_id in clients) {
         if (clients.hasOwnProperty(c_id) && c_id != 'arduino' && clients[c_id] !== null && clients[c_id].auth) {
@@ -86,27 +114,36 @@ function sendToArduino(data) {
         clients['arduino'].socket.send(data);
 }
 function playCurrentPattern() {
-    if (database.current.trim() != '') {
-        var currentPattern = database.patterns[database.current];
+    if (database.currentPattern.trim() != '') {
+        var currentPattern = database.patterns[database.currentPattern];
         var pattern_string = '';
         for (var p_c in currentPattern.list) {
             var pattern_color = currentPattern.list[p_c];
             pattern_string += lpad(pattern_color.fade, 5, '0') + rgbstring(pattern_color.r, pattern_color.g, pattern_color.b) + lpad(pattern_color.time, 5, '0') + ',';
         }
         pattern_string = pattern_string.substring(0, pattern_string.length - 1);
-        console.log('[ws] playing pattern ' + database.current);
+        console.log('[ws] playing pattern ' + database.currentPattern);
         sendToArduino('@p-' + pattern_string);
     }
 }
-function saveDB() {
-    var dbjson = JSON.stringify(database);
-    fs.writeFile('database.json', dbjson, function (err) {
-        if (err) {
-            return console.log(err);
-        }
-        console.log('[db] file saved');
-    });
+function sendColorPalette(client) {
+    client.socket.send(encodeMSG('auth', 'true'));
+    client.socket.send(encodeMSG('colorpalette', database.colors));
+    console.log('[ws] color palette update sent to client ' + client.id);
 }
+function sendPatternList(client) {
+    var names = [];
+    for (var p in database.patterns) {
+        if (database.patterns.hasOwnProperty(p)) {
+            names.push({
+                id: p, name: database.patterns[p].name
+            });
+        }
+    }
+    client.socket.send(encodeMSG('patternlist', names));
+    console.log('[ws] pattern list update sent to client ' + client.id);
+}
+
 wss.on('connection', function (ws) {
     var client = {
         socket: ws,
@@ -135,22 +172,14 @@ wss.on('connection', function (ws) {
                         client.auth = true;
                         if (client.id == 'arduino') {
                             ws.send('@auth');
-                            // ws.send('@h-00000' + lpad(rgb.r) + '' + lpad(rgb.g) + '' + lpad(rgb.b) + '01000');
-                            // send current pattern to arduino here
-                        } else {
-                            ws.send(encodeMSG('auth', 'true'));
-                            ws.send(encodeMSG('colorpalette', database.colors));
-                            console.log('[ws] color palette update sent to client ' + client.id);
-                            var names = [];
-                            for (var p in database.patterns) {
-                                if (database.patterns.hasOwnProperty(p)) {
-                                    names.push({
-                                        id: p, name: database.patterns[p].name
-                                    });
-                                }
+                            if (database.currentPattern != '') {
+                                playCurrentPattern();
+                            } else if (database.currentHue != '') {
+                                sendToArduino(database.currentHue);
                             }
-                            ws.send(encodeMSG('patternlist', names));
-                            console.log('[ws] pattern list update sent to client ' + client.id);
+                        } else {
+                            sendColorPalette(client);
+                            sendPatternList(client);
                         }
                     }
                     break;
@@ -163,15 +192,27 @@ wss.on('connection', function (ws) {
                     if (!client.auth) break;
                     sendToArduino(d.data);
                     break;
+                case 'getcolorpalette' :
+                    if (!client.auth) break;
+                    sendColorPalette(client);
+                    break;
+                case 'getpatternlist' :
+                    if (!client.auth) break;
+                    sendPatternList(client);
+                    break;
                 case 'newcolor':
                     if (!client.auth) break;
                     var colorID = randID();
                     while (database.colors.hasOwnProperty(colorID)) colorID = randID();
+                    d.data.r = parseInt(d.data.r);
+                    d.data.g = parseInt(d.data.g);
+                    d.data.b = parseInt(d.data.b);
                     console.log('[ws] client ' + client.id + ' adding new color with id ' + colorID + ' – rgb(' + d.data.r + ', ' + d.data.g + ', ' + d.data.b + ')');
                     database.colors[colorID] = {
                         r: d.data.r,
                         g: d.data.g,
-                        b: d.data.b
+                        b: d.data.b,
+                        d: Date.now()
                     };
                     sendToAllBut('newcolor', { r: d.data.r, g: d.data.g, b: d.data.b, id: colorID, switch: false }, client);
                     ws.send(encodeMSG('newcolor', { r: d.data.r, g: d.data.g, b: d.data.b, id: colorID, switch: true }));
@@ -179,6 +220,9 @@ wss.on('connection', function (ws) {
                     break;
                 case 'updatecolor':
                     if (!client.auth) break;
+                    d.data.r = parseInt(d.data.r);
+                    d.data.g = parseInt(d.data.g);
+                    d.data.b = parseInt(d.data.b);
                     console.log('[ws] client ' + client.id + ' updating color ' + d.data.id + ' – rgb(' + d.data.r + ', ' + d.data.g + ', ' + d.data.b + ')');
                     database.colors[d.data.id].r = d.data.r;
                     database.colors[d.data.id].g = d.data.g;
@@ -193,6 +237,27 @@ wss.on('connection', function (ws) {
                     delete database.colors[d.data.id];
                     sendToAll('deletecolor', { id: d.data.id });
                     saveDB();
+                    break;
+                case 'testcolor':
+                    if (!client.auth) break;
+                    d.data.r = parseInt(d.data.r);
+                    d.data.g = parseInt(d.data.g);
+                    d.data.b = parseInt(d.data.b);
+                    var colorstring = rgbstring(d.data.r, d.data.g, d.data.b);
+                    console.log('[ws] client ' + client.id + ' testing color ' + colorstring);
+                    database.currentPattern = '';
+                    database.currentHue = '@h-' + colorstring;
+                    sendToArduino(database.currentHue);
+                    break;
+                case 'testcolor_silent':
+                    if (!client.auth) break;
+                    d.data.r = parseInt(d.data.r);
+                    d.data.g = parseInt(d.data.g);
+                    d.data.b = parseInt(d.data.b);
+                    var colorstring = rgbstring(d.data.r, d.data.g, d.data.b);
+                    database.currentPattern = '';
+                    database.currentHue = '@h-' + colorstring;
+                    sendToArduino(database.currentHue);
                     break;
                 case 'newpattern':
                     if (!client.auth) break;
@@ -231,7 +296,8 @@ wss.on('connection', function (ws) {
                 case 'playpattern':
                     if (!client.auth) break;
                     if (database.patterns.hasOwnProperty(d.data.id)) {
-                        database.current = d.data.id;
+                        database.currentHue = '';
+                        database.currentPattern = d.data.id;
                         playCurrentPattern();
                         saveDB();
                     }

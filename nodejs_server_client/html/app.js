@@ -49,7 +49,7 @@ var app = {
             var currentDetected = app.util.rgbstring(app.rgb.r, app.rgb.g, app.rgb.b);
             if (app.trackLiveUpdates && app.testColorData.lastDetected == currentDetected && app.testColorData.lastSent != currentDetected) {
                 app.testColorData.lastSent = currentDetected;
-                app.socket.send(app.encodeMSG('direct', '@h-' + currentDetected));
+                app.socket.send(app.encodeMSG('testcolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b }));
             }
             app.testColorData.lastDetected = currentDetected;
         }, app.testColorData.detectInterval);
@@ -204,9 +204,11 @@ var app = {
             app.socket.send(app.encodeMSG('newcolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b }));
         }
     },
-    updateColor: function () {
+    updateColor: function (latent) {
+        if (latent == undefined) latent = false;
         if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
-            app.socket.send(app.encodeMSG('updatecolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b, id: app.rgb.id }));
+            console.log({ r: app.rgb.r, g: app.rgb.g, b: app.rgb.b, id: app.rgb.id, latent: latent });
+            app.socket.send(app.encodeMSG('updatecolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b, id: app.rgb.id, latent: latent }));
         }
     },
     deleteColor: function () {
@@ -230,9 +232,9 @@ var app = {
                 setTimeout(function () {
                     app.testColorData.allowed = true;
                 }, app.testColorData.delayInterval);
-                app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.rgb.r, app.rgb.g, app.rgb.b)));
+                app.socket.send(app.encodeMSG('testcolor_silent', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b }));
             } else if (override) {
-                app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.rgb.r, app.rgb.g, app.rgb.b)));
+                app.socket.send(app.encodeMSG('testcolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b }));
             }
             app.currentItem.type = 'hue';
             app.currentItem.data = {
@@ -312,7 +314,7 @@ var app = {
             if (app.currentItem.type == 'pattern') {
                 app.playPattern();
             } else if (app.currentItem.type == 'hue') {
-                app.socket.send(app.encodeMSG('direct_silent', '@h-' + app.util.rgbstring(app.currentItem.data.r, app.currentItem.data.g, app.currentItem.data.b)));
+                app.socket.send(app.encodeMSG('testcolor', { r: app.rgb.r, g: app.rgb.g, b: app.rgb.b }));
             }
         }
     },

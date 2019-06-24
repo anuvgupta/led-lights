@@ -248,6 +248,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
+                                app.updateColor(true);
                                 if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t1R
@@ -285,6 +286,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
+                                app.updateColor(true);
                                 if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t2R
@@ -322,6 +324,7 @@ app
                         :mouseup
                             {
                                 block.on('input');
+                                app.updateColor(true);
                                 if (app.trackLiveUpdates) app.testColor(true);
                             }
                     text t3R
@@ -347,6 +350,7 @@ app
                                     var picker = block.parent().sibling('rect').node().jscolor;
                                     picker.fromString(val);
                                     app.colorPickerUpdate(picker);
+                                    app.updateColor(true);
                                     app.testColor(true);
                                 }
                             }
