@@ -7,12 +7,8 @@ const arrayMove = require('array-move');
 const fs = require('fs');
 
 // constants
-var wss_port = 3003;
-var http_port = 3002;
-if (process.argv.slice(2)[0] == 'test') {
-    wss_port = 30003;
-    http_port = 30002;
-}
+const wss_port = process.argv.slice(2)[0] == 'test' ? 30003 : 3003;
+const http_port = process.argv.slice(2)[0] == 'test' ? 30002 : 3002;
 const password = 'control';
 
 // ws server

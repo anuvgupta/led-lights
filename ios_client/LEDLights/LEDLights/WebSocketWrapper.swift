@@ -99,13 +99,58 @@ class WSWrapper : WebSocketDelegate {
                 // load patterns as views
                 if let patternsVC = bridge.patternsVC {
                     patternsVC.clearPatternList()
-                    for (key, data) : (String, JSON) in json["data"] {
+                    for (_, data) : (String, JSON) in json["data"] {
                         patternsVC.addPattern(pattern: Pattern(
                             id: data["id"].stringValue,
                             name: data["name"].stringValue
                         ))
                     }
                 }
+                break;
+            case "newpattern": // new pattern received
+                // add pattern as view
+                if let patternsVC = bridge.patternsVC {
+                    patternsVC.addPattern(pattern: Pattern(
+                        id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
+                    ))
+                }
+                break;
+            case "renamepattern": // new pattern name received
+                // rename pattern in view
+                if let patternsVC = bridge.patternsVC {
+                    patternsVC.renamePattern(pattern: Pattern(
+                        id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
+                    ))
+                }
+                if let patternEditVC = bridge.patternEditVC {
+                    if let currentpattern = editingPattern {
+                        if currentpattern.id == json["data"]["id"].stringValue {
+                            patternEditVC.reloadTitle()
+                        }
+                    }
+                }
+                break;
+            case "deletepattern": // pattern deleted
+                // reload view
+                requestPatternList()
+                if let patternEditVC = bridge.patternEditVC {
+                    if let currentpattern = editingPattern {
+                        if currentpattern.id == json["data"]["id"].stringValue {
+                            patternEditVC.exit()
+                            editingPattern = nil
+                        }
+                    }
+                }
+                break;
+            case "loadpattern": // pattern color data received
+                // load pattern colors as views
+                loadPatternData(id: json["data"]["id"].stringValue, json: json["data"]["list"])
+                break;
+            case "updatepattern": // pattern color data updated
+                // reload pattern colors as views
+                loadPatternData(id: json["data"]["id"].stringValue, json: json["data"]["list"])
                 break;
             default: // unknown event received
                 print("unknown event: " + event)
@@ -114,6 +159,28 @@ class WSWrapper : WebSocketDelegate {
     }
     func websocketDidReceiveData(socket: WebSocketClient, data: Data) {
         print("websocket received data: ", data)
+    }
+    
+    // convenience function for loading list
+    private func loadPatternData(id: String, json: JSON) {
+        if let patternEditVC = bridge.patternEditVC {
+            if let currentpattern = editingPattern {
+                if currentpattern.id == id {
+                    patternEditVC.clearPatternColorList()
+                    var list: [PatternItem] = []
+                    for (_, data) : (String, JSON) in json {
+                        list.append(PatternItem(
+                            red: data["r"].intValue,
+                            green: data["g"].intValue,
+                            blue: data["b"].intValue,
+                            fade: data["fade"].intValue,
+                            hold: data["time"].intValue
+                        ))
+                    }
+                    patternEditVC.refresh(items: list)
+                }
+            }
+        }
     }
     
     // WebSocket client begin connection
@@ -212,12 +279,81 @@ class WSWrapper : WebSocketDelegate {
             let nowMS = msTimeStamp()
             if (nowMS - lastTestColorIntervalTickMS >= 100) {
                 lastTestColorIntervalTickMS = nowMS
-                send(event: "direct_silent", data: "@h-" + rgbstring(r: r, g: g, b: b))
+                send(event: "testcolor_silent", data: [
+                    "r": r, "g": g, "b": b
+                ])
             }
         } else {
             // print(rgbstring(r: r, g: g, b: b))
-            send(event: "direct", data: "@h-" + rgbstring(r: r, g: g, b: b))
+            send(event: "testcolor", data: [
+                "r": r, "g": g, "b": b
+            ])
         }
+    }
+    // create new blank pattern
+    func newPattern() {
+        send(event: "newpattern", data: [ ])
+    }
+    // load current pattern data
+    func loadPattern(id: String) {
+        send(event: "loadpattern", data: [
+            "id": id
+        ])
+    }
+    // rename pattern
+    func renamePattern(id: String, name: String) {
+        send(event: "renamepattern", data: [
+            "id": id, "name": name
+        ])
+    }
+    // delete pattern
+    func deletePattern(id: String) {
+        send(event: "deletepattern", data: [
+            "id": id
+        ])
+    }
+    // play pattern
+    func playPattern(id: String) {
+        currentItemType = "pattern"
+        currentItemData = id
+        send(event: "playpattern", data: [
+            "id": id
+        ])
+    }
+    // add pattern color
+    func addPatternColor(id: String) {
+        send(event: "addpatterncolor", data: [
+            "id": id
+        ])
+    }
+    // update pattern color
+    func updatePatternColor(id: String, colorID: Int, colorData: PatternItem) {
+        send(event: "updatepatterncolor", data: [
+            "id": id,
+            "colorID": colorID,
+            "colorData": [
+                "fade": colorData.fade,
+                "r": colorData.red,
+                "g": colorData.green,
+                "b": colorData.blue,
+                "time": colorData.hold
+            ]
+        ])
+    }
+    // move pattern color
+    func movePatternColor(id: String, colorID: Int, newPos: Int) {
+        send(event: "movepatterncolor", data: [
+            "id": id,
+            "colorID": colorID,
+            "newPos": newPos
+        ])
+    }
+    // delete pattern color
+    func deletePatternColor(id: String, colorID: Int) {
+        send(event: "deletepatterncolor", data: [
+            "id": id,
+            "colorID": colorID
+        ])
     }
     
 }

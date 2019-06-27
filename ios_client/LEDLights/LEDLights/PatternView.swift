@@ -31,9 +31,10 @@ class PatternView : UIButton {
         if let image = UIImage(named: "next.png") {
             self.setImage(image.alpha(0.5), for: .normal)
         }
-        self.imageEdgeInsets = UIEdgeInsets(top: 22.0, left: frame.size.width - 45, bottom: 22.0, right: 15);
+        self.imageEdgeInsets = UIEdgeInsets(top: 24.0, left: frame.size.width - 43, bottom: 24.0, right: 18);
         
         self.setBackgroundColor(color: UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1), forState: .highlighted)
+        
     }
     func load(data: Pattern) {
         self.data = data
@@ -53,5 +54,11 @@ class PatternView : UIButton {
             return d.name
         }
         return ""
+    }
+    func showDeleteView() {
+        
+    }
+    func hideDeleteView() {
+        
     }
 }

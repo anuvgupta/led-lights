@@ -15,4 +15,5 @@ class WSVCBridge {
     public var controlsVC: ControlsViewController?
     public var patternsVC: PatternsViewController?
     public var patternEditVC : PatternEditorViewController?
+    public var patternsNavVC : PatternsNavController?
 }

@@ -23,7 +23,9 @@ var r: Int = 0
 var g: Int = 0
 var b: Int = 0
 // pattern editor data
-var editingPattern : Pattern?
+var editingPattern: Pattern?
+var currentItemType: String = ""
+var currentItemData: String = ""
 
 // extensions
 extension UIColor {
