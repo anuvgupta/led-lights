@@ -10,10 +10,10 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Login View Controller-->
+        <!--Login Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="LoginViewController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="BYZ-38-t0r" customClass="LoginController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -39,7 +39,7 @@
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="aNS-vf-qpG">
                                         <rect key="frame" x="0.0" y="250" width="250" height="30"/>
                                         <subviews>
-                                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder=". . ." textAlignment="center" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="Vfk-Ge-CvC">
+                                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="led lights" textAlignment="center" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="Vfk-Ge-CvC">
                                                 <rect key="frame" x="35" y="0.0" width="180" height="30"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" constant="180" id="CGt-T3-8km"/>
@@ -84,7 +84,7 @@
         <!--Colors-->
         <scene sceneID="hgL-Rw-ps6">
             <objects>
-                <viewController id="5JM-YC-Emr" customClass="ColorsViewController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="5JM-YC-Emr" customClass="ColorsController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="g4D-7g-tBd">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -288,11 +288,11 @@
                     </view>
                     <navigationItem key="navigationItem" title="Colors" id="enK-er-bNS">
                         <barButtonItem key="rightBarButtonItem" style="done" id="bpz-yM-uMz">
-                            <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="pdy-07-e8a">
-                                <rect key="frame" x="366" y="8" width="28" height="28"/>
+                            <button key="customView" opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="pdy-07-e8a">
+                                <rect key="frame" x="322" y="0.0" width="72" height="44"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <inset key="imageEdgeInsets" minX="11" minY="5" maxX="0.0" maxY="6"/>
-                                <state key="normal" image="power"/>
+                                <inset key="imageEdgeInsets" minX="54" minY="12" maxX="0.0" maxY="14"/>
+                                <state key="normal" image="power_bl"/>
                                 <connections>
                                     <action selector="signOutClicked:" destination="5JM-YC-Emr" eventType="primaryActionTriggered" id="tjt-id-ReY"/>
                                 </connections>
@@ -320,7 +320,7 @@
         <!--Patterns-->
         <scene sceneID="zEm-q4-fdM">
             <objects>
-                <viewController title="Patterns" id="4rK-Zk-Sns" customClass="PatternsViewController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController title="Patterns" id="4rK-Zk-Sns" customClass="PatternsController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8a3-d4-MNX">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -367,14 +367,14 @@
                         <viewLayoutGuide key="safeArea" id="IYd-so-14g"/>
                     </view>
                     <navigationItem key="navigationItem" title="Patterns" id="xAm-d3-R9V">
-                        <barButtonItem key="rightBarButtonItem" style="done" id="1pq-76-Mz7">
-                            <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="xPX-p5-k8J">
-                                <rect key="frame" x="366" y="8" width="28" height="28"/>
+                        <barButtonItem key="rightBarButtonItem" style="plain" id="FVS-Jl-lZJ">
+                            <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="xrk-71-tH1">
+                                <rect key="frame" x="322" y="0.0" width="72" height="44"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <inset key="imageEdgeInsets" minX="11" minY="5" maxX="0.0" maxY="6"/>
-                                <state key="normal" image="power"/>
+                                <inset key="imageEdgeInsets" minX="54" minY="12" maxX="0.0" maxY="14"/>
+                                <state key="normal" image="power_bl"/>
                                 <connections>
-                                    <action selector="signOutClicked:" destination="4rK-Zk-Sns" eventType="primaryActionTriggered" id="bz0-If-eCy"/>
+                                    <action selector="signOutClicked:" destination="4rK-Zk-Sns" eventType="touchUpInside" id="RE3-Ps-soo"/>
                                 </connections>
                             </button>
                         </barButtonItem>
@@ -391,16 +391,16 @@
             </objects>
             <point key="canvasLocation" x="3295.652173913044" y="107.8125"/>
         </scene>
-        <!--Pattern Editor View Controller-->
+        <!--Pattern Editor Controller-->
         <scene sceneID="9Xf-Eu-Zr3">
             <objects>
-                <viewController id="U8l-kI-3Ow" customClass="PatternEditorViewController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="U8l-kI-3Ow" customClass="PatternEditorController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="VEj-JW-TeR">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xme-dT-BKg">
-                                <rect key="frame" x="0.0" y="88" width="414" height="691"/>
+                                <rect key="frame" x="0.0" y="88" width="414" height="774"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9Es-Cv-TkO" userLabel="Content View">
                                         <rect key="frame" x="0.0" y="0.0" width="414" height="310"/>
@@ -427,72 +427,15 @@
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </scrollView>
-                            <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="epl-EB-Wgk">
-                                <rect key="frame" x="0.0" y="787" width="414" height="75"/>
-                                <subviews>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="O8Z-PX-1GC">
-                                        <rect key="frame" x="0.0" y="0.0" width="91" height="75"/>
-                                        <color key="backgroundColor" red="0.12549019607843137" green="0.12549019607843137" blue="0.12549019607843137" alpha="1" colorSpace="calibratedRGB"/>
-                                        <state key="normal" image="edit_w"/>
-                                        <connections>
-                                            <action selector="editButtonClicked:" destination="U8l-kI-3Ow" eventType="primaryActionTriggered" id="dv2-MW-gWc"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Rwt-Z6-cTB">
-                                        <rect key="frame" x="91" y="0.0" width="116" height="75"/>
-                                        <color key="backgroundColor" red="0.12549019607843137" green="0.12549019607843137" blue="0.12549019607843137" alpha="1" colorSpace="calibratedRGB"/>
-                                        <state key="normal" image="plus"/>
-                                        <connections>
-                                            <action selector="addButtonClicked:" destination="U8l-kI-3Ow" eventType="primaryActionTriggered" id="vbZ-Rp-ffH"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Frv-JM-U7O">
-                                        <rect key="frame" x="207" y="0.0" width="116" height="75"/>
-                                        <color key="backgroundColor" red="0.12549019607843137" green="0.12549019607843137" blue="0.12549019607843137" alpha="1" colorSpace="calibratedRGB"/>
-                                        <state key="normal" image="play"/>
-                                        <connections>
-                                            <action selector="playButtonClicked:" destination="U8l-kI-3Ow" eventType="primaryActionTriggered" id="oEi-JN-xs3"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wAZ-DK-LZs">
-                                        <rect key="frame" x="323" y="0.0" width="91" height="75"/>
-                                        <color key="backgroundColor" red="0.12549019610000001" green="0.12549019610000001" blue="0.12549019610000001" alpha="1" colorSpace="calibratedRGB"/>
-                                        <state key="normal" image="delete"/>
-                                        <connections>
-                                            <action selector="deleteButtonClicked:" destination="U8l-kI-3Ow" eventType="primaryActionTriggered" id="gTr-AD-pqf"/>
-                                        </connections>
-                                    </button>
-                                </subviews>
-                                <constraints>
-                                    <constraint firstItem="O8Z-PX-1GC" firstAttribute="leading" secondItem="epl-EB-Wgk" secondAttribute="leading" id="6rY-Iv-Q0h"/>
-                                    <constraint firstAttribute="height" constant="75" id="Y5H-yP-yTh"/>
-                                    <constraint firstItem="Rwt-Z6-cTB" firstAttribute="leading" secondItem="O8Z-PX-1GC" secondAttribute="trailing" id="Z99-Ru-6xM"/>
-                                    <constraint firstItem="Rwt-Z6-cTB" firstAttribute="height" secondItem="epl-EB-Wgk" secondAttribute="height" id="a2q-Cy-Ytp"/>
-                                    <constraint firstItem="O8Z-PX-1GC" firstAttribute="height" secondItem="epl-EB-Wgk" secondAttribute="height" id="jwH-jZ-1id"/>
-                                    <constraint firstItem="Frv-JM-U7O" firstAttribute="height" secondItem="epl-EB-Wgk" secondAttribute="height" id="mH0-Pj-Uic"/>
-                                    <constraint firstItem="Frv-JM-U7O" firstAttribute="leading" secondItem="Rwt-Z6-cTB" secondAttribute="trailing" id="r7r-xu-f2B"/>
-                                    <constraint firstItem="wAZ-DK-LZs" firstAttribute="height" secondItem="epl-EB-Wgk" secondAttribute="height" id="vXc-Qa-8KA"/>
-                                    <constraint firstItem="Frv-JM-U7O" firstAttribute="leading" secondItem="Rwt-Z6-cTB" secondAttribute="trailing" id="vgJ-UI-Psz"/>
-                                    <constraint firstItem="wAZ-DK-LZs" firstAttribute="leading" secondItem="Frv-JM-U7O" secondAttribute="trailing" id="wJh-bV-hoE"/>
-                                </constraints>
-                            </stackView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="Frv-JM-U7O" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" multiplier="0.28" id="0oG-Ff-RQR"/>
                             <constraint firstItem="xme-dT-BKg" firstAttribute="leading" secondItem="xQB-ZS-FoO" secondAttribute="leading" id="59J-8t-WXb"/>
                             <constraint firstItem="ndd-PV-F0T" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" id="5Gp-Zk-U8j"/>
-                            <constraint firstItem="wAZ-DK-LZs" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" multiplier="0.22" id="5R1-5g-UXm"/>
-                            <constraint firstItem="epl-EB-Wgk" firstAttribute="bottom" secondItem="xQB-ZS-FoO" secondAttribute="bottom" id="5WB-Yq-ZTv"/>
-                            <constraint firstItem="epl-EB-Wgk" firstAttribute="leading" secondItem="xQB-ZS-FoO" secondAttribute="leading" id="BPs-Ac-d36"/>
                             <constraint firstItem="xme-dT-BKg" firstAttribute="top" secondItem="xQB-ZS-FoO" secondAttribute="top" id="DXH-0U-HDX"/>
-                            <constraint firstItem="xQB-ZS-FoO" firstAttribute="trailing" secondItem="epl-EB-Wgk" secondAttribute="trailing" id="OwS-UG-YA8"/>
-                            <constraint firstItem="epl-EB-Wgk" firstAttribute="top" secondItem="xme-dT-BKg" secondAttribute="bottom" id="SvT-tz-wdd"/>
-                            <constraint firstItem="xme-dT-BKg" firstAttribute="height" secondItem="xQB-ZS-FoO" secondAttribute="height" constant="-75" id="bsR-BK-7ah"/>
+                            <constraint firstItem="xme-dT-BKg" firstAttribute="height" secondItem="xQB-ZS-FoO" secondAttribute="height" id="bsR-BK-7ah"/>
                             <constraint firstItem="xme-dT-BKg" firstAttribute="trailing" secondItem="xQB-ZS-FoO" secondAttribute="trailing" id="jcV-kS-Ntu"/>
                             <constraint firstItem="xme-dT-BKg" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" id="pnD-OI-3fM"/>
-                            <constraint firstItem="Rwt-Z6-cTB" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" multiplier="0.28" id="t71-re-Iwi"/>
-                            <constraint firstItem="O8Z-PX-1GC" firstAttribute="width" secondItem="xQB-ZS-FoO" secondAttribute="width" multiplier="0.22" id="x49-h4-7Lu"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="xQB-ZS-FoO"/>
                     </view>
@@ -510,7 +453,7 @@
         <!--Controls-->
         <scene sceneID="Q2o-ck-jBD">
             <objects>
-                <viewController title="Controls" id="LwX-dQ-yno" customClass="ControlsViewController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController title="Controls" id="LwX-dQ-yno" customClass="ControlsController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="YPU-tc-Hei">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -520,10 +463,10 @@
                     <navigationItem key="navigationItem" title="Controls" id="tDh-td-AG3">
                         <barButtonItem key="rightBarButtonItem" style="done" id="UKM-rz-loh">
                             <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" id="RGS-bk-BQv">
-                                <rect key="frame" x="366" y="8" width="28" height="28"/>
+                                <rect key="frame" x="322" y="0.0" width="72" height="44"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <inset key="imageEdgeInsets" minX="11" minY="5" maxX="0.0" maxY="6"/>
-                                <state key="normal" image="power"/>
+                                <inset key="imageEdgeInsets" minX="54" minY="12" maxX="0.0" maxY="14"/>
+                                <state key="normal" image="power_bl"/>
                                 <connections>
                                     <action selector="signOutClicked:" destination="LwX-dQ-yno" eventType="primaryActionTriggered" id="5tw-hL-Ydh"/>
                                 </connections>
@@ -543,7 +486,7 @@
             <objects>
                 <tabBarController id="4jC-m9-Mc5" sceneMemberID="viewController">
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics" translucent="NO"/>
-                    <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" translucent="NO" itemPositioning="fill" id="J6H-Gg-gyn">
+                    <tabBar key="tabBar" contentMode="scaleAspectFit" insetsLayoutMarginsFromSafeArea="NO" translucent="NO" itemPositioning="fill" id="J6H-Gg-gyn">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="49"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -563,9 +506,9 @@
         <scene sceneID="RPs-qO-t5L">
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="ZaO-ds-TTZ" customClass="PatternsNavController" customModule="LEDLights" customModuleProvider="target" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Patterns" image="brush" id="4l8-2M-nvh">
+                    <tabBarItem key="tabBarItem" title="Patterns" image="brush_b" selectedImage="brush_b" id="4l8-2M-nvh">
                         <inset key="imageInsets" minX="0.0" minY="7" maxX="0.0" maxY="-7"/>
-                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="12"/>
+                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="9"/>
                     </tabBarItem>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="4Pc-XC-9Et">
@@ -585,9 +528,9 @@
         <scene sceneID="Evr-t4-DKO">
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Kds-fz-Gx3" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Controls" image="settings" id="Eey-QV-7OD">
+                    <tabBarItem key="tabBarItem" title="Controls" image="settings_b" selectedImage="settings_b" id="Eey-QV-7OD">
                         <inset key="imageInsets" minX="0.0" minY="7" maxX="0.0" maxY="-7"/>
-                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="12"/>
+                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="9"/>
                     </tabBarItem>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="uSZ-4K-l8N">
@@ -607,9 +550,9 @@
         <scene sceneID="508-Rr-yqS">
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="KyB-oG-8gp" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Colors" image="palette" selectedImage="palette" id="ZxR-w0-BAs">
+                    <tabBarItem key="tabBarItem" title="Colors" image="palette_b" largeContentSizeImage="palette_b" selectedImage="palette_b" id="ZxR-w0-BAs">
                         <inset key="imageInsets" minX="0.0" minY="7" maxX="0.0" maxY="-7"/>
-                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="12"/>
+                        <offsetWrapper key="titlePositionAdjustment" horizontal="0.0" vertical="9"/>
                     </tabBarItem>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="a7I-r8-cEc">
@@ -627,18 +570,14 @@
         </scene>
     </scenes>
     <resources>
-        <image name="brush" width="29" height="28"/>
-        <image name="delete" width="26" height="26"/>
-        <image name="edit_w" width="26" height="26"/>
+        <image name="brush_b" width="25" height="25"/>
         <image name="icon" width="512" height="512"/>
-        <image name="palette" width="28" height="28"/>
-        <image name="play" width="26" height="26"/>
-        <image name="plus" width="26" height="26"/>
-        <image name="power" width="28" height="28"/>
-        <image name="settings" width="28" height="30"/>
+        <image name="palette_b" width="25" height="25"/>
+        <image name="power_bl" width="72" height="72"/>
+        <image name="settings_b" width="25" height="25"/>
     </resources>
     <inferredMetricsTieBreakers>
         <segue reference="arX-5q-SLJ"/>
-        <segue reference="Jah-d8-DHz"/>
+        <segue reference="fsg-vL-vbc"/>
     </inferredMetricsTieBreakers>
 </document>
