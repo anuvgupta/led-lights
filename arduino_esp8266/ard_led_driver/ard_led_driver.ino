@@ -6,7 +6,7 @@
 #define GREENPIN 10
 #define BLUEPIN 11
 
-#define DEBUG false
+#define DEBUG true
 
 // parsing data
 int mb_i = 0;
@@ -31,7 +31,7 @@ double brightness = 100; // brightness
 double speedmult = 100; // speed mult
 int fade = 0; // transition (ms)
 #define PRECISION 5 // 5 millisecond precision for fades
-#define RESET_INTERVAL 10 // reset ESP8266 every 5 minutes
+#define RESET_INTERVAL 10 // reset ESP8266 every 10 minutes
 
 void setup() {
   // init hardware and software serials
@@ -47,6 +47,7 @@ void setup() {
   red(0); green(0); blue(0);
 
   if (DEBUG) Serial.println(F("[nano] connecting to ESP8266"));
+  lastTimestamp = millis();
 }
 
 void loop() {
@@ -89,7 +90,7 @@ void loop() {
               if (DEBUG) Serial.print(F("[update] new hue: "));
               if (DEBUG) Serial.println(msgbuff);
               bool f = 1;
-              while (ESP8266.available() <= 0) {
+              while (ESP8266.available() <= 0 && !resetRequired()) {
                 hue(f && DEBUG);
                 if (f) f = 0;
               }
@@ -97,7 +98,7 @@ void loop() {
               if (DEBUG) Serial.print(F("[update] new pattern: "));
               if (DEBUG) Serial.println(msgbuff);
               bool f = 1;
-              while (ESP8266.available() <= 0) {
+              while (ESP8266.available() <= 0 && !resetRequired()) {
                 pattern(f && DEBUG);
                 if (f) f = 0;
               }
@@ -120,6 +121,15 @@ void loop() {
       }
     }
   }
+}
+
+// check if reset required
+bool resetRequired() {
+  // check time interval
+  unsigned long newTimestamp = millis();
+  unsigned long interval = 60000;
+  interval *= RESET_INTERVAL;
+  return ready && newTimestamp - lastTimestamp >= interval;
 }
 
 // process brightness from msgbuff
@@ -162,7 +172,7 @@ void hue(bool v) {
   n_b = atoi(databuff);
   if (v) { Serial.print(F("[nano] hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.println(")"); }
   // change color
-  while (ESP8266.available() <= 0) {
+  while (ESP8266.available() <= 0 && !resetRequired()) {
     r = n_r; red(r);
     g = n_g; green(g);
     b = n_b; blue(b);
@@ -171,7 +181,7 @@ void hue(bool v) {
 
 // process pattern from msgbuff
 void pattern(bool v) {
-  for (int z = 1; ESP8266.available() <= 0 && tokenize(tokenbuff, msgbuff + 1, ',', z); z++) {
+  for (int z = 1; ESP8266.available() <= 0 && !resetRequired() && tokenize(tokenbuff, msgbuff + 1, ',', z); z++) {
     fade = 0; // reset fade to default (none)
     // parse message data
     int i, j;
@@ -200,7 +210,7 @@ void pattern(bool v) {
     // fade into color
     fadeColor();
     // hold color for time
-    for (j = t / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && j > 0; j--) {
+    for (j = t / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && j > 0 && !resetRequired(); j--) {
       delay(PRECISION);
     }
   }
@@ -214,7 +224,7 @@ void fadeColor() {
     r_st = ((double) PRECISION) * (n_r - r) / ((double) fade);
     g_st = ((double) PRECISION) * (n_g - g) / ((double) fade);
     b_st = ((double) PRECISION) * (n_b - b) / ((double) fade);
-    for (int z = fade / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && z > 0; z--) {
+    for (int z = fade / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && z > 0 && !resetRequired(); z--) {
       r += r_st; g += g_st; b += b_st;
       if (r < 0) r = 0; if (r > 255) r = 255;
       if (g < 0) g = 0; if (g > 255) g = 255;
