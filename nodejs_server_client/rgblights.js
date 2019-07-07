@@ -7,12 +7,13 @@ const arrayMove = require("array-move");
 const fs = require("fs");
 
 // constants
-const wss_port = process.argv.slice(2)[0] == "test" ? 30003 : 3003;
-const http_port = process.argv.slice(2)[0] == "test" ? 30002 : 3002;
+const test = process.argv.slice(2)[0] == "test"
+const wss_port = test ? 30003 : 3003;
+const http_port = test ? 30002 : 3002;
 const password = "control";
 
 // convenience logger
-const DEBUG = true;
+const DEBUG = test;
 function log(category, message1, message2 = "", override = false) {
     if (DEBUG || override) {
         console.log("[" + category + "]", message1, message2);
