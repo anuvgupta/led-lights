@@ -249,4 +249,4 @@ func colorFromString(_ s: String) -> (UIColor, Bool) { // color, success
 // global colors
 let deleteRed: UIColor = getUIColor(red: 237, green: 69, blue: 61)
 let buttonBlue: UIColor = getUIColor(red: 40, green: 124, blue: 246)
-let statusGreen: UIColor = getUIColor(red: 100, green: 211, blue: 125)
+let statusGreen: UIColor = getUIColor(red: 85, green: 196, blue: 110)
