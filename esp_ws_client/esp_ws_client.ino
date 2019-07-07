@@ -13,11 +13,11 @@ WebSocketsClient ws;
 // constants
 #define SERIAL Serial
 #define ESP_DEBUG_V false
-#define DEBUG_MODE true
-#define SERVER "10.0.1.40"
-#define PORT 30003
-//#define SERVER "leds.anuv.me"
-//#define PORT 3003
+#define DEBUG_MODE false
+//#define SERVER "10.0.1.40"
+//#define PORT 30003
+#define SERVER "leds.anuv.me"
+#define PORT 3003
 
 // parsing data
 int mb_i = 0;
@@ -54,6 +54,12 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
       } else if (memcmp(payload, "@s-", 3) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] new speed mult - %s\n", payload + 3);
         Serial.printf("s%s\n", payload + 3);
+      } else if (memcmp(payload, "@hb", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] heartbeat\n");
+        ws.sendTXT("{\"event\":\"arduinoheartbeat\"}");
+      } else if (memcmp(payload, "@music", 6) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] music mode\n");
+        Serial.printf("music\n");
       }
       break;
     case WStype_BIN:
@@ -69,7 +75,7 @@ void setup() {
   SERIAL.setDebugOutput(ESP_DEBUG_V);
   if (DEBUG_MODE) SERIAL.println("\n\n");
   if (DEBUG_MODE) SERIAL.println("ESP8266");
-  for (uint8_t t = 4; t > 0; t--) {
+  for (uint8_t t = 2; t > 0; t--) {
     if (DEBUG_MODE) SERIAL.printf("[boot] wait %d\n", t);
     if (DEBUG_MODE) SERIAL.flush();
     delay(1000);

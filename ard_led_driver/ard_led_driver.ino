@@ -6,7 +6,7 @@
 #define GREENPIN 10
 #define BLUEPIN 11
 
-#define DEBUG true
+#define DEBUG false
 
 // parsing data
 int mb_i = 0;
