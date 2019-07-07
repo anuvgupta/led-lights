@@ -640,7 +640,7 @@
                                         </constraints>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="aLa-sN-vVM">
-                                        <rect key="frame" x="85" y="0.0" width="20" height="100"/>
+                                        <rect key="frame" x="82" y="0.0" width="20" height="100"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Nl5-71-gLK">
                                                 <rect key="frame" x="0.0" y="43.5" width="13" height="13"/>
@@ -659,21 +659,21 @@
                                         </constraints>
                                     </view>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Arduino Offline" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kVZ-1a-nu1">
-                                        <rect key="frame" x="115" y="35" width="145" height="28"/>
+                                        <rect key="frame" x="112" y="35" width="145" height="28"/>
                                         <fontDescription key="fontDescription" type="system" weight="light" pointSize="23"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="2 min ago" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="G2H-Ej-MZT">
-                                        <rect key="frame" x="270" y="41.5" width="70.5" height="19.5"/>
-                                        <fontDescription key="fontDescription" type="system" weight="light" pointSize="16"/>
+                                        <rect key="frame" x="269" y="42" width="66.5" height="18"/>
+                                        <fontDescription key="fontDescription" type="system" weight="thin" pointSize="15"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
-                                    <constraint firstItem="G2H-Ej-MZT" firstAttribute="leading" secondItem="kVZ-1a-nu1" secondAttribute="trailing" constant="10" id="Czs-cC-N6K"/>
+                                    <constraint firstItem="G2H-Ej-MZT" firstAttribute="leading" secondItem="kVZ-1a-nu1" secondAttribute="trailing" constant="12" id="Czs-cC-N6K"/>
                                     <constraint firstItem="2jC-PS-Zy2" firstAttribute="leading" secondItem="no2-d2-Rbd" secondAttribute="leading" constant="10" id="E5h-mY-G7R"/>
                                     <constraint firstItem="kVZ-1a-nu1" firstAttribute="leading" secondItem="aLa-sN-vVM" secondAttribute="trailing" constant="10" id="Hk6-Qr-e0S"/>
                                     <constraint firstItem="2jC-PS-Zy2" firstAttribute="top" secondItem="no2-d2-Rbd" secondAttribute="top" id="JSI-JZ-acl"/>
@@ -683,7 +683,7 @@
                                     <constraint firstAttribute="bottom" secondItem="2jC-PS-Zy2" secondAttribute="bottom" id="VlP-5C-8cT"/>
                                     <constraint firstAttribute="height" constant="100" id="eHG-Qt-Kc5"/>
                                     <constraint firstItem="G2H-Ej-MZT" firstAttribute="centerY" secondItem="no2-d2-Rbd" secondAttribute="centerY" constant="1" id="lUL-St-hUD"/>
-                                    <constraint firstItem="aLa-sN-vVM" firstAttribute="leading" secondItem="2jC-PS-Zy2" secondAttribute="trailing" constant="25" id="luR-W6-WVK"/>
+                                    <constraint firstItem="aLa-sN-vVM" firstAttribute="leading" secondItem="2jC-PS-Zy2" secondAttribute="trailing" constant="22" id="luR-W6-WVK"/>
                                 </constraints>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Ixi-6e-G0l" userLabel="CurrentPlayingWrap">
@@ -1102,7 +1102,7 @@
                         <rect key="frame" x="0.0" y="44" width="414" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <textAttributes key="titleTextAttributes">
-                            <fontDescription key="fontDescription" type="system" pointSize="18"/>
+                            <fontDescription key="fontDescription" type="system" weight="medium" pointSize="18"/>
                         </textAttributes>
                     </navigationBar>
                     <nil name="viewControllers"/>
@@ -1130,6 +1130,6 @@
         <image name="sun_b" width="88" height="88"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="Jah-d8-DHz"/>
+        <segue reference="fsg-vL-vbc"/>
     </inferredMetricsTieBreakers>
 </document>
