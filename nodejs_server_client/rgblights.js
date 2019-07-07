@@ -10,7 +10,7 @@ const fs = require("fs");
 const test = process.argv.slice(2)[0] == "test"
 const wss_port = test ? 30003 : 3003;
 const http_port = test ? 30002 : 3002;
-const password = "control";
+const password = "password";
 
 // convenience logger
 const DEBUG = test;
@@ -823,6 +823,8 @@ wss.on("connection", function(ws) {
                     database.currentMusic = true;
                     // send currently playing to all
                     sendToAll("current", getCurrentlyPlaying());
+                    // send to arduino
+                    sendToArduino("@music");
                     break;
                 // client sent unknown event
                 default:
