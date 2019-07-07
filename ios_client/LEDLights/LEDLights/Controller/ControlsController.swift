@@ -34,8 +34,6 @@ class ControlsController: UIViewController {
     var brightlock: Bool = false
     var speed: Int = 100
     var speedlock: Bool = false
-    var statusTimer: Timer?
-    var statusTimerOn: Bool = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -91,7 +89,6 @@ class ControlsController: UIViewController {
         ws.getBrightness();
         ws.getSpeed();
         ws.getArduinoStatus();
-        enableTimer()
     }
     
     // ib ui actions
@@ -123,6 +120,9 @@ class ControlsController: UIViewController {
             sender.value = Float(speed)
             speedLabel.text = String(speed)
             ws.setSpeed(speed, interval: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                ws.sendCurrent()
+            })
         }
     }
     @IBAction func speedSliderUp(_ sender: UISlider) {
@@ -131,9 +131,6 @@ class ControlsController: UIViewController {
             sender.value = Float(speed)
             speedLabel.text = String(speed)
             ws.setSpeed(speed, interval: false)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
-                ws.sendCurrent()
-            })
         }
     }
     @IBAction func musicButtonClicked(_ sender: UIButton) {
@@ -202,54 +199,6 @@ class ControlsController: UIViewController {
                 statusLabel.text = prefix + "Online"
                 statusIndicatorView.backgroundColor = statusGreen
             }
-            statusTimerTick()
-        }
-    }
-    // enable new timer
-    func enableTimer() {
-        if statusTimerOn {
-            disableTimer()
-        }
-        if !statusTimerOn {
-            statusTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(statusTimerTick), userInfo: nil, repeats: true)
-            statusTimerOn = true
-        }
-    }
-    // disable timer
-    func disableTimer() {
-        if let timer = self.statusTimer {
-            timer.invalidate()
-            statusTimerOn = false
-        }
-    }
-    // timer tick
-    @objc func statusTimerTick() {
-        if arduinoStatusEvent != "" && arduinoStatusTime > 0 {
-            var deltaSec: Int = Int(NSDate().timeIntervalSince1970) - Int(arduinoStatusTime / 1000)
-            if deltaSec < 0 {
-                deltaSec = 0
-            }
-            var outputString: String = "";
-            if deltaSec < 4 {
-                outputString += "now"
-            } else if deltaSec < 60 {
-                outputString += String(Int(round(Double(deltaSec) / 5.0) * 5.0)) + " seconds ago"
-            } else if deltaSec < 3600 {
-                let mins: Int = Int(deltaSec / 60)
-                if mins == 1 {
-                    outputString += String(mins) + " minute ago"
-                } else {
-                    outputString += String(mins) + " minutes ago"
-                }
-            } else {
-                let hrs: Int = Int(deltaSec / 3600)
-                if hrs == 1 {
-                    outputString += String(hrs) + " hour ago"
-                } else {
-                    outputString += String(hrs) + " hours ago"
-                }
-            }
-            timeLabel.text = outputString
         }
     }
     
