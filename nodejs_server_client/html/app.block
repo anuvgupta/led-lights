@@ -82,7 +82,7 @@ app
                 margin-bottom 0px
         input password
             type password
-            placeholder password
+            placeholder led lights
             css
                 padding 4px 1px 6px
                 text-align center
@@ -91,7 +91,7 @@ app
                 font-size 15px
                 opacity 0.8
                 border 0.5px solid #ccc
-                border-radius 2px
+                border-radius 3px
             :keyup
                 {
                     var val = block.$().val().trim();
@@ -127,6 +127,7 @@ app
                     margin-top 8px
                     text-transform uppercase
                     display block
+                    cursor default
             block logout
                 css
                     position absolute
@@ -544,7 +545,7 @@ app
                         label label
                             for track-checkbox
                             text text
-                                val Track Live Updates
+                                val Live Tracking
                                 css
                                     margin-left 7px
                                     font-size 15px
@@ -746,7 +747,7 @@ app
                                     .data('pattern title')
                                     .css({
                                         letterSpacing: '0.2px',
-                                        color: '#111'
+                                        color: '#222'
                                     })
                                 )
                             )
@@ -755,10 +756,10 @@ app
                                 cursor: 'pointer'
                             })
                             .on('mouseover', function (e, b, d) {
-                                block.child('link/text').css('color', '#777');
+                                block.child('link/text').css('color', '#555');
                             })
                             .on('mouseout', function (e, b, d) {
-                                block.child('link/text').css('color', '#555');
+                                block.child('link/text').css('color', '#222');
                             })
                             .on('click', function (e, b, d) {
                                 app.loadPattern(block.mark(), block.key('name'));
@@ -772,6 +773,10 @@ app
                             block.key('name', name).child('link/text').html('').data(name);
                         });
                     }
+            :clearlist
+                {
+                    block.child('menu/list').empty();
+                }
             #newpattern
                 {
                     block.child('menu/list').add(Block('menu-item', newpattern.id).data({
@@ -810,6 +815,7 @@ app
                             font-size 26px
                             letter-spacing 0.5px
                             color #000
+                            cursor default
                     div new
                         css
                             position absolute
@@ -866,6 +872,7 @@ app
                             letter-spacing 1px
                             display block
                             margin-bottom 5px
+                            cursor default
                     text desc
                         val create or edit pattern
                         css
@@ -874,6 +881,7 @@ app
                             letter-spacing 1px
                             display block
                             margin-bottom 35px
+                            cursor default
                 div editor
                     css
                         display none
