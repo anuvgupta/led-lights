@@ -8,6 +8,7 @@
 
 import UIKit
 import HueKit
+import Foundation
 
 class ColorsController: UIViewController {
 
@@ -22,11 +23,12 @@ class ColorsController: UIViewController {
     @IBOutlet weak var newPresetButton: UIButton!
     @IBOutlet weak var deletePresetButton: UIButton!
     @IBOutlet weak var pushPresetButton: UIButton!
+    @IBOutlet weak var colorListToolbar: UIView!
     
     // ui globals
     var currentColorViewIndex = 0
     var colorViews: Dictionary<String, UIButton> = [:]
-    var editingColor: String = ""
+    public var editingColor: String = ""
     var hexcolor: String = "#000000"
     var colorlock: Bool = false
     
@@ -34,14 +36,38 @@ class ColorsController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // lock while loading
+        colorlock = true
+        
         liveTrackingSwitch.setOn(false, animated: false)
         scrollView.contentSize = scrollContentView.frame.size
         pushPresetButton.layer.cornerRadius = 10
         // colorIndicatorView.roundCorners(corners: [.topLeft, .topRight], radius: 8.0)
         colorIndicatorView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(colorIndicatorClicked)))
         
+        let saved_livetrack = UserDefaults.standard.string(forKey: "livetracking") ?? "false"
+        if saved_livetrack == "true" {
+            liveTrackingSwitch.isOn = true
+            liveTracking = true
+        } else {
+            liveTrackingSwitch.isOn = false
+            liveTracking = false
+        }
+        
+        let border1 = CALayer()
+        border1.borderColor = UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1).cgColor
+        border1.frame = CGRect(x: 0, y: colorListToolbar.frame.size.height - 1, width: colorListToolbar.frame.size.width, height: 1.0)
+        border1.borderWidth = 1.0
+        colorListToolbar.layer.addSublayer(border1)
+        colorListToolbar.layer.masksToBounds = true
+        
         bridge.colorsVC = self
         ws.requestColorPalette()
+        
+        // unlock after loading
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+            self.colorlock = false
+        })
     }
     
     // ib ui actions
@@ -56,12 +82,28 @@ class ColorsController: UIViewController {
             colorChange(colorSquareView.color, interval: true)
         }
     }
+    @IBAction func colorSquareUp(_ sender: ColorSquarePicker) {
+        if liveTracking {
+            ws.testColor(interval: false)
+        }
+        if editingColor != "" {
+            ws.updateColor(id: editingColor, interval: false)
+        }
+    }
+    @IBAction func colorBarUp(_ sender: ColorBarPicker) {
+        if liveTracking {
+            ws.testColor(interval: false)
+        }
+        if editingColor != "" {
+            ws.updateColor(id: editingColor, interval: false)
+        }
+    }
     @IBAction func pushButtonPressed(_ sender: UIButton) {
         ws.testColor(interval: false)
     }
     @IBAction func liveTrackValueChanged(_ sender: UISwitch) {
         liveTracking = sender.isOn
-        UserDefaults.standard.set(liveTracking, forKey: "livetracking")
+        UserDefaults.standard.set(String(liveTracking), forKey: "livetracking")
     }
     @IBAction func newPresetClicked(_ sender: UIButton) {
         ws.newPreset(red: r, green: g, blue: b)
@@ -82,7 +124,9 @@ class ColorsController: UIViewController {
         alert.addTextField { (textField) in
             textField.text = self.hexcolor
         }
-        let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in })
+        let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
+            bridge.currentAlertVC = nil
+        })
         let colorAction = UIAlertAction(title: "Set", style: .default, handler: { a -> Void in
             if let textField = alert.textFields?[0] {
                 if textField.text!.count > 0 {
@@ -92,10 +136,12 @@ class ColorsController: UIViewController {
                     }
                 }
             }
+            bridge.currentAlertVC = nil
         })
         alert.addAction(cancelAction)
         alert.addAction(colorAction)
         alert.preferredAction = colorAction
+        bridge.currentAlertVC = alert
         self.present(alert, animated: true, completion: nil)
     }
     @objc func colorPresetClicked(_ sender: UIButton) {
@@ -109,6 +155,7 @@ class ColorsController: UIViewController {
             preset.isSelected = false
         }
         if (editingColor == key) {
+            ws.updateColor(id: editingColor, interval: false)
             editingColor = ""
             sender.isSelected = false
             deletePresetButton.isEnabled = false
@@ -140,16 +187,16 @@ class ColorsController: UIViewController {
         colorIndicatorView.backgroundColor = color
         colorHexLabel.text = color.hexString
         hexcolor = color.hexString
-        if (r > 220 && g > 220 && b > 220) {
+        if r > 220 && g > 220 && b > 220 {
             colorHexLabel.textColor = UIColor.black
         } else {
             colorHexLabel.textColor = UIColor.white
         }
-        if (liveTracking) {
-            ws.testColor(interval: true)
+        if liveTracking {
+            ws.testColor(interval: interval)
         }
-        if (editingColor != "") {
-            ws.updateColor(id: editingColor, interval: true)
+        if editingColor != "" {
+            ws.updateColor(id: editingColor, interval: interval)
         }
     }
     // set color picker color and update other views

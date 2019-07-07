@@ -7,19 +7,25 @@
 //
 
 import UIKit
+import Foundation
 
+// login view controller
 class LoginController: UIViewController {
     
     // ib ui elements
     @IBOutlet weak var loginStack: UIStackView!
+    @IBOutlet weak var textField: UITextField!
     
     // ui view onload
     override func viewDidLoad() {
         super.viewDidLoad()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: {
-            self.showLoginStack()
-        })
         bridge.loginVC = self
+        textField.attributedPlaceholder = NSAttributedString(string: "led lights", attributes: [ NSAttributedString.Key.foregroundColor: UIColor.lightGray ])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: {
+            if ws.connected() {
+                self.showLoginStack()
+            }
+        })
         ws.connect();
     }
     
@@ -36,6 +42,11 @@ class LoginController: UIViewController {
     func showLoginStack() {
         if let lS = self.loginStack {
             lS.isHidden = false;
+        }
+    }
+    func hideLoginStack() {
+        if let lS = self.loginStack {
+            lS.isHidden = true;
         }
     }
 }

@@ -9,26 +9,33 @@
 import UIKit
 import Foundation
 
+// global application
+let application = UIApplication.shared
+// global bridge to ViewControllers for WebSocket interface
+let bridge: WSVCBridge = WSVCBridge()
 // WebSocket client interface
 //let serverURL: String = "ws://10.0.1.40:30003"
-let serverURL: String = "ws://10.204.204.168:30003"
-//let serverURL: String = "ws://leds.anuv.me:30003"
+//let serverURL: String = "ws://10.204.204.168:30003"
+let serverURL: String = "ws://leds.anuv.me:3003"
 let ws: WSWrapper = WSWrapper()
-// WebSocket's bridge to UI Views
-let bridge: WSVCBridge = WSVCBridge()
 
 // global info/settings
-let colorsPerRow: Int = 4
-var liveTracking: Bool = false
-var lastPassword: String = ""
-// app color values
+let colorsPerRow: Int = 4 // # color presets per row
+var liveTracking: Bool = false // live tracking
+var lastPassword: String = "" // saved password
+// color editor data
 var r: Int = 0
 var g: Int = 0
 var b: Int = 0
 // pattern editor data
-var editingPattern: Pattern?
-var currentItemType: String = ""
-var currentItemData: String = ""
+var editingPattern: Pattern? // currently editing pattern
+// currently playing data
+var currentItemType: String = "" // currently playing type (pattern/hue/music)
+var currentItemPData: (String, String)? = nil // if pattern currently playing, pattern ID
+var currentItemCData: (Int, Int, Int)? = nil // if color currently playing, color RGB
+// arduino status data
+var arduinoStatusEvent: String = ""
+var arduinoStatusTime: Int = 0
 
 // extensions
 extension UIColor {
@@ -42,15 +49,6 @@ extension UIColor {
         return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
     }
 }
-extension UIView {
-    // add rounded corners to UIViews
-    public func roundCorners(corners: UIRectCorner, radius: CGFloat) {
-        let path = UIBezierPath(roundedRect: self.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
-        let mask = CAShapeLayer()
-        mask.path = path.cgPath
-        self.layer.mask = mask
-    }
-}
 extension UIImage {
     // add alpha option setting to UIImage
     func alpha(_ value:CGFloat) -> UIImage {
@@ -60,8 +58,10 @@ extension UIImage {
         UIGraphicsEndImageContext()
         return newImage!
     }
+    // https://stackoverflow.com/questions/28517866/how-to-set-the-alpha-of-an-uiimage-in-swift-programmatically
 }
 extension UIButton {
+    // add background color to UIButton
     func setBackgroundColor(color: UIColor, forState: UIControl.State) {
         UIGraphicsBeginImageContext(CGSize(width: 1, height: 1))
         UIGraphicsGetCurrentContext()!.setFillColor(color.cgColor)
@@ -70,6 +70,7 @@ extension UIButton {
         UIGraphicsEndImageContext()
         self.setBackgroundImage(colorImage, for: forState)
     }
+    // https://stackoverflow.com/questions/38562379/uibutton-background-color-for-highlighted-selected-state-issue/38566083
 }
 extension String {
     // get String substrings using index API
@@ -84,11 +85,98 @@ extension String {
         return String(self[startIndex ..< endIndex])
     }
 }
+extension UIView {
+    // add rounded corners to UIViews
+    public func roundCorners(corners: UIRectCorner, radius: CGFloat) {
+        let path = UIBezierPath(roundedRect: self.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        let mask = CAShapeLayer()
+        mask.path = path.cgPath
+        self.layer.mask = mask
+    }
+    // https://stackoverflow.com/questions/37163850/round-top-corners-of-a-uibutton-in-swift
+}
+extension CALayer {
+    // add shadows and rounded corners to layer
+    private func addShadowWithRoundedCorners() {
+        if let contents = self.contents {
+            masksToBounds = false
+            sublayers?.filter{ $0.frame.equalTo(self.bounds) }
+                .forEach{ $0.roundCorners(radius: self.cornerRadius) }
+            self.contents = nil
+            if let sublayer = sublayers?.first, sublayer.name == "contentLayer" {
+                sublayer.removeFromSuperlayer()
+            }
+            let contentLayer = CALayer()
+            contentLayer.name = "contentLayer"
+            contentLayer.contents = contents
+            contentLayer.frame = bounds
+            contentLayer.cornerRadius = cornerRadius
+            contentLayer.masksToBounds = true
+            insertSublayer(contentLayer, at: 0)
+        }
+    }
+    func addShadow(radius: CGFloat, opacity: Float, offset: CGSize, color: UIColor) {
+        self.shadowOffset = offset
+        self.shadowOpacity = opacity
+        self.shadowRadius = radius
+        self.shadowColor = color.cgColor
+        self.masksToBounds = false
+        if cornerRadius != 0 {
+            addShadowWithRoundedCorners()
+        }
+    }
+    func roundCorners(radius: CGFloat) {
+        self.cornerRadius = radius
+        if shadowOpacity != 0 {
+            addShadowWithRoundedCorners()
+        }
+    }
+    // (https://medium.com/swifty-tim/views-with-rounded-corners-and-shadows-c3adc0085182)
+}
+extension UIViewController {
+    //  get topmost ViewController
+    func topMostViewController() -> UIViewController {
+        if self.presentedViewController == nil {
+            return self
+        }
+        if let navigation = self.presentedViewController as? UINavigationController {
+            if let visibleVC = navigation.visibleViewController {
+                return visibleVC.topMostViewController()
+            }
+        }
+        if let tab = self.presentedViewController as? UITabBarController {
+            if let selectedTab = tab.selectedViewController {
+                return selectedTab.topMostViewController()
+            }
+            return tab.topMostViewController()
+        }
+        return self.presentedViewController!.topMostViewController()
+    }
+    // https://gist.github.com/db0company/369bfa43cb84b145dfd8
+}
+extension UIApplication {
+    // get current ViewController
+    func topMostViewController() -> UIViewController? {
+        return self.keyWindow?.rootViewController?.topMostViewController()
+    }
+    // https://gist.github.com/db0company/369bfa43cb84b145dfd8
+}
+final class ControlContainableScrollView: UIScrollView {
+    // custom scroll class
+    override func touchesShouldCancel(in view: UIView) -> Bool {
+        if view is UIControl && !(view is UITextInput) && !(view is UISlider) && !(view is UISwitch) {
+            return true
+        }
+        return super.touchesShouldCancel(in: view)
+    }
+    // (https://www.rightpoint.com/rplabs/fixing-controls-and-scrolling-button-views-ios)
+}
 
 // convenience functions
 func msTimeStamp() -> Int {
     return Int((Date().timeIntervalSince1970 * 1000.0).rounded())
 }
+// pad string on left
 func lpad(string: String, width: Int, pString: String?) -> String {
     let paddingString = pString ?? ""
     if string.count >= width {
@@ -100,11 +188,24 @@ func lpad(string: String, width: Int, pString: String?) -> String {
         padString += paddingString
     }
     return [padString, string].joined(separator: "")
+    
 }
-
+// convert rgb to formatted string
 func rgbstring(r: Int, g: Int, b: Int) -> String {
     return lpad(string: String(r), width: 3, pString: "0") + lpad(string: String(g), width: 3, pString: "0") + lpad(string: String(b), width: 3, pString: "0")
 }
+// dismiss all alerts
+func dismissAlerts(callback: (() -> Void)? = nil) {
+    if let currentAlertVC = bridge.currentAlertVC {
+        currentAlertVC.dismiss(animated: true, completion: callback)
+        bridge.currentAlertVC = nil
+    } else {
+        if let completion = callback {
+            completion()
+        }
+    }
+}
+// load UIColor RGB values into app color
 func loadColor(color: UIColor) {
     var red: CGFloat = 0
     var green: CGFloat = 0
@@ -116,10 +217,21 @@ func loadColor(color: UIColor) {
     b = Int(blue * 255)
     print(r, g, b)
 }
+// create UIColor from RGB values
 func getUIColor(red: Int, green: Int, blue: Int) -> UIColor {
     return UIColor(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: 1)
 }
-func colorFromString(_ s: String) -> (UIColor, Bool) {
+// load UIColor RGB values into app color
+func getRGB(color: UIColor) -> (Int, Int, Int) {
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var alpha: CGFloat = 0
+    color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+    return (Int(red * 255), Int(green * 255), Int(blue * 255))
+}
+// parse UIColor from HEX string
+func colorFromString(_ s: String) -> (UIColor, Bool) { // color, success
     var hex: String = s.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
     if (hex.substring(0, len: 1) == "#") {
         hex = hex.substring(1)
@@ -133,3 +245,8 @@ func colorFromString(_ s: String) -> (UIColor, Bool) {
     Scanner(string: hex.substring(4, len: 2)).scanHexInt32(&rgb[2])
     return (UIColor(red: CGFloat(Float(rgb[0]) / 255.0), green: CGFloat(Float(rgb[1]) / 255.0), blue: CGFloat(Float(rgb[2]) / 255.0), alpha: CGFloat(1)), true)
 }
+
+// global colors
+let deleteRed: UIColor = getUIColor(red: 237, green: 69, blue: 61)
+let buttonBlue: UIColor = getUIColor(red: 40, green: 124, blue: 246)
+let statusGreen: UIColor = getUIColor(red: 100, green: 211, blue: 125)

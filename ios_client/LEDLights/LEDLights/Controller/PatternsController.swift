@@ -8,6 +8,7 @@
 
 import UIKit
 import PureLayout
+import Foundation
 
 class PatternsController: UIViewController {
 
@@ -28,13 +29,13 @@ class PatternsController: UIViewController {
         super.viewDidLoad()
 
         if let image = UIImage(named: "plus_bl.png") {
-            addButtonView.setImage(image.alpha(0.8), for: .normal)
-            addButtonView.setImage(image.alpha(0.95), for: .highlighted)
+            addButtonView.setImage(image.alpha(0.9), for: .normal)
+            addButtonView.setImage(image.alpha(1.0), for: .highlighted)
         }
         addButtonView.setBackgroundColor(color: UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1), forState: .highlighted)
         addButtonView.addTarget(self, action: #selector(newPatternClicked), for: .primaryActionTriggered)
         addButtonView.imageView?.contentMode = .scaleAspectFit
-        addButtonView.imageEdgeInsets = UIEdgeInsets(top: 25, left: 0, bottom: 25, right: 0)
+        addButtonView.imageEdgeInsets = UIEdgeInsets(top: 27, left: 0, bottom: 27, right: 0)
 
         scrollView.contentSize = contentView.frame.size
         
@@ -63,6 +64,7 @@ class PatternsController: UIViewController {
             let alert = UIAlertController(title: "Delete Pattern", message: "Permanently delete " + data.name + "?", preferredStyle: .alert)
             let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
                 senderPatternView.hideDeleteView()
+                bridge.currentAlertVC = nil
             })
             let deleteAction = UIAlertAction(title: "Delete", style: .default, handler: { a -> Void in
                 senderPatternView.buttonView.setBackgroundColor(color: UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1), forState: .normal)
@@ -70,10 +72,12 @@ class PatternsController: UIViewController {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
                     ws.deletePattern(id: data.id)
                 })
+                bridge.currentAlertVC = nil
             })
             alert.addAction(cancelAction)
             alert.addAction(deleteAction)
             alert.preferredAction = cancelAction
+            bridge.currentAlertVC = alert
             self.present(alert, animated: true, completion: nil)
         }
     }
@@ -146,8 +150,19 @@ class PatternsController: UIViewController {
         border.borderColor = UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1).cgColor
         border.frame = CGRect(x: 0, y: addButtonView.frame.size.height - 1, width: addButtonView.frame.size.width, height: 1.0)
         border.borderWidth = 1.0
-//        addButtonView.layer.addSublayer(border)
-//        addButtonView.layer.masksToBounds = true
+        // disabled for aesthetics
+        // addButtonView.layer.addSublayer(border)
+        // addButtonView.layer.masksToBounds = true
     }
 
+}
+
+class PatternsNavController : UINavigationController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        bridge.patternsNavVC = self
+    }
+    func back(animated: Bool = true) {
+        self.popViewController(animated: animated)
+    }
 }

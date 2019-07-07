@@ -7,10 +7,10 @@
 //
 
 import UIKit
-import Foundation
 import PureLayout
+import Foundation
 
-class PatternColorView : UIControl, UIGestureRecognizerDelegate {
+class PatternColorView: UIView, UIGestureRecognizerDelegate {
     
     // instance data
     public var id: Int = 0
@@ -24,14 +24,13 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
     var mainViewLeftConstraint: NSLayoutConstraint?
     var mainViewRightConstraint: NSLayoutConstraint?
     public let deleteView: UIButton = UIButton()
-    let handleButton: UIButton = UIButton()
+    public let handleButton: HandleButton = HandleButton()
     let fadeLabel: UIButton = UIButton()
-    let colorView: UIView = UIView()
+    let colorView: UIButton = UIButton()
     let holdLabel: UIButton = UIButton()
-    // gestures
+    // swipe gestures
     var swipeLeftGesture: UISwipeGestureRecognizer? = nil
     var swipeRightGesture: UISwipeGestureRecognizer? = nil
-    var panGesture: UIPanGestureRecognizer? = nil
     
     // init setup
     override init(frame: CGRect) {
@@ -44,7 +43,8 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
         if let title = deleteView.titleLabel {
             title.font = title.font.withSize(16)
         }
-        deleteView.setBackgroundColor(color: UIColor(red: 237/255, green: 69/255, blue: 61/255, alpha: 1), forState: .normal)
+        deleteView.setBackgroundColor(color: deleteRed, forState: .normal)
+        deleteView.addTarget(self, action: #selector(removeClicked), for: .primaryActionTriggered)
         self.addSubview(deleteView)
         
         mainView.configureForAutoLayout()
@@ -53,12 +53,14 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
         
         handleButton.configureForAutoLayout()
         if let image = UIImage(named: "handle_b.png") {
-            handleButton.setImage(image.alpha(0.6), for: .normal)
+            handleButton.setImage(image.alpha(0.55), for: .normal)
         }
         handleButton.imageView?.contentMode = .scaleAspectFit
-        handleButton.addTarget(self, action: #selector(handleDown), for: .touchDown)
-        handleButton.addTarget(self, action: #selector(handleUp), for: .touchUpOutside)
-        handleButton.addTarget(self, action: #selector(handleUp), for: .touchUpInside)
+        // handleButton.addTarget(self, action: #selector(handleDown), for: .touchDown)
+        // handleButton.addTarget(self, action: #selector(handleUp), for: .touchUpOutside)
+        // handleButton.addTarget(self, action: #selector(handleUp), for: .touchUpInside)
+        // handleButton.addTarget(self, action: #selector(handleDrag), for: .touchDragInside)
+        handleButton.parentColorView = self
         mainView.addSubview(handleButton)
         
         fadeLabel.configureForAutoLayout()
@@ -67,7 +69,7 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
         fadeLabel.titleLabel?.numberOfLines = 0
         fadeLabel.titleLabel?.textAlignment = .center
         if let label = fadeLabel.titleLabel {
-            label.font = label.font.withSize(18)
+            label.font = UIFont.systemFont(ofSize: 18, weight: .light)
         }
         fadeLabel.addTarget(self, action: #selector(fadeClicked), for: .primaryActionTriggered)
         mainView.addSubview(fadeLabel)
@@ -75,6 +77,7 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
         colorView.configureForAutoLayout()
         colorView.layer.cornerRadius = 8.0
         colorView.clipsToBounds = true
+        colorView.addTarget(self, action: #selector(colorClicked), for: .primaryActionTriggered)
         mainView.addSubview(colorView)
         
         holdLabel.configureForAutoLayout()
@@ -83,7 +86,7 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
         holdLabel.titleLabel?.numberOfLines = 0
         holdLabel.titleLabel?.textAlignment = .center
         if let label = holdLabel.titleLabel {
-            label.font = label.font.withSize(18)
+            label.font = UIFont.systemFont(ofSize: 18, weight: .light)
         }
         holdLabel.addTarget(self, action: #selector(holdClicked), for: .primaryActionTriggered)
         mainView.addSubview(holdLabel)
@@ -105,7 +108,6 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
             deleteView.autoPinEdge(.top, to: .top, of: self)
             deleteView.autoPinEdge(.bottom, to: .bottom, of: self)
             deleteView.autoPinEdge(.left, to: .left, of: self)
-            deleteView.addTarget(self, action: #selector(removeClicked), for: .primaryActionTriggered)
             
             handleButton.autoSetDimension(.width, toSize: 80)
             handleButton.autoMatch(.height, to: .height, of: mainView)
@@ -123,47 +125,16 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
             holdLabel.autoPinEdge(.left, to: .right, of: fadeLabel)
             
             colorView.autoAlignAxis(.horizontal, toSameAxisOf: mainView)
-            colorView.autoMatch(.height, to: .height, of: mainView, withMultiplier: 0.7)
-            colorView.autoPinEdge(.left, to: .right, of: holdLabel, withOffset: 10)
-            colorView.autoPinEdge(.right, to: .right, of: mainView, withOffset: -15)
+            colorView.autoMatch(.height, to: .height, of: mainView, withMultiplier: 0.60)
+            colorView.autoPinEdge(.left, to: .right, of: holdLabel, withOffset: 25)
+            colorView.autoPinEdge(.right, to: .right, of: mainView, withOffset: -25)
             
             shouldSetupConstraints = false
         }
         super.updateConstraints()
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>,
-                      with event: UIEvent?) {
-        print("ended")
-    }
-    
-    // gesture conflict manager
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // do not begin the pan until the swipe fails
-        if let sLG = self.swipeLeftGesture {
-            if let sRG = self.swipeRightGesture {
-                if let pG = self.panGesture {
-                    if (gestureRecognizer == sLG || gestureRecognizer == sRG) && otherGestureRecognizer == pG {
-                        return true
-                    }
-                }
-            }
-        }
-        return false
-    }
-    
     // ui actions
-    @objc func handleUp(_ sender: UIButton) {
-        print(String(id) + ": handle up")
-        mainView.backgroundColor = UIColor.white
-        self.draggable = false
-    }
-    @objc func handleDown(_ sender: UIButton) {
-        print(String(id) + ": handle down")
-        mainView.backgroundColor = UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1)
-        self.draggable = true
-    }
     @objc func fadeClicked(_ sender: UIButton) {
         if let colordata = self.data {
             if let patternEditVC = bridge.patternEditVC {
@@ -171,10 +142,17 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
             }
         }
     }
-    @objc func holdClicked(gesture: UITapGestureRecognizer) {
+    @objc func holdClicked(_ sender: UIButton) {
         if let colordata = self.data {
             if let patternEditVC = bridge.patternEditVC {
                 patternEditVC.presentHoldModal(colorID: self.id, colorData: colordata)
+            }
+        }
+    }
+    @objc func colorClicked(_ sender: UIButton) {
+        if let colordata = self.data {
+            if let patternEditVC = bridge.patternEditVC {
+                patternEditVC.presentColorPicker(colorID: self.id, colorData: colordata)
             }
         }
     }
@@ -183,6 +161,22 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
             patternEditVC.removeColor(colorID: id)
         }
     }
+    // handle button targeted drag handler (unneccessary)
+    // @objc func handleDrag(_ sender: UIButton) {
+    //     print(String(id) + ": handle drag")
+    // }
+    // handle button targeted touchUp handler (unneccessary)
+    // @objc func handleUp(_ sender: UIButton) {
+    //     print(String(id) + ": handle up")
+    //     mainView.backgroundColor = UIColor.white
+    //     self.draggable = false
+    // }
+    // handle button targeted touchDown handler (for bgcolor & draggable)
+    // @objc func handleDown(_ sender: UIButton) {
+    //     print(String(id) + ": handle down")
+    //     mainView.backgroundColor = UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1)
+    //     self.draggable = true
+    // }
     
     // load data
     func load(id: Int, data: PatternItem) {
@@ -209,6 +203,14 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
     func setFrame(frame: CGRect) {
         self.frame = frame
     }
+    // set handle button touch handler
+    func setTouchHandler(_ handler: @escaping (PatternColorView?, HandleEvent, CGPoint) -> Void) {
+        self.handleButton.touchHandler = handler
+    }
+    // bgcolor setter
+    func setBGColor(_ color: UIColor) {
+        self.mainView.backgroundColor = color
+    }
     // show/hide delete button
     func showDeleteView() {
         setMainViewLeftOffset(deleteButtonWidth)
@@ -216,7 +218,6 @@ class PatternColorView : UIControl, UIGestureRecognizerDelegate {
     func hideDeleteView() {
         setMainViewLeftOffset(0)
     }
-    // get id
     // shift main view
     private func setMainViewLeftOffset(_ left: CGFloat) {
         if let leftConstraint = mainViewLeftConstraint {

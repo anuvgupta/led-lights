@@ -15,6 +15,8 @@ class PatternEditorController: UIViewController {
     @IBOutlet var mainView: UIView!
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var contentView: UIView!
+    @IBOutlet weak var playButtonWrapView: UIView!
+    @IBOutlet weak var playButtonView: UIButton!
     // code ui elements
     let addButtonView : UIButton = UIButton()
     
@@ -34,6 +36,8 @@ class PatternEditorController: UIViewController {
             ws.loadPattern(id: pattern.id)
         }
         
+        scrollView.canCancelContentTouches = false
+        
         if let image = UIImage(named: "edit_bl.png") {
             let rightBarButton: UIButton = UIButton()
             rightBarButton.setImage(image, for: .normal)
@@ -45,13 +49,18 @@ class PatternEditorController: UIViewController {
         }
         
         if let image = UIImage(named: "plus_bl.png") {
-            addButtonView.setImage(image.alpha(0.8), for: .normal)
-            addButtonView.setImage(image.alpha(0.95), for: .highlighted)
+            addButtonView.setImage(image.alpha(0.9), for: .normal)
+            addButtonView.setImage(image.alpha(1.0), for: .highlighted)
         }
         addButtonView.setBackgroundColor(color: UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1), forState: .highlighted)
         addButtonView.addTarget(self, action: #selector(addButtonClicked), for: .primaryActionTriggered)
         addButtonView.imageView?.contentMode = .scaleAspectFit
         addButtonView.imageEdgeInsets = UIEdgeInsets(top: 30, left: 0, bottom: 30, right: 0)
+        
+        playButtonView.contentMode = .scaleAspectFit
+        playButtonWrapView.backgroundColor = buttonBlue
+        playButtonWrapView.layer.roundCorners(radius: 40)
+        playButtonWrapView.layer.addShadow(radius: 3, opacity: 0.25, offset: CGSize(width: 1, height: 2), color: UIColor.black)
         
         scrollView.contentSize = contentView.frame.size
     }
@@ -62,19 +71,6 @@ class PatternEditorController: UIViewController {
             ws.playPattern(id: currentpattern.id)
         }
     }
-    @IBAction func deleteButtonClicked(_ sender: UIButton) {
-        if let currentpattern = editingPattern {
-            let alert = UIAlertController(title: "Delete Pattern", message: "Permanently delete " + currentpattern.name + "?", preferredStyle: .alert)
-            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in })
-            let deleteAction = UIAlertAction(title: "Delete", style: .default, handler: { a -> Void in
-                ws.deletePattern(id: currentpattern.id)
-            })
-            alert.addAction(cancelAction)
-            alert.addAction(deleteAction)
-            alert.preferredAction = cancelAction
-            self.present(alert, animated: true, completion: nil)
-        }
-    }
     // code ui actions
     @objc func editBarButtonClicked(_ sender: UIBarButtonItem) {
         if let currentpattern = editingPattern {
@@ -82,7 +78,9 @@ class PatternEditorController: UIViewController {
             alert.addTextField { (textField) in
                 textField.text = currentpattern.name
             }
-            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in })
+            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
+                bridge.currentAlertVC = nil
+            })
             let renameAction = UIAlertAction(title: "Rename", style: .default, handler: { a -> Void in
                 if let textField = alert.textFields?[0] {
                     let res: String = textField.text ?? ""
@@ -90,10 +88,12 @@ class PatternEditorController: UIViewController {
                         ws.renamePattern(id: currentpattern.id, name: res)
                     }
                 }
+                bridge.currentAlertVC = nil
             })
             alert.addAction(cancelAction)
             alert.addAction(renameAction)
             alert.preferredAction = renameAction
+            bridge.currentAlertVC = alert
             self.present(alert, animated: true, completion: nil)
         }
     }
@@ -114,32 +114,41 @@ class PatternEditorController: UIViewController {
         }
     }
     @objc func addButtonClicked(_ sender: UIButton) {
-        print("add")
         if let currentpattern = editingPattern {
             ws.addPatternColor(id: currentpattern.id)
         }
     }
-    @objc func draggedView(gesture: UIPanGestureRecognizer) {
-        let sender : PatternColorView = gesture.view as! PatternColorView
-        if sender.draggable {
-//            self.view.bringSubviewToFront(sender)
-//            let translation = gesture.translation(in: self.view)
-//            sender.center = CGPoint(x: sender.center.x + translation.x, y: sender.center.y + translation.y)
-//            gesture.setTranslation(CGPoint.zero, in: self.view)
-            let position = gesture.location(in: self.view)
-            var y = position.y - scrollView.frame.minY
-            if (y < 0) {
-                y = 0
+    
+    // drag handler
+    func handleTouched(view: PatternColorView?, event: HandleEvent, location: CGPoint) {
+        if let pcview = view {
+            switch (event) {
+                case .began:
+                    pcview.draggable = true
+                    pcview.setBGColor(UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1))
+                    break;
+                case .moved:
+                    if pcview.draggable {
+                        var y = location.y + pcview.frame.minY
+                        if (y < 0) {
+                            y = 0
+                        }
+                        let maxHeight: CGFloat = CGFloat(currentPatternColorViewIndex * patternColorHeight)
+                        if y > maxHeight {
+                            y = maxHeight
+                        }
+                        let npos = Int(y / CGFloat(patternColorHeight))
+                        moveColor(colorView: pcview, newPos: npos)
+                    }
+                    break;
+                case .ended:
+                    pcview.draggable = false
+                    pcview.setBGColor(UIColor.white)
+                    if let currentpattern = editingPattern {
+                        ws.movePatternColor(id: currentpattern.id, colorID: pcview.id, newPos: pcview.ordinalPosition)
+                    }
+                    break;
             }
-            let maxHeight: CGFloat = CGFloat(currentPatternColorViewIndex * patternColorHeight)
-            if y > maxHeight {
-                y = maxHeight
-            }
-            let npos = Int(y / CGFloat(patternColorHeight))
-            moveColor(colorView: sender, newPos: npos)
-        } else {
-//            gesture.ignore
-            print("nodrag")
         }
     }
     
@@ -175,11 +184,11 @@ class PatternEditorController: UIViewController {
             swipeLeftHandler.delegate = patternColorView
             patternColorView.swipeLeftGesture = swipeLeftHandler
             patternColorView.addGestureRecognizer(swipeLeftHandler)
-            let panHandler = UIPanGestureRecognizer(target: self, action: #selector(draggedView))
-            panHandler.delegate = patternColorView
             patternColorView.isUserInteractionEnabled = true
-            patternColorView.panGesture = panHandler
-            patternColorView.addGestureRecognizer(panHandler)
+            patternColorView.isExclusiveTouch = true
+            patternColorView.setTouchHandler({ (view: PatternColorView?, event: HandleEvent, location: CGPoint) -> Void in
+                self.handleTouched(view: view, event: event, location: location)
+            })
             contentView.addSubview(patternColorView)
             patternColorViews.append(patternColorView)
             currentPatternColorViewIndex += 1
@@ -206,18 +215,23 @@ class PatternEditorController: UIViewController {
         if let currentpattern = editingPattern {
             let alert = UIAlertController(title: "Edit Fade", message: "Enter new fade time (ms)", preferredStyle: .alert)
             alert.addTextField { (textField) in
+                textField.keyboardType = .numberPad
                 textField.text = String(colorData.fade)
             }
-            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in })
+            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
+                bridge.currentAlertVC = nil
+            })
             let setAction = UIAlertAction(title: "Set", style: .default, handler: { a -> Void in
                 if let textField = alert.textFields?[0] {
                     colorData.fade = Int(textField.text ?? "0") ?? 0
                     ws.updatePatternColor(id: currentpattern.id, colorID: colorID, colorData: colorData)
                 }
+                bridge.currentAlertVC = nil
             })
             alert.addAction(cancelAction)
             alert.addAction(setAction)
             alert.preferredAction = setAction
+            bridge.currentAlertVC = alert
             self.present(alert, animated: true, completion: nil)
         }
     }
@@ -226,25 +240,62 @@ class PatternEditorController: UIViewController {
         if let currentpattern = editingPattern {
             let alert = UIAlertController(title: "Edit Hold", message: "Enter new hold time (ms)", preferredStyle: .alert)
             alert.addTextField { (textField) in
+                textField.keyboardType = .numberPad
                 textField.text = String(colorData.hold)
             }
-            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in })
+            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
+                bridge.currentAlertVC = nil
+            })
             let setAction = UIAlertAction(title: "Set", style: .default, handler: { a -> Void in
                 if let textField = alert.textFields?[0] {
                     colorData.hold = Int(textField.text ?? "0") ?? 0
                     ws.updatePatternColor(id: currentpattern.id, colorID: colorID, colorData: colorData)
                 }
+                bridge.currentAlertVC = nil
             })
             alert.addAction(cancelAction)
             alert.addAction(setAction)
             alert.preferredAction = setAction
+            bridge.currentAlertVC = alert
             self.present(alert, animated: true, completion: nil)
+        }
+    }
+    // display color picker view
+    func presentColorPicker(colorID: Int, colorData: PatternItem) {
+        if editingPattern != nil {
+            self.pickerColorIDToLoad = colorID
+            self.pickerColorDataToLoad = colorData
+            self.performSegue(withIdentifier: "colorPickSegue", sender: self)
         }
     }
     // remove pattern color
     func removeColor(colorID: Int) {
         if let currentpattern = editingPattern {
             ws.deletePatternColor(id: currentpattern.id, colorID: colorID)
+        }
+    }
+    // get and set UIScrollview content offset
+    func getScroll() -> CGPoint? {
+        if let sV = scrollView {
+            return sV.contentOffset
+        }
+        return nil
+    }
+    func getScrollHeight() -> CGFloat? {
+        if let sV = scrollView {
+            return sV.contentSize.height
+        }
+        return nil
+    }
+    func getScrollFrameHeight() -> CGFloat? {
+        if let sV = scrollView {
+            return sV.frame.height
+        }
+        return nil
+    }
+    func setScroll(_ scroll: CGPoint, animated: Bool = false) {
+        if let sV = scrollView {
+            sV.setContentOffset(scroll, animated: animated)
         }
     }
     // swap two colors
@@ -268,4 +319,16 @@ class PatternEditorController: UIViewController {
             }
         }
     }
+    
+    // color picker segue
+    var pickerColorIDToLoad: Int = 0
+    var pickerColorDataToLoad: PatternItem?
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "colorPickSegue" {
+            let navVC = segue.destination as! UINavigationController
+            let destVC = navVC.topViewController as! ColorPickerController
+            destVC.loadColor(colorID: pickerColorIDToLoad, colorData: pickerColorDataToLoad)
+        }
+    }
+    
 }

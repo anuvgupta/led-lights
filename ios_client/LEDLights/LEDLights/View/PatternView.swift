@@ -9,7 +9,7 @@
 import UIKit
 import Foundation
 
-class PatternView : UIView {
+class PatternView: UIView {
     
     // instance data
     public var data: Pattern?
@@ -30,16 +30,16 @@ class PatternView : UIView {
         deleteView.setTitle("Delete", for: .normal)
         deleteView.setTitleColor(UIColor.white, for: .normal)
         if let title = deleteView.titleLabel {
-            title.font = title.font.withSize(16)
+            title.font = UIFont.systemFont(ofSize: 16, weight: .light)
         }
-        deleteView.setBackgroundColor(color: UIColor(red: 237/255, green: 69/255, blue: 61/255, alpha: 1), forState: .normal)
+        deleteView.setBackgroundColor(color: deleteRed, forState: .normal)
         self.addSubview(deleteView)
         
         buttonView.configureForAutoLayout()
         buttonView.contentHorizontalAlignment = .left
         buttonView.setTitleColor(UIColor.black, for: .normal)
         if let title = buttonView.titleLabel {
-            title.font = title.font.withSize(20)
+            title.font = UIFont.systemFont(ofSize: 20, weight: .light)
         }
         buttonView.titleEdgeInsets.left -= 20.0
         if let image = UIImage(named: "next_b.png") {
