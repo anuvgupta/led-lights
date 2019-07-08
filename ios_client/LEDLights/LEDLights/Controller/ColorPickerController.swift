@@ -67,7 +67,8 @@ class ColorPickerController: UIViewController {
             newColorView.backgroundColor = prevColor
             newColorView.roundCorners(corners: [.topRight, .bottomRight], radius: 10)
         }
-        
+//        prevColorView.addBorder(borderColor: UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 0.75), borderWidth: 1, borderCornerRadius: 10)
+//        newColorView.addBorder(borderColor: UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 0.75), borderWidth: 1, borderCornerRadius: 10)
         scrollView.contentSize = contentView.frame.size
         
         bridge.colorPickVC = self

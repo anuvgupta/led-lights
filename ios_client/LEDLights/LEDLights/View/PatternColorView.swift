@@ -75,7 +75,8 @@ class PatternColorView: UIView, UIGestureRecognizerDelegate {
         mainView.addSubview(fadeLabel)
         
         colorView.configureForAutoLayout()
-        colorView.layer.cornerRadius = 8.0
+        colorView.addBorder(borderColor: UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 0.75), borderWidth: 1, borderCornerRadius: 8)
+        colorView.layer.masksToBounds = true
         colorView.clipsToBounds = true
         colorView.addTarget(self, action: #selector(colorClicked), for: .primaryActionTriggered)
         mainView.addSubview(colorView)

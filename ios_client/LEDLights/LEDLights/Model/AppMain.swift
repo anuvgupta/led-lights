@@ -86,6 +86,12 @@ extension String {
     }
 }
 extension UIView {
+    // add full borders to UIViews
+    public func addBorder(borderColor: UIColor, borderWidth: CGFloat, borderCornerRadius: CGFloat){
+        self.layer.borderWidth = borderWidth
+        self.layer.borderColor = borderColor.cgColor
+        self.layer.cornerRadius = borderCornerRadius
+    }
     // add rounded corners to UIViews
     public func roundCorners(corners: UIRectCorner, radius: CGFloat) {
         let path = UIBezierPath(roundedRect: self.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))

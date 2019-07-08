@@ -56,7 +56,7 @@ class ControlsController: UIViewController {
         border2.borderWidth = 1.0
         currentPlayingWrap.layer.addSublayer(border2)
         currentPlayingWrap.layer.masksToBounds = true
-        hueIndicatorView.layer.cornerRadius = 8
+        hueIndicatorView.addBorder(borderColor: UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 0.75), borderWidth: 1, borderCornerRadius: 8)
         hueIndicatorView.layer.masksToBounds = true
         hueIndicatorView.isHidden = true
         patternNameLabel.isHidden = true
