@@ -169,7 +169,9 @@ var app = {
                         });
                         break;
                     case "patternlist":
-                        app.block.child("controlpanel/patterns").on("clearlist");
+                        app.block
+                            .child("controlpanel/patterns")
+                            .on("clearlist");
                         for (var p in d.data) {
                             app.block.child("controlpanel/patterns").data({
                                 newpattern: {
@@ -242,6 +244,62 @@ var app = {
                             app.currentPattern.list = null;
                         }
                         break;
+                    case "arduinostatus":
+                        app.block
+                            .child("controlpanel/patterns/directpanel/status")
+                            .data({
+                                statusevent: {
+                                    event: d.data.lastEvent,
+                                    time: d.data.lastTimestamp
+                                }
+                            });
+                        break;
+                    case "current":
+                        var type = d.data.type;
+                        if (type == "music") {
+                            app.currentItem.type = "music";
+                            app.currentItem.data = null;
+                        } else if (type == "pattern") {
+                            app.currentItem.type = "pattern";
+                            app.currentItem.data = {
+                                id: d.data.data.id,
+                                name: d.data.data.name
+                            };
+                        } else if (type == "hue") {
+                            app.currentItem.type = "hue";
+                            app.currentItem.data = {
+                                r: d.data.data.r,
+                                g: d.data.data.g,
+                                b: d.data.data.b
+                            };
+                        } else {
+                            app.currentItem.type = "none";
+                            app.currentItem.data = null;
+                        }
+                        app.block
+                            .child("controlpanel/patterns/directpanel/current")
+                            .data({
+                                current: app.currentItem
+                            });
+                        break;
+                    case "brightness":
+                        app.direct.brightness = parseInt(d.data);
+                        app.block
+                            .child(
+                                "controlpanel/patterns/directpanel/brightness"
+                            )
+                            .data({
+                                update: app.direct.brightness
+                            });
+                        break;
+                    case "speed":
+                        app.direct.speed = parseInt(d.data);
+                        app.block
+                            .child("controlpanel/patterns/directpanel/speed")
+                            .data({
+                                update: app.direct.speed
+                            });
+                        break;
                     default:
                         console.log("unknown event", d.event);
                         break;
@@ -274,13 +332,6 @@ var app = {
     updateColor: function(latent) {
         if (latent == undefined) latent = false;
         if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
-            console.log({
-                r: app.rgb.r,
-                g: app.rgb.g,
-                b: app.rgb.b,
-                id: app.rgb.id,
-                latent: latent
-            });
             app.socket.send(
                 app.encodeMSG("updatecolor", {
                     r: app.rgb.r,
@@ -329,12 +380,6 @@ var app = {
                     })
                 );
             }
-            app.currentItem.type = "hue";
-            app.currentItem.data = {
-                r: app.rgb.r,
-                g: app.rgb.g,
-                b: app.rgb.b
-            };
         }
     },
     currentPattern: {
@@ -344,7 +389,7 @@ var app = {
     },
     currentItem: {
         type: "",
-        data: ""
+        data: null
     },
     trackPatternColorBlock: null,
     newPattern: function() {
@@ -413,8 +458,6 @@ var app = {
     },
     playPattern: function() {
         if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
-            app.currentItem.type = "pattern";
-            app.currentItem.data = app.currentPattern.id;
             app.socket.send(
                 app.encodeMSG("playpattern", { id: app.currentPattern.id })
             );
@@ -476,6 +519,9 @@ var app = {
                 );
             }
         }
+    },
+    playMusic: function () {
+        app.socket.send(app.encodeMSG("music", ""));
     },
     login: function(pass) {
         app.password = pass;

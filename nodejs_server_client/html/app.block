@@ -119,7 +119,8 @@ app
                 background-color #3e3e3e
                 box-shadow rgb(210, 210, 210) 0px 2px 4px
             text title
-                val Live LEDs
+                // val Live LEDs
+                val Lights
                 css
                     font-family ModernSansRegular
                     font-size 30px
@@ -148,7 +149,7 @@ app
                         app.logout();
                     }
                 img icon
-                    src img/exit.png
+                    src img/exit_w.png
                     height 35px
                     width 35px
             block github
@@ -170,7 +171,7 @@ app
                     target _blank
                     href https://github.com/anuvgupta/led-lights
                     img icon
-                        src img/github.png
+                        src img/github_w.png
                         height 35px
                         width 35px
         div colors
@@ -200,6 +201,7 @@ app
                     }
                 css
                     height 480px
+                    border-bottom 1px solid #eee
                 button rect
                     css
                         height 250px
@@ -729,9 +731,9 @@ app
                     var colors = block.child('area/editor/colors');
                     var children = colors.children();
                     for (var c in children) {
-                        if (children.hasOwnProperty(c)) {
+                        if (children.hasOwnProperty(c) && c != 'addbutton') {
                             if (children[c].key('editcolor')) {
-                                children[c].child('color').on('click');
+                                children[c].child('colorwrap/color').on('click');
                             }
                         }
                     }
@@ -796,12 +798,17 @@ app
                 }
             div menu
                 css
-                    width 300px
+                    // width 300px
+                    width 350px
                     border-right 1px solid #eee
-                    height 100%
                     position absolute
                     left 0
                     top 0
+                    overflow scroll
+                @query window height != 0
+                    {
+                        block.css('height', (block.parent().$().height() - block.sibling('directpanel').$().height()) + 'px');
+                    }
                 div title
                     css
                         margin-top 10px
@@ -820,7 +827,7 @@ app
                         css
                             position absolute
                             top 7px
-                            right 20px
+                            right 15px
                             opacity 0.6
                             cursor pointer
                             transition opacity 0.2s ease
@@ -831,7 +838,7 @@ app
                             css
                                 opacity 0.6
                         image img
-                            src img/plus.png
+                            src img/plus_b.png
                             height 23px
                             width 23px
                         :click
@@ -842,23 +849,426 @@ app
                     css
                         margin-left 24px
                         text-align left
+                        margin-bottom 20px
+            !panel-item
+                init
+                    {
+                        var b = Block('div')
+                            .css({
+                                width: '100%',
+                                height: '80px',
+                                borderBottom: '1px solid #f2f2f2',
+                                boxSizing: 'border-box'
+                            })
+                            .__add(Block('block', 'icon')
+                                .css({
+                                    width: '55px',
+                                    opacity: '0.6',
+                                    marginRight: '5px',
+                                    float: 'left',
+                                    boxSizing: 'border-box'
+                                })
+                                .add('image', 'img')
+                            )
+                            .__add(Block('block', 1)
+                                .css({
+                                    height: '100%',
+                                    float: 'left',
+                                    boxSizing: 'border-box'
+                                })
+                                .query('window height != 0', function (event, block) {
+                                    block.css('width', (block.__parent().$().width() - block.__sibling('icon').$().outerWidth(true)) + 'px');
+                                })
+                                .__child('content').css('textAlign', 'left').__parent()
+                            )
+                        ;
+                        return b.setAdd(b.__child('block/content'));
+                    }
+                load
+                    {
+                        data('icon', function (icon) {
+                            block.__child('icon').child('img').data({
+                                src: 'img/' + icon + '_b.png',
+                                height: '23px',
+                                width: '23px',
+                                css: { margin: '0 auto' }
+                            });
+                        });
+                    }
+            div directpanel
+                css
+                    width 350px
+                    height 400px
+                    border-top 1px solid #eee
+                    position absolute
+                    bottom 0
+                    left 0
+                    border-right 1px solid #eee
+                panel-item status
+                    icon memory
+                    {
+                        block.key('lastTimestamp', 0);
+                        block.key('deleteRed', 'rgba(237, 69, 61, 1)');
+                        block.key('buttonBlue', 'rgba(40, 124, 246, 1)');
+                        block.key('statusGreen', 'rgba(85, 196, 110, 1)');
+                        block.key('timeUpdater', null);
+                    }
+                    #statusevent
+                        {
+                            var text = "Arduino ";
+                            var color = block.key('buttonBlue');
+                            if (statusevent.event != "") {
+                                if (statusevent.event == "disconnected") {
+                                    text +=  "Offline";
+                                    color = block.key('deleteRed');
+                                } else if (statusevent.event == "connected") {
+                                    text +=  "Syncing";
+                                    color = block.key('buttonBlue');
+                                } else if (statusevent.event == "authenticated") {
+                                    text +=  "Syncing";
+                                    color = block.key('buttonBlue');
+                                } else if (statusevent.event == "online") {
+                                    text +=  "Online";
+                                    color = block.key('statusGreen');
+                                }
+                                block.child('status/text').html('').data(text);
+                                block.child('indicator/circle').css('background-color', color);
+                                block.key('lastTimestamp', statusevent.time);
+                                block.on('updatetime');
+                            }
+                            if (block.key('timeUpdater') === null) {
+                                block.key('timeUpdater', setInterval(function () {
+                                    block.on('updatetime');
+                                }, 500));
+                            }
+                        }
+                    :updatetime
+                        {
+                            var lTS = parseInt(block.key('lastTimestamp'));
+                            var deltaSec = parseInt(Date.now() / 1000) - parseInt(lTS / 1000);
+                            if (deltaSec < 0) {
+                                deltaSec = 0;
+                            }
+                            var outputString = "";
+                            if (deltaSec < 5) {
+                                outputString += "now";
+                            } else if (deltaSec < 60) {
+                                outputString += "" + parseInt(Math.floor(parseFloat(deltaSec) / 5.0) * 5.0) + " seconds ago";
+                            } else if (deltaSec < 3600) {
+                                var mins = parseInt(deltaSec / 60);
+                                if (mins == 1) {
+                                    outputString += "" + mins + " minute ago";
+                                } else {
+                                    outputString += "" + mins + " minutes ago";
+                                }
+                            } else {
+                                var hrs = parseInt(deltaSec / 3600);
+                                if (hrs == 1) {
+                                    outputString += "" + hrs + " hour ago";
+                                } else {
+                                    outputString += "" + hrs + " hours ago";
+                                }
+                            }
+                            block.child('time/text').html('').data(outputString);
+                        }
+                    block indicator
+                        css
+                            height 100%
+                            width 20px
+                            float left
+                            margin 0
+                            margin-top 1px
+                            margin-right 10px
+                        div circle
+                            css
+                                border-radius 100%
+                                height 10px
+                                width 10px
+                                margin 0 auto
+                                background-color rgba(20, 20, 20, 0.6)
+                    block status
+                        css
+                            float left
+                            width auto
+                        text text
+                            val Arduino Status
+                            css
+                                font-size 20px
+                                margin-bottom 1px
+                                display block
+                                margin-right 10px
+                                color #222
+                                cursor default
+                    block time
+                        css
+                            float left
+                            width auto
+                        text text
+                            val 2 mins ago
+                            css
+                                font-size 12.5px
+                                margin-top 3px
+                                display block
+                                color #555
+                                cursor default
+                panel-item current
+                    icon play
+                    :hidechildren
+                        {
+                            var children = block.children();
+                            for (var c in children) {
+                                if (children.hasOwnProperty(c) && children[c].block) {
+                                    children[c].css('display', 'none');
+                                }
+                            }
+                        }
+                    #current
+                        {
+                            block.on('hidechildren');
+                            if (current.type == 'hue') {
+                                block.child('hue/color/view').css('background-color', app.util.rgbcss(current.data.r, current.data.g, current.data.b));
+                                block.child('hue').css('display', 'block');
+                            } else if (current.type == 'pattern') {
+                                block.child('pattern/text').html('').data(current.data.name);
+                                block.child('pattern').css('display', 'block');
+                            } else if (current.type == 'music') {
+                                block.child('music').css('display', 'block');
+                            }
+                        }
+                    div hue
+                        css
+                            display none
+                            height 100%
+                            width 100%
+                        block label
+                            css
+                                width auto
+                                margin-right 10px
+                                margin-left 5px
+                                float left
+                            text text
+                                val Hue
+                                css
+                                    font-size 18px
+                                    letter-spacing 0.5px
+                                    color #222
+                        block color
+                            css
+                                width 50%
+                                max-width 100px
+                                float left
+                                margin-left 5px
+                            div view
+                                css
+                                    width 100%
+                                    height 50%
+                                    border-radius 6px
+                                    border 1px solid #eee
+                                    margin-top 2px
+                    div pattern
+                        css
+                            display none
+                        text text
+                            val Pattern Name
+                            css
+                                font-size 22px
+                                color #444
+                    div music
+                        css
+                            display none
+                        text text
+                            val Music Reactive
+                            css
+                                font-size 16px
+                                letter-spacing 0.55px
+                                color #222
+                panel-item brightness
+                    icon sun
+                    #update
+                        {
+                            block.child('brightslider/slider/input').$().val(update);
+                            block.child('brightslider/value/text').html('').data("" + update);
+                        }
+                    div brightslider
+                        css
+                            width 100%
+                            height 40px
+                        block slider
+                            css
+                                float left
+                                margin 0 20px 0 5px
+                            @query window height != 0
+                                {
+                                    block.css('width', (block.parent().$().width() - 40 - 20 - 20) + 'px');
+                                }
+                            input input
+                                type range
+                                min 0
+                                max 100
+                                value 100
+                                css
+                                    width 100%
+                                    margin-top 7px
+                                    cursor pointer
+                                    opacity 0.8
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 100) val = 100;
+                                            block.parent().sibling('value').child('text').html('' + val);
+                                            app.direct.brightness = val;
+                                            app.sendBrightness();
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input');
+                                        app.playCurrent();
+                                    }
+                        block value
+                            css
+                                width 40px
+                                font-size 19px
+                                float left
+                            {
+                                block.__child('content').css('text-align', 'left');
+                            }
+                            text text
+                                val 100
+                                css
+                                    color #333
+                panel-item speed
+                    icon clock
+                    #update
+                        {
+                            block.child('speedslider/slider/input').$().val(update);
+                            block.child('speedslider/value/text').html('').data("" + update);
+                        }
+                    div speedslider
+                        css
+                            width 100%
+                            height 40px
+                        block slider
+                            css
+                                float left
+                                margin 0 20px 0 5px
+                            @query window height != 0
+                                {
+                                    block.css('width', (block.parent().$().width() - 40 - 20 - 20) + 'px');
+                                }
+                            input input
+                                type range
+                                min 0
+                                max 500
+                                value 100
+                                step 5
+                                css
+                                    width 100%
+                                    margin-top 7px
+                                    cursor pointer
+                                    opacity 0.8
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 500) val = 500;
+                                            block.parent().sibling('value').child('text').html('' + val);
+                                            app.direct.speed = val;
+                                            app.sendSpeed();
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input');
+                                        app.playCurrent();
+                                    }
+                        block value
+                            css
+                                width 40px
+                                font-size 19px
+                                float left
+                            {
+                                block.__child('content').css('text-align', 'left');
+                            }
+                            text text
+                                val 100
+                                css
+                                    color #333
+                panel-item music
+                    icon speaker
+                    block musictoggle
+                        css
+                            width auto
+                        block button
+                            css
+                                margin 0
+                                background-color rgb(76, 76, 76)
+                                padding 6px 20px
+                                width auto
+                                height 35px
+                                text-align center
+                                border-radius 4px
+                                cursor pointer
+                                color white
+                                transition background-color 0.15s ease
+                                -moz-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                -webkit-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                border 1px solid #ffffff
+                                opacity 0.9
+                                display inline-table
+                                float left
+                            :mouseover
+                                css
+                                    background-color rgb(88, 88, 88)
+                            :mouseout
+                                css
+                                    background-color rgb(76, 76, 76)
+                            :mousedown
+                                css
+                                    background-color rgb(98, 98, 98)
+                            :mouseup
+                                css
+                                    background-color rgb(88, 88, 88)
+                            text text
+                                val music react
+                                css
+                                    font-size 22px
+                                    letter-spacing 1.5px
+                                    // text-transform uppercase
+                            :click
+                                {
+                                    app.playMusic();
+                                }
+                        block betalabel
+                            css
+                                height 35px
+                                width auto
+                                display inline-table
+                                padding 6px 10px
+                                margin-left 6px
+                                float left
+                            text text
+                                val Beta Feature
+                                css
+                                    color #555
+                                    font-size 15px
             div area
                 css
                     height 100%
                     position absolute
-                    left 301px
+                    left 351px
                     top 0
                 @query window height != 0
                     {
-                        block.css('width', (window.innerWidth - 500 - 1 - 300 - 1) + 'px');
+                        block.css('width', (window.innerWidth - 500 - 1 - 350 - 1) + 'px');
                     }
                 block placeholder
                     css
                         display table
-                    @query window height != 0
-                        {
-                            block.css('height', (block.parent().$().height() - 100) + 'px');
-                        }
                     :show
                         {
                             block.sibling('editor').css('display', 'none');
@@ -889,10 +1299,7 @@ app
                         top 0
                         left 0
                         width 100%
-                    @query window height != 0
-                        {
-                            block.css('height', (block.parent().$().height() - 100) + 'px');
-                        }
+                        height 100%
                     :show
                         {
                             block.sibling('placeholder').css('display', 'none');
@@ -949,7 +1356,7 @@ app
                                 cursor pointer
                                 transition opacity 0.2s ease
                             image icon
-                                src img/delete.png
+                                src img/delete_b.png
                                 height 35px
                                 width 35px
                             :mouseover
@@ -971,7 +1378,7 @@ app
                                 cursor pointer
                                 transition opacity 0.2s ease
                             image icon
-                                src img/edit.png
+                                src img/edit_b.png
                                 height 35px
                                 width 35px
                             :mouseover
@@ -1002,13 +1409,13 @@ app
                                     .css({
                                         width: '30px',
                                         marginLeft: '40px',
-                                        height: '60px',
+                                        height: '63px',
                                         marginBottom: '10px',
                                         borderRadius: '3px',
                                         backgroundColor: '#fdfdfd',
                                         boxShadow: '3px 2px 7px rgba(0,0,0,0.12)',
                                         transition: 'margin-left 0.1s ease, box-shadow 0.1s ease',
-                                        border: '1px solid #efefef'
+                                        border: '1px solid #f1f1f1'
                                     })
                                     .key('editcolor', false)
                                     .key('dragging', false)
@@ -1061,7 +1468,7 @@ app
                                             })
                                             .add(Block('image', 1)
                                                 .data({
-                                                    src: 'img/bars.png',
+                                                    src: 'img/bars3_b.png',
                                                     width: '32px',
                                                     height: '32px'
                                                 })
@@ -1137,39 +1544,49 @@ app
                                             })
                                         )
                                     )
-                                    .add(Block('div', 'color')
+                                    .add(Block('div', 'colorwrap')
                                         .css({
                                             float: 'left',
-                                            cursor: 'pointer',
-                                            border: '3px solid black'
+                                            borderLeft: '1px solid #f0f0f0',
+                                            borderRight: '1px solid #f0f0f0',
+                                            boxSizing: 'border-box',
+                                            height: '100%'
                                         })
                                         .query('window height != 0', function (event, block, data) {
-                                            block.css('width', (block.parent().$().width() - 100 * 2 - 3 * 2 - 70 * 2) + 'px')
-                                                .css('height', (block.parent().$().height() - 3 * 2) + 'px');
+                                            block.css('width', (block.parent().$().width() - 100 * 2 - 3 * 2 - 70 * 2) + 'px');
                                         })
-                                        .on('click', function (e, b, d) {
-                                            e.stopPropagation();
-                                            if (block.key('editcolor')) {
-                                                block.key('editcolor', false);
-                                                b.css('border', '3px solid ' + app.util.rgbcss(block.key('r'), block.key('g'), block.key('b')));
-                                                app.trackPatternColorBlock = null;
-                                                block.on('sendUpdate');
-                                            } else {
-                                                var prevent = false;
-                                                var siblings = block.parent().children();
-                                                for (var s in siblings) {
-                                                    if (siblings.hasOwnProperty(s) && siblings[s].key('editcolor')) {
-                                                        siblings[s].child('color').on('click');
-                                                        prevent = true;
+                                        .add(Block('div', 'color')
+                                            .css({
+                                                cursor: 'pointer',
+                                                border: '3px solid black',
+                                                width: '100%',
+                                                height: '100%',
+                                                boxSizing: 'border-box'
+                                            })
+                                            .on('click', function (e, b, d) {
+                                                e.stopPropagation();
+                                                if (block.key('editcolor')) {
+                                                    block.key('editcolor', false);
+                                                    b.css('border', '3px solid ' + app.util.rgbcss(block.key('r'), block.key('g'), block.key('b')));
+                                                    app.trackPatternColorBlock = null;
+                                                    block.on('sendUpdate');
+                                                } else {
+                                                    var prevent = false;
+                                                    var siblings = block.parent().children();
+                                                    for (var s in siblings) {
+                                                        if (siblings.hasOwnProperty(s) && siblings[s].key('editcolor')) {
+                                                            siblings[s].child('colorwrap/color').on('click');
+                                                            prevent = true;
+                                                        }
+                                                    }
+                                                    if (!prevent) {
+                                                        block.key('editcolor', true);
+                                                        b.css('border', '3px solid #c3c3c3');
+                                                        app.trackPatternColorBlock = block;
                                                     }
                                                 }
-                                                if (!prevent) {
-                                                    block.key('editcolor', true);
-                                                    b.css('border', '3px solid #c3c3c3');
-                                                    app.trackPatternColorBlock = block;
-                                                }
-                                            }
-                                        })
+                                            })
+                                        )
                                     )
                                     .add(Block('block', 'time')
                                         .css({
@@ -1263,7 +1680,7 @@ app
                                             })
                                             .add(Block('image', 1)
                                                 .data({
-                                                    src: 'img/x.png',
+                                                    src: 'img/x_b.png',
                                                     width: '23px',
                                                     height: '23px'
                                                 })
@@ -1320,9 +1737,9 @@ app
                                 });
                                 var rgbupdate = function () {
                                     var currentrgbcss = app.util.rgbcss(block.key('r'), block.key('g'), block.key('b'));
-                                    block.child('color').css('background-color', currentrgbcss);
+                                    block.child('colorwrap/color').css('background-color', currentrgbcss);
                                     if (!block.key('editcolor'))
-                                        block.child('color').css('border', '3px solid ' + currentrgbcss);
+                                        block.child('colorwrap/color').css('border', '3px solid ' + currentrgbcss);
                                 }
                                 data('r', function (r) {
                                     block.key('r', r);
@@ -1357,57 +1774,70 @@ app
                         }
                         @query window height != 0
                             {
-                                block.css('height', (block.parent().$().height() - 15 - 46 - 6 - 2 - 78 - 5 - 10) + 'px');
+                                block.css('height', (block.parent().$().height() - 15 - 46 - 6 - 2 - 85 - 5 - 10) + 'px');
                             }
                         #list
                             {
-                                block.html('');
-                                for (var l in list) {
-                                    block.add(Block('pattern-color', 'color_' + l));
-                                    block.child('color_' + l).data({ 'id': l }).data(list[l]);
+                                var children = block.children();
+                                for (var c in children) {
+                                    if (children.hasOwnProperty(c) && c != 'addbutton') {
+                                        block.remove(c);
+                                    }
                                 }
+                                var numcolors = 0;
+                                for (var l in list) {
+                                    block.add(Block('pattern-color', 'color_' + l), 'addbutton');
+                                    block.child('color_' + l).data({ 'id': l }).data(list[l]);
+                                    numcolors++;
+                                }
+                                numcolors++;
+                                block.child('addbutton').css({
+                                    '-webkit-box-ordinal-group': "" + numcolors,
+                                    '-moz-box-ordinal-group': "" + numcolors,
+                                    'box-ordinal-group': "" + numcolors
+                                });
                                 Block.queries();
                             }
-                    block addbutton
-                        css
-                            height 78px
-                            cursor pointer
-                            color white
-                            background-color rgb(76, 76, 76)
-                            transition background-color 0.2s ease
-                            -moz-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
-                            -webkit-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
-                            box-shadow inset 0px 0px 60px 0px -16px rgb(84, 84, 84)
-                            text-align center
-                            float left
-                            opacity 0.9
-                        @query window height != 0
-                            {
-                                block.css('width', (block.parent().$().width() / 2) + 'px');
-                            }
-                        :mouseover
+                        block addbutton
                             css
-                                background-color rgb(88, 88, 88)
-                        :mouseout
-                            css
-                                background-color rgb(76, 76, 76)
-                        :mousedown
-                            css
-                                background-color rgb(98, 98, 98)
-                        :mouseup
-                            css
-                                background-color rgb(88, 88, 88)
-                        :click
-                            {
-                                app.addPatternColor();
-                            }
-                        text text
-                            val +
-                            css
-                                font-size 60px
+                                height 74px
+                                cursor pointer
+                                background-color rgba(76, 76, 76, 0)
+                                transition background-color 0.2s ease
+                                text-align center
+                                float left
+                                opacity 0.8
+                                margin 5px auto 40px 40px
+                                border-radius 4px
+                            @query window width != 0
+                                {
+                                    block.css('width', (block.parent().$().width() - 40 * 2) + 'px');
+                                }
+                            :mouseover
+                                css
+                                    background-color rgba(76, 76, 76, 0.1)
+                            :mouseout
+                                css
+                                    background-color rgba(76, 76, 76, 0)
+                            :mousedown
+                                css
+                                    background-color rgba(76, 76, 76, 0.2)
+                            :mouseup
+                                css
+                                    background-color rgba(76, 76, 76, 0.1)
+                            :click
+                                {
+                                    app.addPatternColor();
+                                }
+                            image img
+                                src img/plus_bl.png
+                                height 40px
+                                width 40px
+                                css
+                                    margin 0 auto
                     block playbutton
                         css
-                            height 78px
+                            height 85px
                             cursor pointer
                             color white
                             background-color rgb(76, 76, 76)
@@ -1421,7 +1851,7 @@ app
                             opacity 0.9
                         @query window height != 0
                             {
-                                block.css('width', (block.parent().$().width() / 2 - 1) + 'px');
+                                block.css('width', (block.parent().$().width() - 1) + 'px');
                             }
                         :mouseover
                             css
@@ -1440,190 +1870,11 @@ app
                                 app.playPattern();
                             }
                         image img
-                            src img/play.png
+                            src img/play_w.png
                             height 45px
                             width 45px
                             css
                                 margin 0 auto
-                div directpanel
-                    css
-                        width 100%
-                        height 99px
-                        border-top 1px solid #eee
-                        position absolute
-                        bottom 0
-                        left 0
-                    div brightslider
-                        css
-                            width 70%
-                            height 40px
-                            margin-top 7px
-                        block label
-                            css
-                                width 110px
-                                float left
-                                font-size 19px
-                            {
-                                block.__child('content').css('text-align', 'right');
-                            }
-                            text text
-                                val Brightness:
-                                css
-                                    color #333
-                        block slider
-                            css
-                                float left
-                                margin 0 20px 0 20px
-                            @query window height != 0
-                                {
-                                    block.css('width', (block.parent().$().width() - 230) + 'px');
-                                }
-                            input input
-                                type range
-                                min 0
-                                max 100
-                                value 100
-                                css
-                                    width 100%
-                                    margin-top 7px
-                                    cursor pointer
-                                    opacity 0.8
-                                :input
-                                    {
-                                        var val = parseInt(block.$().val().trim());
-                                        if (!isNaN(val)) {
-                                            if (val < 0) val = 0;
-                                            if (val > 100) val = 100;
-                                            block.parent().sibling('value').child('text').html('' + val);
-                                            app.direct.brightness = val;
-                                            app.sendBrightness();
-                                        }
-                                    }
-                                :mouseup
-                                    {
-                                        block.on('input');
-                                        app.playCurrent();
-                                    }
-                        block value
-                            css
-                                width 80px
-                                font-size 19px
-                                float left
-                            {
-                                block.__child('content').css('text-align', 'left');
-                            }
-                            text text
-                                val 100
-                                css
-                                    color #333
-                    div speedslider
-                        css
-                            width 70%
-                            height 40px
-                        block label
-                            css
-                                width 110px
-                                float left
-                                font-size 19px
-                            {
-                                block.__child('content').css('text-align', 'right');
-                            }
-                            text text
-                                val Speed Mult:
-                                css
-                                    color #333
-                        block slider
-                            css
-                                float left
-                                margin 0 20px 0 20px
-                            @query window height != 0
-                                {
-                                    block.css('width', (block.parent().$().width() - 230) + 'px');
-                                }
-                            input input
-                                type range
-                                min 0
-                                max 500
-                                value 100
-                                step 5
-                                css
-                                    width 100%
-                                    margin-top 7px
-                                    cursor pointer
-                                    opacity 0.8
-                                :input
-                                    {
-                                        var val = parseInt(block.$().val().trim());
-                                        if (!isNaN(val)) {
-                                            if (val < 0) val = 0;
-                                            if (val > 500) val = 500;
-                                            block.parent().sibling('value').child('text').html('' + val);
-                                            app.direct.speed = val;
-                                            app.sendSpeed();
-                                        }
-                                    }
-                                :mouseup
-                                    {
-                                        block.on('input');
-                                        app.playCurrent();
-                                    }
-                        block value
-                            css
-                                width 80px
-                                font-size 19px
-                                float left
-                            {
-                                block.__child('content').css('text-align', 'left');
-                            }
-                            text text
-                                val 100
-                                css
-                                    color #333
-                    block musictoggle
-                        css
-                            width 30%
-                            position absolute
-                            top 0
-                            right 0
-                        block button
-                            css
-                                margin 0 auto
-                                background-color rgb(76, 76, 76)
-                                padding 6px 0
-                                width 120px
-                                height 35px
-                                text-align center
-                                border-radius 4px
-                                cursor pointer
-                                color white
-                                transition background-color 0.15s ease
-                                -moz-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
-                                -webkit-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
-                                box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
-                                border 1px solid #ffffff
-                                opacity 0.9
-                            :mouseover
-                                css
-                                    background-color rgb(88, 88, 88)
-                            :mouseout
-                                css
-                                    background-color rgb(76, 76, 76)
-                            :mousedown
-                                css
-                                    background-color rgb(98, 98, 98)
-                            :mouseup
-                                css
-                                    background-color rgb(88, 88, 88)
-                            text text
-                                val music
-                                css
-                                    font-size 22px
-                                    letter-spacing 1.5px
-                                    text-transform uppercase
-                            :click
-                                {
-                                    console.log('toggle music reactive mode');
-                                }
     :mousemove
         {
             var colors = block.child('controlpanel/patterns/area/editor/colors');
@@ -1649,7 +1900,7 @@ app
             var colors = block.child('controlpanel/patterns/area/editor/colors');
             var children = colors.children();
             for (var c in children) {
-                if (children.hasOwnProperty(c) && children[c].key('dragging'))
+                if (children.hasOwnProperty(c) && c != 'addbutton' && children[c].key('dragging'))
                     children[c].child('handle/imgwrap').on('mouseup');
             }
         }
@@ -1658,7 +1909,7 @@ app
             var colors = block.child('controlpanel/patterns/area/editor/colors');
             var children = colors.children();
             for (var c in children) {
-                if (children.hasOwnProperty(c)) {
+                if (children.hasOwnProperty(c) && c != 'addbutton') {
                     if (children[c].child('fade/input').css('display') == 'block') {
                         children[c].child('fade/input').on('sendVal');
                     }

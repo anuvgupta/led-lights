@@ -7,7 +7,7 @@ const arrayMove = require("array-move");
 const fs = require("fs");
 
 // constants
-const test = process.argv.slice(2)[0] == "test"
+const test = process.argv.slice(2)[0] == "test";
 const wss_port = test ? 30003 : 3003;
 const http_port = test ? 30002 : 3002;
 const password = "password";
@@ -388,7 +388,8 @@ wss.on("connection", function(ws) {
                         r: d.data.r,
                         g: d.data.g,
                         b: d.data.b,
-                        d: Date.now()
+                        d: Date.now(),
+                        name: ""
                     };
                     // send new preset to all other clients
                     sendToAllBut(
@@ -398,6 +399,7 @@ wss.on("connection", function(ws) {
                             g: d.data.g,
                             b: d.data.b,
                             id: colorID,
+                            name: "",
                             switch: false
                         },
                         client
@@ -409,6 +411,7 @@ wss.on("connection", function(ws) {
                             g: d.data.g,
                             b: d.data.b,
                             id: colorID,
+                            name: "",
                             switch: true // tells client to switch currently editing preset to the new preset
                         })
                     );
@@ -461,6 +464,27 @@ wss.on("connection", function(ws) {
                     delete database.colors[d.data.id];
                     // send delete update to clients
                     sendToAll("deletecolor", { id: d.data.id });
+                    saveDB();
+                    break;
+                // client naming color preset
+                case "namecolor":
+                    if (!client.auth) break;
+                    d.data.name = ("" + d.data.name).trim();
+                    if (d.data.name == "") break;
+                    log(
+                        "ws",
+                        "client " +
+                            client.id +
+                            " naming color " +
+                            d.data.id +
+                            " to " +
+                            d.data.name
+                    );
+                    database.colors[d.data.id].name = d.data.name;
+                    sendToAll("namecolor", {
+                        id: d.data.id,
+                        name: d.data.name
+                    });
                     saveDB();
                     break;
                 // client testing color preset
