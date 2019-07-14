@@ -40,6 +40,8 @@ var app = {
     },
     initblock: function(callback) {
         app.block.fill(document.body);
+        var scheme = app.util.cookie("scheme");
+        if (scheme != null) app.setScheme(scheme);
         $(document.body).on("DOMNodeInserted", function(e) {
             if (e.target.parentNode == document.body) {
                 e.target.style.top = "65px";
@@ -520,7 +522,7 @@ var app = {
             }
         }
     },
-    playMusic: function () {
+    playMusic: function() {
         app.socket.send(app.encodeMSG("music", ""));
     },
     login: function(pass) {
@@ -640,10 +642,54 @@ var app = {
                 app.util.lpad(String(parseInt(g)), 3, "0") +
                 app.util.lpad(String(parseInt(b)), 3, "0")
             );
+        },
+        capitalize: function (word) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
         }
     },
     img: {
         icon: { $: null, loaded: false }
+    },
+    scheme: "chrome",
+    setScheme: function(name) {
+        if (app.colors.hasOwnProperty(name)) {
+            app.scheme = name;
+            app.util.cookie("scheme", name);
+            app.block.child("controlpanel/patterns/directpanel/scheme").data({
+                select: name
+            });
+            Block.queries();
+        }
+    },
+    colors: {
+        material: {
+            navbar: {
+                background: "rgb(38, 118, 236)",
+                border: "rgb(50, 134, 255)"
+            },
+            button: {
+                default: "rgb(38, 118, 236)",
+                inset: "rgb(46, 126, 244)",
+                mouseover: "rgb(50, 130, 248)",
+                mouseout: "rgb(38, 118, 236)",
+                mouseup: "rgb(50, 130, 248)",
+                mousedown: "rgb(60, 140, 255)"
+            }
+        },
+        chrome: {
+            navbar: {
+                background: "rgb(62, 62, 62)",
+                border: "rgb(74, 74, 74)"
+            },
+            button: {
+                default: "rgb(76, 76, 76)",
+                inset: "rgb(84, 84, 84)",
+                mouseover: "rgb(88, 88, 88)",
+                mouseout: "rgb(76, 76, 76)",
+                mouseup: "rgb(88, 88, 88)",
+                mousedown: "rgb(98, 98, 98)"
+            }
+        }
     }
 };
 

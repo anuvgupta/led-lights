@@ -47,9 +47,7 @@
                 ;
             }
             if (height !== null) block.css('height', height);
-            else block.css('height', 'auto');
             if (width !== null) block.css('width', width);
-            else block.css('width', 'auto');
             if (alt !== null) block.attribute('title', alt);
         }
 // app UI content layer
@@ -115,16 +113,23 @@ app
                 position absolute
                 top 0
                 left 0
-                border-bottom 1px solid #4a4a4a
-                background-color #3e3e3e
+                background-color #2677ED
                 box-shadow rgb(210, 210, 210) 0px 2px 4px
+                transition background-color 0.3s ease, border 0.3s ease
+            @query window height != 0
+                {
+                    block.css({
+                        backgroundColor: app.colors[app.scheme].navbar['background'],
+                        borderBottom: '1px solid ' + app.colors[app.scheme].navbar['border'],
+                    });
+                }
             text title
                 // val Live LEDs
                 val Lights
                 css
                     font-family ModernSansRegular
                     font-size 30px
-                    color #fafafa
+                    color #fefefe
                     margin-top 8px
                     text-transform uppercase
                     display block
@@ -135,7 +140,7 @@ app
                     top 2px
                     right 20px
                     width 50px
-                    opacity 0.85
+                    opacity 0.9
                     transition opacity 0.1s ease
                     cursor pointer
                 :mouseover
@@ -143,7 +148,7 @@ app
                         opacity 1
                 :mouseout
                     css
-                        opacity 0.85
+                        opacity 0.9
                 :click
                     {
                         app.logout();
@@ -158,7 +163,7 @@ app
                     top 2px
                     left 20px
                     width 50px
-                    opacity 0.85
+                    opacity 0.9
                     transition opacity 0.1s ease
                     cursor pointer
                 :mouseover
@@ -166,7 +171,7 @@ app
                         opacity 1
                 :mouseout
                     css
-                        opacity 0.85
+                        opacity 0.9
                 a link
                     target _blank
                     href https://github.com/anuvgupta/led-lights
@@ -367,89 +372,71 @@ app
                         width 195px
                     div spacer1
                         css
-                            height 30px
+                            height 25px
                     div button1
                         css
                             margin 0 auto
-                            // background-color #afafaf
-                            background-color rgb(76, 76, 76)
-                            padding 6px 0
+                            padding 8px 0
                             width 150px
                             text-align center
                             border-radius 4px
                             cursor pointer
                             color white
-                            transition background-color 0.15s ease
-                            -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                            -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                            box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            transition background-color 0.15s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
                             border 1px solid #ffffff
                             opacity 0.9
-                        :mouseover
-                            css
-                                background-color rgb(88, 88, 88)
-                        :mouseout
-                            css
-                                // background-color #afafaf
-                                background-color rgb(76, 76, 76)
-                        :mousedown
-                            css
-                                // background-color #c3c3c3
-                                background-color rgb(98, 98, 98)
-                        :mouseup
-                            css
-                                background-color rgb(88, 88, 88)
+                        @query window height != 0
+                            {
+                                var inset = 'inset 0px 39px 0px -18px ' + app.colors[app.scheme].button['inset'];
+                                block.css({
+                                    backgroundColor: app.colors[app.scheme].button['default'],
+                                    '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
+                                });
+                            }
+                        :mouseover, mouseout, mousedown, mouseup
+                            {
+                                block.css('background-color', app.colors[app.scheme].button[event.type]);
+                            }
                         text text
                             val new
                             css
                                 font-size 20px
                                 letter-spacing 1.5px
-                                text-transform uppercase
+                                // text-transform uppercase
                         :click
                             {
                                 app.newColor();
                             }
                     div spacer2
                         css
-                            height 7px
+                            height 10px
                     div button2
                         {
                             block.key('enabled', false);
                         }
                         css
                             margin 0 auto
-                            background-color rgb(76, 76, 76)
-                            padding 6px 0
+                            padding 8px 0
                             width 150px
                             text-align center
                             border-radius 4px
                             cursor pointer
                             color white
-                            transition background-color 0.15s ease, opacity 0.1s ease
-                            -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                            -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                            box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                            transition background-color 0.15s ease, opacity 0.1s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
                             border 1px solid #ffffff
                             opacity 0.5
-                        :mouseover
+                        @query window height != 0
                             {
-                                if (block.key('enabled'))
-                                    block.css('background-color', 'rgb(88, 88, 88)');
+                                var inset = 'inset 0px 39px 0px -18px ' + app.colors[app.scheme].button['inset'];
+                                block.css({
+                                    backgroundColor: app.colors[app.scheme].button['default'],
+                                    '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
+                                });
                             }
-                        :mouseout
+                        :mouseover, mouseout, mousedown, mouseup
                             {
                                 if (block.key('enabled'))
-                                    block.css('background-color', 'rgb(76, 76, 76)');
-                            }
-                        :mousedown
-                            {
-                                if (block.key('enabled'))
-                                    block.css('background-color', 'rgb(98, 98, 98)');
-                            }
-                        :mouseup
-                            {
-                                if (block.key('enabled'))
-                                    block.css('background-color', 'rgb(88, 88, 88)');
+                                    block.css('background-color', app.colors[app.scheme].button[event.type]);
                             }
                         :click
                             {
@@ -472,7 +459,7 @@ app
                             css
                                 font-size 20px
                                 letter-spacing 1.5px
-                                text-transform uppercase
+                                // text-transform uppercase
                 div sync
                     css
                         margin-top 10px
@@ -489,37 +476,33 @@ app
                         div button3
                             css
                                 margin 0 auto
-                                background-color rgb(76, 76, 76)
-                                padding 6px 0
+                                padding 8px 0
                                 width 150px
                                 text-align center
                                 border-radius 4px
                                 cursor pointer
                                 color white
-                                transition background-color 0.15s ease
-                                -moz-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                                -webkit-box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
-                                box-shadow inset 0px 39px 0px -18px rgb(84, 84, 84)
+                                transition background-color 0.15s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
                                 border 1px solid #ffffff
                                 opacity 0.9
-                            :mouseover
-                                css
-                                    background-color rgb(88, 88, 88)
-                            :mouseout
-                                css
-                                    background-color rgb(76, 76, 76)
-                            :mousedown
-                                css
-                                    background-color rgb(98, 98, 98)
-                            :mouseup
-                                css
-                                    background-color rgb(88, 88, 88)
+                            @query window height != 0
+                                {
+                                    var inset = 'inset 0px 39px 0px -18px ' + app.colors[app.scheme].button['inset'];
+                                    block.css({
+                                        backgroundColor: app.colors[app.scheme].button['default'],
+                                        '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
+                                    });
+                                }
+                            :mouseover, mouseout, mousedown, mouseup
+                                {
+                                    block.css('background-color', app.colors[app.scheme].button[event.type]);
+                                }
                             text text
                                 val push
                                 css
                                     font-size 20px
                                     letter-spacing 1.5px
-                                    text-transform uppercase
+                                    // text-transform uppercase
                             :click
                                 {
                                     app.testColor(true);
@@ -898,7 +881,7 @@ app
             div directpanel
                 css
                     width 350px
-                    height 400px
+                    height 480px
                     border-top 1px solid #eee
                     position absolute
                     bottom 0
@@ -1205,7 +1188,6 @@ app
                         block button
                             css
                                 margin 0
-                                background-color rgb(76, 76, 76)
                                 padding 6px 20px
                                 width auto
                                 height 35px
@@ -1213,26 +1195,23 @@ app
                                 border-radius 4px
                                 cursor pointer
                                 color white
-                                transition background-color 0.15s ease
-                                -moz-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
-                                -webkit-box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
-                                box-shadow inset 0px 43px 0px -18px rgb(84, 84, 84)
+                                transition background-color 0.15s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
                                 border 1px solid #ffffff
                                 opacity 0.9
                                 display inline-table
                                 float left
-                            :mouseover
-                                css
-                                    background-color rgb(88, 88, 88)
-                            :mouseout
-                                css
-                                    background-color rgb(76, 76, 76)
-                            :mousedown
-                                css
-                                    background-color rgb(98, 98, 98)
-                            :mouseup
-                                css
-                                    background-color rgb(88, 88, 88)
+                            @query window height != 0
+                                {
+                                    var inset = 'inset 0px 39px 0px -18px ' + app.colors[app.scheme].button['inset'];
+                                    block.css({
+                                        backgroundColor: app.colors[app.scheme].button['default'],
+                                        '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
+                                    });
+                                }
+                            :mouseover, mouseout, mousedown, mouseup
+                                {
+                                    block.css('background-color', app.colors[app.scheme].button[event.type]);
+                                }
                             text text
                                 val music react
                                 css
@@ -1256,6 +1235,145 @@ app
                                 css
                                     color #555
                                     font-size 15px
+                panel-item scheme
+                    icon palette
+                    block selector
+                        {
+                            block.key('visible', false);
+                        }
+                        css
+                            position relative
+                            width auto
+                            height 40px
+                            border 1px solid #e8e8e8
+                            padding 0 40px 0 10px
+                            border-radius 4px
+                            cursor pointer
+                            box-sizing border-box
+                        !selector-option
+                            init
+                                {
+                                    return Block('div')
+                                        .css({
+                                            width: '100%',
+                                            height: '40px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0)',
+                                            cursor: 'pointer'
+                                        })
+                                        .add(Block('block', 1)
+                                            .add(Block('text', 1)
+                                                .data('title')
+                                                .css({
+                                                    fontSize: '15px',
+                                                    paddingLeft: '15px',
+                                                    color: '#333',
+                                                    letterSpacing: '0.4px'
+                                                })
+                                            )
+                                            .__child('content')
+                                                .css('text-align', 'left')
+                                                .__parent()
+                                        )
+                                        .on('mouseover', function (e, b) {
+                                            b.css('background-color', '#f3f3f3');
+                                        })
+                                        .on('mouseout', function (e, b) {
+                                            b.css('background-color', 'rgba(255, 255, 255, 0)');
+                                        })
+                                        .on('click', function (e, b) {
+                                            app.setScheme(b.key('scheme'));
+                                            // e.stopPropagation();
+                                        })
+                                    ;
+                                }
+                            load
+                                {
+                                    data('scheme', function (scheme) {
+                                        block.key('scheme', scheme);
+                                        block.child('block/text').html('').data(app.util.capitalize(scheme));
+                                    });
+                                }
+                        div options
+                            css
+                                position absolute
+                                width 150px
+                                min-height 50px
+                                bottom 35px
+                                left -1px
+                                background-color white
+                                border 1px solid #eee
+                                border-radius 5px 5px 5px 0
+                                cursor default
+                                box-shadow rgba(210, 210, 210, 0.3) 0px 2px 4px
+                                z-index 10
+                                display none
+                                opacity 0
+                                transition opacity 0.15s ease
+                            {
+                                for (var color in app.colors) {
+                                    if (app.colors.hasOwnProperty(color)) {
+                                        block.add(Block('selector-option', color).data({ scheme: color }));
+                                    }
+                                }
+                            }
+                            :show
+                                {
+                                    block.css('display', 'block');
+                                    setTimeout(function () {
+                                        block.css('opacity', '1');
+                                    }, 10);
+                                }
+                            :hide
+                                {
+                                    block.css('opacity', '0');
+                                    setTimeout(function () {
+                                        block.css('display', 'block');
+                                    }, 160);
+                                }
+                        text text
+                            val selector
+                            css
+                                color #333
+                                letter-spacing 0.4px
+                                font-size 15px
+                        image arrow
+                            src img/down_b.png
+                            height 20px
+                            width 20px
+                            css
+                                position absolute
+                                right 4px
+                                top 10px
+                                opacity 0.8
+                                transition transform 0.1s ease
+                                transform rotate(90deg)
+                            :up
+                                {
+                                    block.css('transform', 'rotate(90deg)');
+                                }
+                            :down
+                                {
+                                    block.css('transform', 'rotate(180deg)');
+                                }
+                            }
+                        :click
+                            {
+                                if (block.key('visible')) {
+                                    block.child('options').on('hide');
+                                    block.child('arrow').on('up');
+                                    block.key('visible', false);
+                                } else {
+                                    block.child('options').on('show');
+                                    block.child('arrow').on('down');
+                                    block.key('visible', true);
+                                }
+                            }
+                    #select
+                        {
+                            var name = app.util.capitalize(select);
+                            // name = select;
+                            block.child('selector/text').html('').data(name);
+                        }
             div area
                 css
                     height 100%
@@ -1800,7 +1918,7 @@ app
                             }
                         block addbutton
                             css
-                                height 74px
+                                height 64px
                                 cursor pointer
                                 background-color rgba(76, 76, 76, 0)
                                 transition background-color 0.2s ease
@@ -1831,8 +1949,8 @@ app
                                 }
                             image img
                                 src img/plus_bl.png
-                                height 40px
-                                width 40px
+                                height 30px
+                                width 30px
                                 css
                                     margin 0 auto
                     block playbutton
@@ -1840,31 +1958,23 @@ app
                             height 85px
                             cursor pointer
                             color white
-                            background-color rgb(76, 76, 76)
                             border-left 1px solid #eee
-                            transition background-color 0.2s ease
-                            -moz-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
-                            -webkit-box-shadow inset 0px 60px 0px -16px rgb(84, 84, 84)
-                            box-shadow inset 0px 0px 60px 0px -16px rgb(84, 84, 84)
+                            transition background-color 0.2s ease, box-shadow 0.2s ease, -moz-box-shadow 0.2s ease, -webkit-box-shadow 0.2s ease
                             text-align center
                             float left
                             opacity 0.9
                         @query window height != 0
                             {
-                                block.css('width', (block.parent().$().width() - 1) + 'px');
+                                var inset = 'inset 0px 60px 0px -16px ' + app.colors[app.scheme].button['inset'];
+                                block.css({
+                                    backgroundColor: app.colors[app.scheme].button['default'],
+                                    '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
+                                });
                             }
-                        :mouseover
-                            css
-                                background-color rgb(88, 88, 88)
-                        :mouseout
-                            css
-                                background-color rgb(76, 76, 76)
-                        :mousedown
-                            css
-                                background-color rgb(98, 98, 98)
-                        :mouseup
-                            css
-                                background-color rgb(88, 88, 88)
+                        :mouseover, mouseout, mousedown, mouseup
+                            {
+                                block.css('background-color', app.colors[app.scheme].button[event.type]);
+                            }
                         :click
                             {
                                 app.playPattern();
