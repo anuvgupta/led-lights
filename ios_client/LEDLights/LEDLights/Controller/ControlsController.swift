@@ -230,7 +230,7 @@ class ControlsController: UIViewController {
                 deltaSec = 0
             }
             var outputString: String = "";
-            if deltaSec < 4 {
+            if deltaSec < 5 {
                 outputString += "now"
             } else if deltaSec < 60 {
                 outputString += String(Int(round(Double(deltaSec) / 5.0) * 5.0)) + " seconds ago"

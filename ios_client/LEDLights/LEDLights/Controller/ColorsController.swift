@@ -39,6 +39,8 @@ class ColorsController: UIViewController {
         // lock while loading
         colorlock = true
         
+        scrollContentView.frame = CGRect(x: scrollContentView.frame.minX, y: scrollContentView.frame.minY, width: scrollView.frame.width, height: scrollContentView.frame.height)
+        
         liveTrackingSwitch.setOn(false, animated: false)
         scrollView.contentSize = scrollContentView.frame.size
         pushPresetButton.layer.cornerRadius = 10
@@ -223,16 +225,16 @@ class ColorsController: UIViewController {
     // add color preset to list
     func addColorView(preset: ColorPreset) {
         let colorView = UIButton()
-        let width: Int = Int(scrollContentView.frame.width) / colorsPerRow
-        let x: Int = Int(currentColorViewIndex % colorsPerRow) * width
-        let y: Int = Int(currentColorViewIndex / colorsPerRow) * width
+        let width: CGFloat = scrollContentView.frame.width / CGFloat(colorsPerRow)
+        let x: CGFloat = CGFloat(currentColorViewIndex % colorsPerRow) * width
+        let y: CGFloat = CGFloat(currentColorViewIndex / colorsPerRow) * width
         colorView.frame = CGRect(x: x, y: y, width: width, height: width)
         colorView.backgroundColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
         
         colorViews[preset.id] = colorView
         currentColorViewIndex += 1
         scrollContentView.addSubview(colorView)
-        scrollContentView.frame.size.height = CGFloat(Int(currentColorViewIndex / colorsPerRow + 1) * width)
+        scrollContentView.frame.size.height = CGFloat(CGFloat(currentColorViewIndex / colorsPerRow + 1) * width)
         scrollView.contentSize = scrollContentView.frame.size
         if (preset.red > 220 && preset.green > 220 && preset.blue > 220) {
             colorView.setTitleColor(UIColor.black, for: .selected)
