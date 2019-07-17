@@ -1,0 +1,92 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "lights",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "PatternListIntent",
+                    "slots": [],
+                    "samples": ["list patterns", "get patterns", "patterns"]
+                },
+                {
+                    "name": "ColorListIntent",
+                    "slots": [],
+                    "samples": ["list colors", "get colors", "colors"]
+                },
+                {
+                    "name": "ArduinoStatusIntent",
+                    "slots": [],
+                    "samples": ["status", "arduino status"]
+                },
+                {
+                    "name": "TestColorIntent",
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.FirstName",
+                            "samples": ["{name}"]
+                        }
+                    ],
+                    "samples": [
+                        "color {name}",
+                        "use color {name}",
+                        "set color to {name}"
+                    ]
+                }
+            ],
+            "types": []
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "TestColorIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.FirstName",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1195717826619.1197847242287"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.1195717826619.1197847242287",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Which color?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What color?"
+                    }
+                ]
+            }
+        ]
+    }
+}
