@@ -1,8 +1,16 @@
+/*
+ * led-lights
+ * alexa skill hosted lambda endpoint
+ */
+
+// libraries
 const Alexa = require("ask-sdk-core");
 const fetch = require("node-fetch");
+const secrets = require("./secrets");
 
+// rest api access
 const api_url = "leds.anuv.me/api";
-const api_auth = "password";
+const api_auth = secrets.password;
 async function LEDS(endpoint, method, data = null) {
     var options = {
         method: method.toUpperCase(),
@@ -74,7 +82,7 @@ const SessionEndedRequestHandler = {
         );
     },
     handle(handlerInput) {
-        // Any cleanup logic goes here.
+        // cleanup logic
         return handlerInput.responseBuilder.getResponse();
     }
 };

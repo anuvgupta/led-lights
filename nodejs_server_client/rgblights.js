@@ -6,7 +6,7 @@ const rn = require("random-number");
 const arrayMove = require("array-move");
 const bodyParser = require("body-parser");
 const fs = require("fs");
-const secrets = require("./secrets.js");
+const secrets = require("./secrets");
 
 // constants
 const test = process.argv.slice(2)[0] == "test";
