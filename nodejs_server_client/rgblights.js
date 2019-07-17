@@ -4,13 +4,15 @@ const express = require("express");
 const rn = require("random-number");
 const WebSocket = require("ws");
 const arrayMove = require("array-move");
+const bodyParser = require("body-parser");
 const fs = require("fs");
+const secrets = require("./secrets.js")
 
 // constants
 const test = process.argv.slice(2)[0] == "test";
 const wss_port = test ? 30003 : 3003;
 const http_port = test ? 30002 : 3002;
-const password = "password";
+const password = secrets.password;
 
 // convenience logger
 const DEBUG = test;
@@ -21,6 +23,7 @@ function log(category, message1, message2 = "", override = false) {
 }
 // ws server
 const wss = new WebSocket.Server({ port: wss_port });
+var ws_online = false;
 var clients = {}; // client socket list
 var database; // database of color presets, patterns, currently playing
 try {
@@ -446,25 +449,12 @@ wss.on("connection", function(ws) {
                         r: d.data.r,
                         g: d.data.g,
                         b: d.data.b,
+                        name: database.colors[d.data.id].name,
                         id: d.data.id
                     });
                     // save database if update is latent
                     // (latent = not part of a heavy series of immediate realtime updates)
                     if (d.data.latent) saveDB();
-                    break;
-                // client deleting color preset
-                case "deletecolor":
-                    if (!client.auth) break;
-                    log(
-                        "ws",
-                        "client " + client.id + " deleting color " + d.data.id
-                    );
-                    // remove color preset from database
-                    database.colors[d.data.id] = null;
-                    delete database.colors[d.data.id];
-                    // send delete update to clients
-                    sendToAll("deletecolor", { id: d.data.id });
-                    saveDB();
                     break;
                 // client naming color preset
                 case "namecolor":
@@ -481,10 +471,27 @@ wss.on("connection", function(ws) {
                             d.data.name
                     );
                     database.colors[d.data.id].name = d.data.name;
-                    sendToAll("namecolor", {
-                        id: d.data.id,
-                        name: d.data.name
+                    sendToAll("updatecolor", {
+                        r: database.colors[d.data.id].r,
+                        g: database.colors[d.data.id].g,
+                        b: database.colors[d.data.id].b,
+                        name: d.data.name,
+                        id: d.data.id
                     });
+                    saveDB();
+                    break;
+                // client deleting color preset
+                case "deletecolor":
+                    if (!client.auth) break;
+                    log(
+                        "ws",
+                        "client " + client.id + " deleting color " + d.data.id
+                    );
+                    // remove color preset from database
+                    database.colors[d.data.id] = null;
+                    delete database.colors[d.data.id];
+                    // send delete update to clients
+                    sendToAll("deletecolor", { id: d.data.id });
                     saveDB();
                     break;
                 // client testing color preset
@@ -791,6 +798,7 @@ wss.on("connection", function(ws) {
                     );
                     // correct brightness
                     d.data.brightness = parseInt(d.data.brightness);
+                    if (isNaN(d.data.brightness)) d.data.brightness = 100;
                     if (d.data.brightness < 0) d.data.brightness = 0;
                     if (d.data.brightness > 100) d.data.brightness = 100;
                     // send brightness to all clients
@@ -811,6 +819,7 @@ wss.on("connection", function(ws) {
                     );
                     // correct speed
                     d.data.speed = parseInt(d.data.speed);
+                    if (isNaN(d.data.speed)) d.data.speed = 100;
                     if (d.data.speed < 0) d.data.speed = 0;
                     if (d.data.speed > 500) d.data.speed = 500;
                     // send speed to all clients
@@ -872,22 +881,447 @@ wss.on("connection", function(ws) {
 });
 wss.on("listening", function() {
     log("ws", "listening on", wss_port, true);
+    ws_online = true;
     arduinoTracker.loop();
 });
 wss.on("error", function(e) {
     log("ws", "server error", e, true);
+    ws_online = false;
 });
 wss.on("close", function() {
     log("ws", "server closed", "", true);
+    ws_online = false;
 });
 
 // http server
 var app = express();
 var server = http.Server(app);
+app.use(bodyParser.json());
+app.use(
+    bodyParser.urlencoded({
+        extended: true
+    })
+);
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept"
+    );
+    next();
+});
+app.use(express.static("html"));
 app.get("/", function(req, res) {
     res.sendFile(__dirname + "/html/index.html");
 });
-app.use(express.static("html"));
+var api = {
+    auth: function(req, res, next) {
+        if (
+            req.headers.authorization &&
+            req.headers.authorization.trim() == password
+        ) {
+            next(req, res);
+        } else {
+            res.send({
+                success: false,
+                message: "incorrect password",
+                payload: {}
+            });
+        }
+    },
+    ws_online: function(req, res, next) {
+        if (ws_online) {
+            next(req, res);
+        } else {
+            res.send({
+                success: false,
+                message: "websocket service offline",
+                payload: {}
+            });
+        }
+    },
+    require: function(param_name, req, res, next, fail = null) {
+        var param_val = ("" + req.body[param_name]).trim();
+        if (
+            req.body.hasOwnProperty(param_name) &&
+            param_val &&
+            param_val != ""
+        ) {
+            next(param_val, req, res);
+        } else {
+            if (fail) fail(req, res);
+            else {
+                res.send({
+                    success: false,
+                    message: "parameter '" + param_name + "' required",
+                    payload: {}
+                });
+            }
+        }
+    }
+};
+
+app.get("/api", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        res.send({
+            success: true,
+            message: "led-lights api",
+            payload: {}
+        });
+    });
+});
+app.get("/api/arduinostatus", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            var lastEvent = arduinoTracker.data.lastEvent;
+            var lastTimestamp = arduinoTracker.data.lastTimestamp;
+            var deltaSec =
+                parseInt(Date.now() / 1000) - parseInt(lastTimestamp / 1000);
+            if (deltaSec < 0) deltaSec = 0;
+            var humanReadableTime = "";
+            if (deltaSec < 5) humanReadableTime += "now";
+            else if (deltaSec < 60)
+                humanReadableTime +=
+                    "" +
+                    parseInt(Math.floor(parseFloat(deltaSec) / 5.0) * 5.0) +
+                    " seconds ago";
+            else if (deltaSec < 3600) {
+                var mins = parseInt(deltaSec / 60);
+                if (mins == 1) {
+                    humanReadableTime += "" + mins + " minute ago";
+                } else {
+                    humanReadableTime += "" + mins + " minutes ago";
+                }
+            } else {
+                var hrs = parseInt(deltaSec / 3600);
+                if (hrs == 1) {
+                    humanReadableTime += "" + hrs + " hour ago";
+                } else {
+                    humanReadableTime += "" + hrs + " hours ago";
+                }
+            }
+            res.send({
+                success: true,
+                message: "arduino status retrieved",
+                payload: {
+                    status: {
+                        event: lastEvent,
+                        timestamp: lastTimestamp,
+                        humantime: humanReadableTime
+                    }
+                }
+            });
+        });
+    });
+});
+app.get("/api/colorlist", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        var colors = [];
+        for (var c in database.colors) {
+            if (database.colors.hasOwnProperty(c)) {
+                colors.push({
+                    id: c,
+                    name: database.colors[c].name
+                });
+            }
+        }
+        res.send({
+            success: true,
+            message: "color list retrieved",
+            payload: { colors: colors }
+        });
+    });
+});
+app.post("/api/testcolor", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            api.require("name", req, res, function(name, req, res) {
+                var id = "";
+                for (var c in database.colors) {
+                    if (database.colors[c].name == name) {
+                        id = c;
+                        break;
+                    }
+                }
+                if (id != "") {
+                    var color = database.colors[id];
+                    // convert color RGB values to RGB string
+                    var colorstring = rgbstring(color.r, color.g, color.b);
+                    log("http", "alexa client testing color " + colorstring);
+                    // update current hue
+                    database.currentPattern = null;
+                    database.currentHue = {
+                        r: color.r,
+                        g: color.g,
+                        b: color.b,
+                        colorstring: colorstring
+                    };
+                    database.currentMusic = false;
+                    // send RGB string to arduino
+                    sendToArduino("@h-" + colorstring);
+                    // send currently playing to all
+                    sendToAll("current", getCurrentlyPlaying());
+                    saveDB();
+                    res.send({
+                        success: true,
+                        message: "testing color " + name + " (" + id + ")",
+                        payload: {
+                            id: id,
+                            name: name,
+                            rgb: colorstring
+                        }
+                    });
+                } else {
+                    res.send({
+                        success: false,
+                        message: "color '" + name + "' does not exist",
+                        payload: {}
+                    });
+                }
+            });
+        });
+    });
+});
+app.get("/api/patternlist", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        var patterns = [];
+        for (var p in database.patterns) {
+            if (database.patterns.hasOwnProperty(p)) {
+                patterns.push({
+                    id: p,
+                    name: database.patterns[p].name
+                });
+            }
+        }
+        res.send({
+            success: true,
+            message: "pattern list retrieved",
+            payload: {
+                patterns: patterns
+            }
+        });
+    });
+});
+app.post("/api/playpattern", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            api.require("name", req, res, function(name, req, res) {
+                var id = "";
+                var realName = "";
+                for (var p in database.patterns) {
+                    if (
+                        database.patterns[p].name.toLowerCase() ==
+                        name.toLowerCase()
+                    ) {
+                        id = p;
+                        realName = database.patterns[p].name;
+                        break;
+                    }
+                }
+                if (id != "") {
+                    log("http", "alexa client playing pattern " + id);
+                    // update current pattern
+                    database.currentHue = null;
+                    database.currentPattern = {
+                        id: id,
+                        name: database.patterns[p].name
+                    };
+                    database.currentMusic = false;
+                    // summarize and send current pattern to arduino
+                    playCurrentPattern();
+                    // send currently playing
+                    sendToAll("current", getCurrentlyPlaying());
+                    saveDB();
+                    res.send({
+                        success: true,
+                        message:
+                            "playing pattern " + realName + " (" + id + ")",
+                        payload: {
+                            id: id,
+                            name: realName
+                        }
+                    });
+                } else {
+                    res.send({
+                        success: false,
+                        message: "pattern '" + name + "' does not exist",
+                        payload: {}
+                    });
+                }
+            });
+        });
+    });
+});
+app.post("/api/playcurrent", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            var current = getCurrentlyPlaying();
+            if (current.type == "pattern") playCurrentPattern();
+            else if (current.type == "hue")
+                sendToArduino("@h-" + current.data.colorstring);
+            res.send({
+                success: true,
+                message: "playing current",
+                payload: { current: current }
+            });
+        });
+    });
+});
+app.get("/api/brightness", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        res.send({
+            success: true,
+            message: "brightness retrieved",
+            payload: { level: database.brightness }
+        });
+    });
+});
+app.post("/api/brightness", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            api.require(
+                "level",
+                req,
+                res,
+                function(level, req, res) {
+                    log("http", "alexa client setting brightness to " + level);
+                    // correct brightness
+                    level = parseInt(level);
+                    if (isNaN(level)) level = 100;
+                    if (level < 0) level = 0;
+                    if (level > 100) level = 100;
+                    // send brightness to all clients
+                    database.brightness = level;
+                    sendToAll("brightness", database.brightness);
+                    // send brightness to arduino
+                    sendToArduino("@b-" + lpad(database.brightness, 3, "0"));
+                    res.send({
+                        success: true,
+                        message: "brightness updated",
+                        payload: { level: database.brightness }
+                    });
+                },
+                function(req, res) {
+                    api.require(
+                        "increment",
+                        req,
+                        res,
+                        function(increment, req, res) {
+                            if (increment == "up") {
+                                increment = 5;
+                            } else if (increment == "down") {
+                                increment = -5;
+                            }
+                            increment = parseInt(increment);
+                            if (isNaN(increment)) increment = 5;
+                            var newbrightness = database.brightness + increment;
+                            if (newbrightness < 0) newbrightness = 0;
+                            if (newbrightness > 100) newbrightness = 100;
+                            database.brightness = newbrightness;
+                            sendToAll("brightness", database.brightness);
+                            sendToArduino(
+                                "@b-" + lpad(database.brightness, 3, "0")
+                            );
+                            res.send({
+                                success: true,
+                                message: "brightness updated",
+                                payload: {
+                                    level: database.brightness
+                                }
+                            });
+                        },
+                        function(req, res) {
+                            res.send({
+                                success: false,
+                                message:
+                                    "parameter 'level' or 'increment' required",
+                                payload: {}
+                            });
+                        }
+                    );
+                }
+            );
+        });
+    });
+});
+app.get("/api/speed", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        res.send({
+            success: true,
+            message: "speed retrieved",
+            payload: { level: database.speed }
+        });
+    });
+});
+app.post("/api/speed", function(req, res) {
+    api.auth(req, res, function(req, res) {
+        api.ws_online(req, res, function(req, res) {
+            api.require(
+                "level",
+                req,
+                res,
+                function(level, req, res) {
+                    log("http", "alexa client setting speed to " + level);
+                    // correct brightness
+                    level = parseInt(level);
+                    if (isNaN(level)) level = 500;
+                    if (level < 0) level = 0;
+                    if (level > 500) level = 500;
+                    // send brightness to all clients
+                    database.speed = level;
+                    sendToAll("speed", database.speed);
+                    // send brightness to arduino
+                    sendToArduino("@s-" + lpad(database.speed, 3, "0"));
+                    res.send({
+                        success: true,
+                        message: "speed updated",
+                        payload: {
+                            level: database.speed
+                        }
+                    });
+                },
+                function(req, res) {
+                    api.require(
+                        "increment",
+                        req,
+                        res,
+                        function(increment, req, res) {
+                            if (increment == "up") {
+                                increment = 20;
+                            } else if (increment == "down") {
+                                increment = -20;
+                            }
+                            increment = parseInt(increment);
+                            if (isNaN(increment)) increment = 10;
+                            var newspeed = database.speed + increment;
+                            if (newspeed < 0) newspeed = 0;
+                            if (newspeed > 500) newspeed = 500;
+                            database.speed = newspeed;
+                            sendToAll("speed", database.speed);
+                            sendToArduino("@s-" + lpad(database.speed, 3, "0"));
+                            res.send({
+                                success: true,
+                                message: "speed updated",
+                                payload: {
+                                    level: database.speed
+                                }
+                            });
+                        },
+                        function(req, res) {
+                            res.send({
+                                success: true,
+                                message:
+                                    "parameter 'level' or 'increment' required",
+                                payload: {}
+                            });
+                        }
+                    );
+                }
+            );
+        });
+    });
+});
+
 server.listen(http_port, function() {
     log("http", "listening on", http_port, true);
 });
