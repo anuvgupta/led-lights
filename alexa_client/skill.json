@@ -48,6 +48,121 @@
                         "use color {name}",
                         "set color to {name}"
                     ]
+                },
+                {
+                    "name": "PlayPatternIntent",
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.FirstName",
+                            "samples": ["{name}"]
+                        }
+                    ],
+                    "samples": [
+                        "use pattern {name}",
+                        "pattern {name}",
+                        "play pattern {name}"
+                    ]
+                },
+                {
+                    "name": "GetBrightnessIntent",
+                    "slots": [],
+                    "samples": ["get brightness", "brightness"]
+                },
+                {
+                    "name": "SetBrightnessIntent",
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER",
+                            "samples": ["{level}"]
+                        }
+                    ],
+                    "samples": [
+                        "brightness level {level}",
+                        "set brightness {level}",
+                        "set brightness to {level}"
+                    ]
+                },
+                {
+                    "name": "IncBrightnessIntent",
+                    "slots": [
+                        {
+                            "name": "inc",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "increase brightness by {inc}",
+                        "brightness up by {inc}",
+                        "brightness up",
+                        "increase brightness"
+                    ]
+                },
+                {
+                    "name": "DecBrightnessIntent",
+                    "slots": [
+                        {
+                            "name": "dec",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "brightness down by {dec}",
+                        "decrease brightness by {dec}",
+                        "decrease brightness",
+                        "brightness down"
+                    ]
+                },
+                {
+                    "name": "GetSpeedIntent",
+                    "slots": [],
+                    "samples": ["get speed", "speed"]
+                },
+                {
+                    "name": "SetSpeedIntent",
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER",
+                            "samples": ["{level}"]
+                        }
+                    ],
+                    "samples": [
+                        "speed level {level}",
+                        "set speed {level}",
+                        "set speed to {level}"
+                    ]
+                },
+                {
+                    "name": "IncSpeedIntent",
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "increase speed by {level}",
+                        "speed up by {level}",
+                        "increase speed",
+                        "speed up"
+                    ]
+                },
+                {
+                    "name": "DecSpeedIntent",
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "decrease speed by {level}",
+                        "speed down by {level}",
+                        "speed down",
+                        "decrease speed"
+                    ]
                 }
             ],
             "types": []
@@ -69,6 +184,54 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "PlayPatternIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.FirstName",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1088138034815.40245670022"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "SetBrightnessIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1075963575735.1242768018417"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "SetSpeedIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "level",
+                            "type": "AMAZON.NUMBER",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.930199120388.501141558898"
+                            }
+                        }
+                    ]
                 }
             ],
             "delegationStrategy": "ALWAYS"
@@ -84,6 +247,37 @@
                     {
                         "type": "PlainText",
                         "value": "What color?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1088138034815.40245670022",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Which pattern?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What pattern?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1075963575735.1242768018417",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Level?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.930199120388.501141558898",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Level?"
                     }
                 ]
             }
