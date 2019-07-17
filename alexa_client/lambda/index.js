@@ -34,8 +34,14 @@ const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === "LaunchRequest";
     },
-    handle(handlerInput) {
-        const speechText = "Lights";
+    async handle(handlerInput) {
+        var data = await LEDS("arduinostatus", "get");
+        data = data.payload.status;
+        if (data.event === "disconnected") data.event = "Offline";
+        else if (data.event === "connected") data.event = "Syncing";
+        else if (data.event === "authenticated") data.event = "Syncing";
+        else if (data.event === "online") data.event = "Online";
+        const speechText = data.event + ".";
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
@@ -52,11 +58,11 @@ const HelpIntentHandler = {
     },
     handle(handlerInput) {
         const speechText =
-            "Commands: status, colors, set color, patterns, play pattern, brightness, brightness up/down, speed, speed up/down";
+            "Commands: status, colors, set color, patterns, play pattern, brightness, brightness up or down, speed, speed up or down";
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
+            .reprompt()
             .getResponse();
     }
 };
@@ -99,13 +105,15 @@ const ArduinoStatusIntent = {
     async handle(handlerInput) {
         var data = await LEDS("arduinostatus", "get");
         data = data.payload.status;
-        const speechText =
-            data.event.substring(0, 1).toUpperCase() +
-            data.event.substring(1) +
-            ", " +
-            data.humantime +
-            ".";
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        if (data.event === "disconnected") data.event = "Offline";
+        else if (data.event === "connected") data.event = "Syncing";
+        else if (data.event === "authenticated") data.event = "Syncing";
+        else if (data.event === "online") data.event = "Online";
+        const speechText = data.event + ", " + data.humantime + ".";
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // color list intent
@@ -127,7 +135,10 @@ const ColorListIntentHandler = {
             }
         }
         const speechText = colorsText.substring(0, colorsText.length - 2) + ".";
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // test color intent
@@ -152,7 +163,10 @@ const TestColorIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // pattern list intent
@@ -175,7 +189,10 @@ const PatternListIntentHandler = {
         }
         const speechText =
             patternsText.substring(0, patternsText.length - 2) + ".";
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // play pattern intent
@@ -200,7 +217,10 @@ const PlayPatternIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // get brightness intent
@@ -220,7 +240,10 @@ const GetBrightnessIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // set brightness intent
@@ -246,7 +269,10 @@ const SetBrightnessIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // increase brightness intent
@@ -275,7 +301,10 @@ const IncBrightnessIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // decrease brightness intent
@@ -304,7 +333,10 @@ const DecBrightnessIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // get speed intent
@@ -324,7 +356,10 @@ const GetSpeedIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // set speed intent
@@ -350,7 +385,10 @@ const SetSpeedIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // increase speed intent
@@ -379,7 +417,10 @@ const IncSpeedIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 // decrease speed intent
@@ -408,7 +449,10 @@ const DecSpeedIntentHandler = {
         } else {
             speechText = data.message;
         }
-        return handlerInput.responseBuilder.speak(speechText).getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 
@@ -421,12 +465,10 @@ const IntentReflectorHandler = {
         const intentName = handlerInput.requestEnvelope.request.intent.name;
         const speechText = `Triggered ${intentName}`;
 
-        return (
-            handlerInput.responseBuilder
-                .speak(speechText)
-                //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
-                .getResponse()
-        );
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
     }
 };
 
@@ -441,7 +483,7 @@ const ErrorHandler = {
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
+            .reprompt()
             .getResponse();
     }
 };
