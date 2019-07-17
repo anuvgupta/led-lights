@@ -138,13 +138,13 @@
                     "name": "IncSpeedIntent",
                     "slots": [
                         {
-                            "name": "level",
+                            "name": "inc",
                             "type": "AMAZON.NUMBER"
                         }
                     ],
                     "samples": [
-                        "increase speed by {level}",
-                        "speed up by {level}",
+                        "increase speed by {inc}",
+                        "speed up by {inc}",
                         "increase speed",
                         "speed up"
                     ]
@@ -153,13 +153,13 @@
                     "name": "DecSpeedIntent",
                     "slots": [
                         {
-                            "name": "level",
+                            "name": "inc",
                             "type": "AMAZON.NUMBER"
                         }
                     ],
                     "samples": [
-                        "decrease speed by {level}",
-                        "speed down by {level}",
+                        "decrease speed by {inc}",
+                        "speed down by {inc}",
                         "speed down",
                         "decrease speed"
                     ]
