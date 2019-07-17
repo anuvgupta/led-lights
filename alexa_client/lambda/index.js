@@ -170,6 +170,239 @@ const PatternListIntentHandler = {
         return handlerInput.responseBuilder.speak(speechText).getResponse();
     }
 };
+// play pattern intent
+const PlayPatternIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "PlayPatternIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var name = (
+            "" + handlerInput.requestEnvelope.request.intent.slots.name.value
+        )
+            .trim()
+            .toLowerCase();
+        var data = await LEDS("playpattern", "post", { name: name });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Pattern " + name;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// get brightness intent
+const GetBrightnessIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "GetBrightnessIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var data = await LEDS("brightness", "get");
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// set brightness intent
+const SetBrightnessIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "SetBrightnessIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var level = parseInt(
+            (
+                "" +
+                handlerInput.requestEnvelope.request.intent.slots.level.value
+            ).trim()
+        );
+        var data = await LEDS("brightness", "post", { level: level });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// increase brightness intent
+const IncBrightnessIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "IncBrightnessIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var inc = handlerInput.requestEnvelope.request.intent.slots.inc.value
+            ? parseInt(
+                  (
+                      "" +
+                      handlerInput.requestEnvelope.request.intent.slots.inc
+                          .value
+                  ).trim()
+              )
+            : "up";
+        var data = await LEDS("brightness", "post", { increment: inc });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// decrease brightness intent
+const DecBrightnessIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "DecBrightnessIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var inc = handlerInput.requestEnvelope.request.intent.slots.inc.value
+            ? parseInt(
+                  (
+                      "" +
+                      handlerInput.requestEnvelope.request.intent.slots.inc
+                          .value
+                  ).trim()
+              ) * -1
+            : "down";
+        var data = await LEDS("brightness", "post", { increment: inc });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// get speed intent
+const GetSpeedIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "GetSpeedIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var data = await LEDS("speed", "get");
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// set speed intent
+const SetSpeedIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "SetSpeedIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var level = parseInt(
+            (
+                "" +
+                handlerInput.requestEnvelope.request.intent.slots.level.value
+            ).trim()
+        );
+        var data = await LEDS("speed", "post", { level: level });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// increase speed intent
+const IncSpeedIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "IncSpeedIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var inc = handlerInput.requestEnvelope.request.intent.slots.inc.value
+            ? parseInt(
+                  (
+                      "" +
+                      handlerInput.requestEnvelope.request.intent.slots.inc
+                          .value
+                  ).trim()
+              )
+            : "up";
+        var data = await LEDS("speed", "post", { increment: inc });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
+// decrease speed intent
+const DecSpeedIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name ===
+                "DecSpeedIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var inc = handlerInput.requestEnvelope.request.intent.slots.inc.value
+            ? parseInt(
+                  (
+                      "" +
+                      handlerInput.requestEnvelope.request.intent.slots.inc
+                          .value
+                  ).trim()
+              ) * -1
+            : "down";
+        var data = await LEDS("speed", "post", { increment: inc });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Level " + data.payload.level;
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder.speak(speechText).getResponse();
+    }
+};
 
 // intent reflector catch-all (repeats intent name)
 const IntentReflectorHandler = {
@@ -205,9 +438,8 @@ const ErrorHandler = {
     }
 };
 
-// This handler acts as the entry point for your skill, routing all request and response
-// payloads to the handlers above. Make sure any new handlers or interceptors you've
-// defined are included below. The order matters - they're processed top to bottom.
+// skill entry point
+// (routes request & response payloads to intent handlers, processed top to bottom)
 exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
@@ -215,11 +447,20 @@ exports.handler = Alexa.SkillBuilders.custom()
         ColorListIntentHandler,
         TestColorIntentHandler,
         PatternListIntentHandler,
+        PlayPatternIntentHandler,
+        GetBrightnessIntentHandler,
+        SetBrightnessIntentHandler,
+        IncBrightnessIntentHandler,
+        DecBrightnessIntentHandler,
+        GetSpeedIntentHandler,
+        SetSpeedIntentHandler,
+        IncSpeedIntentHandler,
+        DecSpeedIntentHandler,
 
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
         IntentReflectorHandler
-    ) // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+    ) // catch-all is last
     .addErrorHandlers(ErrorHandler)
     .lambda();
