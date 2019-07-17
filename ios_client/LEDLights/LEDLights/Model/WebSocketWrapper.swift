@@ -75,14 +75,21 @@ class WSWrapper: WebSocketDelegate {
                         green: data["g"].intValue,
                         blue: data["b"].intValue,
                         timestamp: data["d"].intValue,
-                        id: key
+                        id: key,
+                        name: data["name"].stringValue
                     ))
                 }
                 colorPresets.sort(by: { $0.timestamp < $1.timestamp })
                 if let colorsVC = bridge.colorsVC {
+                    let editingColor = String(colorsVC.editingColor)
                     colorsVC.clearColorPresets()
                     for preset: ColorPreset in colorPresets {
                         colorsVC.addColorView(preset: preset)
+                    }
+                    if editingColor != "" {
+                        if let editingColorButton = colorsVC.colorViews[editingColor] {
+                            colorsVC.colorPresetEdit(editingColorButton)
+                        }
                     }
                 }
                 if let colorPickVC = bridge.colorPickVC {
@@ -101,11 +108,12 @@ class WSWrapper: WebSocketDelegate {
                         green: json["data"]["g"].intValue,
                         blue: json["data"]["b"].intValue,
                         timestamp: json["data"]["d"].intValue,
-                        id: json["data"]["id"].stringValue
+                        id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
                     ))
-                    if colorsVC.editingColor != "" && json["data"]["switch"].boolValue {
+                    if /*colorsVC.editingColor != "" &&*/ json["data"]["switch"].boolValue {
                         if let presetButton = colorsVC.colorViews[json["data"]["id"].stringValue] {
-                            colorsVC.colorPresetClicked(presetButton)
+                            colorsVC.colorPresetEdit(presetButton)
                         }
                     }
                 }
@@ -115,7 +123,8 @@ class WSWrapper: WebSocketDelegate {
                         green: json["data"]["g"].intValue,
                         blue: json["data"]["b"].intValue,
                         timestamp: json["data"]["d"].intValue,
-                        id: json["data"]["id"].stringValue
+                        id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
                     ))
                 }
                 break;
@@ -133,7 +142,8 @@ class WSWrapper: WebSocketDelegate {
                         red: json["data"]["r"].intValue,
                         green: json["data"]["g"].intValue,
                         blue: json["data"]["b"].intValue,
-                        timestamp: 0, id: json["data"]["id"].stringValue
+                        timestamp: 0, id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
                     ))
                 }
                 if let colorPickVC = bridge.colorPickVC {
@@ -141,7 +151,8 @@ class WSWrapper: WebSocketDelegate {
                         red: json["data"]["r"].intValue,
                         green: json["data"]["g"].intValue,
                         blue: json["data"]["b"].intValue,
-                        timestamp: 0, id: json["data"]["id"].stringValue
+                        timestamp: 0, id: json["data"]["id"].stringValue,
+                        name: json["data"]["name"].stringValue
                     ))
                 }
                 break;
@@ -404,6 +415,13 @@ class WSWrapper: WebSocketDelegate {
     func deletePreset(id: String) {
         send(event: "deletecolor", data: [
             "id": id
+        ])
+    }
+    // name color preset
+    func namePreset(id: String, name: String) {
+        send(event: "namecolor", data: [
+            "id": id,
+            "name": name
         ])
     }
     // update color preset

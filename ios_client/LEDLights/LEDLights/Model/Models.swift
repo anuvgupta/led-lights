@@ -10,17 +10,19 @@ import Foundation
 
 // color preset data object
 class ColorPreset {
-    public var red : Int = 0
-    public var green : Int = 0
-    public var blue : Int = 0
-    public var timestamp : Int = 0 // last updated
-    public var id : String = ""
-    init(red: Int, green: Int, blue: Int, timestamp: Int, id: String) {
+    public var red: Int = 0
+    public var green: Int = 0
+    public var blue: Int = 0
+    public var timestamp: Int = 0 // last updated
+    public var id: String = ""
+    public var name: String = ""
+    init(red: Int, green: Int, blue: Int, timestamp: Int, id: String, name: String) {
         self.red = red
         self.green = green
         self.blue = blue
         self.timestamp = timestamp
         self.id = id
+        self.name = name
     }
 }
 

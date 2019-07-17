@@ -116,22 +116,41 @@ class ColorPickerController: UIViewController {
     // add color preset to list
     func addColorView(preset: ColorPreset) {
         let colorView = UIButton()
-        let width: Int = Int(contentView.frame.width) / colorsPerRow
-        let x: Int = Int(currentColorViewIndex % colorsPerRow) * width
-        let y: Int = Int(currentColorViewIndex / colorsPerRow) * width
-        colorView.frame = CGRect(x: x, y: y, width: width, height: width)
+        let width: CGFloat = contentView.frame.width / CGFloat(colorsPerRow)
+        let height: CGFloat = width / colorsAspectRatio
+        let x: CGFloat = CGFloat(currentColorViewIndex % colorsPerRow) * width
+        let y: CGFloat = CGFloat(currentColorViewIndex / colorsPerRow) * height
+        colorView.frame = CGRect(x: x, y: y, width: width, height: height)
         colorView.backgroundColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
         colorViews[preset.id] = colorView
         currentColorViewIndex += 1
         contentView.addSubview(colorView)
-        contentView.frame.size.height = CGFloat(Int(currentColorViewIndex / colorsPerRow + 1) * width)
+        contentView.frame.size.height = CGFloat(CGFloat(currentColorViewIndex / colorsPerRow + 1) * height)
         scrollView.contentSize = contentView.frame.size
-        // colorView.setTitle(preset.id, for: .normal)
+        if (preset.red > bwThreshold && preset.green > bwThreshold && preset.blue > bwThreshold) {
+            colorView.setTitleColor(UIColor.black, for: .normal)
+        } else {
+            colorView.setTitleColor(UIColor.white, for: .normal)
+        }
+        colorView.setTitle(preset.name, for: .normal)
         colorView.addTarget(self, action: #selector(colorPresetClicked), for: .touchUpInside)
     }
     // update color preset in list
     func updateColorView(preset: ColorPreset) {
-        colorViews[preset.id]?.backgroundColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
+        if let colorView = colorViews[preset.id] {
+            let updatedColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
+            colorView.backgroundColor = updatedColor
+            updateColorViewDisplayColor(colorView, red: preset.red, green: preset.green, blue: preset.blue)
+            colorView.setTitle(preset.name, for: .normal)
+        }
+    }
+    // update color preset view's text/img color
+    func updateColorViewDisplayColor(_ colorView: UIButton, red: Int, green: Int, blue: Int) {
+        if (red > bwThreshold && green > bwThreshold && blue > bwThreshold) {
+            colorView.setTitleColor(UIColor.black, for: .normal)
+        } else {
+            colorView.setTitleColor(UIColor.white, for: .normal)
+        }
     }
     
     // go back to pattern edit view

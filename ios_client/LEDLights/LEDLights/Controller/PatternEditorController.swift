@@ -98,10 +98,10 @@ class PatternEditorController: UIViewController {
         }
     }
     @objc func patternColorSwiped(gesture: UISwipeGestureRecognizer) {
-        let sender : PatternColorView = gesture.view as! PatternColorView
+        let sender: PatternColorView = gesture.view as! PatternColorView
         switch gesture.direction {
             case .right:
-                for patternColorView : PatternColorView in patternColorViews {
+                for patternColorView: PatternColorView in patternColorViews {
                     patternColorView.hideDeleteView()
                 }
                 sender.showDeleteView()

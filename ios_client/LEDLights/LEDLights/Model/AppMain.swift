@@ -14,13 +14,15 @@ let application = UIApplication.shared
 // global bridge to ViewControllers for WebSocket interface
 let bridge: WSVCBridge = WSVCBridge()
 // WebSocket client interface
-let serverURL: String = "ws://10.0.1.40:30003"
+//let serverURL: String = "ws://10.0.1.40:30003"
 //let serverURL: String = "ws://10.204.204.168:30003"
-//let serverURL: String = "ws://leds.anuv.me:3003"
+let serverURL: String = "ws://leds.anuv.me:3003"
 let ws: WSWrapper = WSWrapper()
 
 // global info/settings
-let colorsPerRow: Int = 4 // # color presets per row
+let colorsPerRow: Int = 3 // # color presets per row
+let colorsAspectRatio: CGFloat = 1.75 // width-height aspect ratio
+let bwThreshold: Int = 200 // foreground color contrast threshold
 var liveTracking: Bool = false // live tracking
 var lastPassword: String = "" // saved password
 // color editor data

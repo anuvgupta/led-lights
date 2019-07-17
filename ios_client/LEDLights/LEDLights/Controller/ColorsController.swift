@@ -24,11 +24,13 @@ class ColorsController: UIViewController {
     @IBOutlet weak var deletePresetButton: UIButton!
     @IBOutlet weak var pushPresetButton: UIButton!
     @IBOutlet weak var colorListToolbar: UIView!
+    // code ui elements
+    let rightBarButton: UIButton = UIButton()
     
     // ui globals
     var currentColorViewIndex = 0
     var colorViews: Dictionary<String, UIButton> = [:]
-    public var editingColor: String = ""
+    var editingColor: String = ""
     var hexcolor: String = "#000000"
     var colorlock: Bool = false
     
@@ -54,6 +56,16 @@ class ColorsController: UIViewController {
         } else {
             liveTrackingSwitch.isOn = false
             liveTracking = false
+        }
+        
+        if let image = UIImage(named: "edit_bl.png") {
+            rightBarButton.isHidden = true
+            rightBarButton.setImage(image, for: .normal)
+            rightBarButton.setImage(image.alpha(0.55), for: .highlighted)
+            rightBarButton.imageEdgeInsets = UIEdgeInsets(top: 12, left: 48, bottom: 12, right: 0)
+            rightBarButton.addTarget(self, action: #selector(editBarButtonClicked), for: .primaryActionTriggered)
+            let rightBarButtonItem: UIBarButtonItem = UIBarButtonItem(customView: rightBarButton)
+            self.navigationItem.setRightBarButtonItems([ rightBarButtonItem ], animated: true)
         }
         
         let border1 = CALayer()
@@ -146,7 +158,10 @@ class ColorsController: UIViewController {
         bridge.currentAlertVC = alert
         self.present(alert, animated: true, completion: nil)
     }
-    @objc func colorPresetClicked(_ sender: UIButton) {
+    @objc func colorPresetLoad(_ sender: UIButton) {
+        setColor(sender.backgroundColor ?? UIColor.black)
+    }
+    @objc func colorPresetEdit(_ sender: UIButton) {
         var key = ""
         for (id, preset) in colorViews {
             if (preset == sender) {
@@ -161,25 +176,57 @@ class ColorsController: UIViewController {
             editingColor = ""
             sender.isSelected = false
             deletePresetButton.isEnabled = false
+            self.title = "Colors"
+            rightBarButton.isHidden = true
         } else {
             editingColor = ""
             setColor(sender.backgroundColor ?? UIColor.black)
             editingColor = key
-            if (r > 220 && g > 220 && b > 220) {
-                sender.setTitleColor(UIColor.black, for: .selected)
-                if let image = UIImage(named: "edit_b.png") {
-                    sender.setImage(image, for: .selected)
-                }
-            } else {
-                sender.setTitleColor(UIColor.white, for: .selected)
-                if let image = UIImage(named: "edit_w.png") {
-                    sender.setImage(image, for: .selected)
-                }
-            }
-            sender.imageView?.contentMode = .scaleAspectFit
-            sender.imageEdgeInsets = UIEdgeInsets(top: 35, left: 0, bottom: 35, right: 0)
             sender.isSelected = true
             deletePresetButton.isEnabled = true
+            if let buttonTitle = sender.title(for: .normal) {
+                if buttonTitle != "" {
+                    self.title = buttonTitle
+                } else {
+                    self.title = "untitled"
+                }
+            }
+            rightBarButton.isHidden = false
+        }
+    }
+    @objc func colorPresetTap(gesture: UITapGestureRecognizer) {
+        let sender: UIButton = gesture.view as! UIButton
+        colorPresetLoad(sender);
+    }
+    @objc func colorPresetLong(gesture: UILongPressGestureRecognizer) {
+        let sender: UIButton = gesture.view as! UIButton
+        if gesture.state == .began {
+            colorPresetEdit(sender);
+        }
+    }
+    @objc func editBarButtonClicked(_ sender: UIBarButtonItem) {
+        if editingColor != "" {
+            let alert = UIAlertController(title: "Rename Color", message: "Enter new color name", preferredStyle: .alert)
+            alert.addTextField { (textField) in
+                textField.text = self.colorViews[self.editingColor]?.title(for: .normal) ?? ""
+            }
+            let cancelAction = UIAlertAction(title: "Cancel", style: .default, handler: { a -> Void in
+                bridge.currentAlertVC = nil
+            })
+            let renameAction = UIAlertAction(title: "Rename", style: .default, handler: { a -> Void in
+                if let textField = alert.textFields?[0] {
+                    let res: String = textField.text ?? ""
+                    if res.count > 0 {
+                        ws.namePreset(id: self.editingColor, name: res)
+                    }
+                }
+                bridge.currentAlertVC = nil
+            })
+            alert.addAction(cancelAction)
+            alert.addAction(renameAction)
+            alert.preferredAction = renameAction
+            bridge.currentAlertVC = alert
+            self.present(alert, animated: true, completion: nil)
         }
     }
     
@@ -189,7 +236,7 @@ class ColorsController: UIViewController {
         colorIndicatorView.backgroundColor = color
         colorHexLabel.text = color.hexString
         hexcolor = color.hexString
-        if r > 220 && g > 220 && b > 220 {
+        if r > bwThreshold && g > bwThreshold && b > bwThreshold {
             colorHexLabel.textColor = UIColor.black
         } else {
             colorHexLabel.textColor = UIColor.white
@@ -202,7 +249,7 @@ class ColorsController: UIViewController {
         }
     }
     // set color picker color and update other views
-    func setColor(_ color: UIColor) {
+    func setColor(_ color: UIColor, triggerColorChange: Bool = true) {
         colorlock = true
         let h = color.hsvValue?.h ?? 0.0
         let s = color.hsvValue?.s ?? 0.0
@@ -212,7 +259,9 @@ class ColorsController: UIViewController {
         colorSquareView.value.x = s
         colorSquareView.value.y = v
         colorlock = false
-        colorChange(color, interval: false)
+        if triggerColorChange {
+            colorChange(color, interval: false)
+        }
     }
     // clear color preset list
     func clearColorPresets() {
@@ -221,28 +270,62 @@ class ColorsController: UIViewController {
         colorViews = [:]
         editingColor = ""
         deletePresetButton.isEnabled = false
+        self.title = "Colors"
     }
     // add color preset to list
     func addColorView(preset: ColorPreset) {
         let colorView = UIButton()
         let width: CGFloat = scrollContentView.frame.width / CGFloat(colorsPerRow)
+        let height: CGFloat = width / colorsAspectRatio
         let x: CGFloat = CGFloat(currentColorViewIndex % colorsPerRow) * width
-        let y: CGFloat = CGFloat(currentColorViewIndex / colorsPerRow) * width
-        colorView.frame = CGRect(x: x, y: y, width: width, height: width)
+        let y: CGFloat = CGFloat(currentColorViewIndex / colorsPerRow) * height
+        colorView.frame = CGRect(x: x, y: y, width: width, height: height)
         colorView.backgroundColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
         
         colorViews[preset.id] = colorView
         currentColorViewIndex += 1
         scrollContentView.addSubview(colorView)
-        scrollContentView.frame.size.height = CGFloat(CGFloat(currentColorViewIndex / colorsPerRow + 1) * width)
+        scrollContentView.frame.size.height = CGFloat(CGFloat(currentColorViewIndex / colorsPerRow + 1) * height)
         scrollView.contentSize = scrollContentView.frame.size
-        if (preset.red > 220 && preset.green > 220 && preset.blue > 220) {
-            colorView.setTitleColor(UIColor.black, for: .selected)
+        updateColorViewDisplayColor(colorView, red: preset.red, green: preset.green, blue: preset.blue);
+        colorView.setTitle(preset.name, for: .normal)
+        colorView.setTitle("", for: .selected)
+        //colorView.addTarget(self, action: #selector(colorPresetEdit), for: .touchUpInside)
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(colorPresetTap))
+        tapGesture.numberOfTapsRequired = 1
+        colorView.addGestureRecognizer(tapGesture)
+        let longGesture = UILongPressGestureRecognizer(target: self, action: #selector(colorPresetLong))
+        longGesture.numberOfTouchesRequired = 1
+        longGesture.minimumPressDuration = 0.5
+        colorView.addGestureRecognizer(longGesture)
+    }
+    // update color preset in list
+    func updateColorView(preset: ColorPreset) {
+        if let colorView = colorViews[preset.id] {
+            let updatedColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
+            colorView.backgroundColor = updatedColor
+            updateColorViewDisplayColor(colorView, red: preset.red, green: preset.green, blue: preset.blue)
+            // uncomment to sync up color editors
+            //if editingColor == preset.id {
+            //    editingColor = ""
+            //    setColor(updatedColor)
+            //    editingColor = preset.id
+            //}
+            colorView.setTitle(preset.name, for: .normal)
+            if editingColor == preset.id {
+                self.title = preset.name
+            }
+        }
+    }
+    // update color preset view's text/img color
+    func updateColorViewDisplayColor(_ colorView: UIButton, red: Int, green: Int, blue: Int) {
+        if (red > bwThreshold && green > bwThreshold && blue > bwThreshold) {
+            colorView.setTitleColor(UIColor.black, for: .normal)
             if let image = UIImage(named: "edit_b.png") {
                 colorView.setImage(image, for: .selected)
             }
         } else {
-            colorView.setTitleColor(UIColor.white, for: .selected)
+            colorView.setTitleColor(UIColor.white, for: .normal)
             if let image = UIImage(named: "edit_w.png") {
                 colorView.setImage(image, for: .selected)
             }
@@ -252,12 +335,6 @@ class ColorsController: UIViewController {
         }
         colorView.imageView?.contentMode = .scaleAspectFit
         colorView.imageEdgeInsets = UIEdgeInsets(top: 35, left: 0, bottom: 35, right: 0)
-        // colorView.setTitle(preset.id, for: .normal)
-        colorView.addTarget(self, action: #selector(colorPresetClicked), for: .touchUpInside)
-    }
-    // update color preset in list
-    func updateColorView(preset: ColorPreset) {
-        colorViews[preset.id]?.backgroundColor = getUIColor(red: preset.red, green: preset.green, blue: preset.blue)
     }
     
 }
