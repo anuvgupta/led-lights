@@ -1,5 +1,5 @@
 # led-lights
-IoT RGB LED strip lights driven by Arduino &amp; ESP8266 WebSockets, with online control panel
+IoT RGB LED strip lights driven by Arduino &amp; ESP8266 WebSockets, with mobile control panel
 
 ## Overview
 iOS control panel app (or online webpage) uses WebSocket client APIs to send custom color presets and fRGBh patterns (fade time, red, green, blue, hold time) to node.js WebSocket server. ESP8266 connects to WiFi and then the node.js WebSocket server. Server forwards presets & patterns sent by iOS/web clients to ESP8266's WebSocket client. ESP8266 forwards pattern to Arduino over hardware serial. Arduino receives pattern over SoftwareSerial and parses into series of fRGBh settings. Arduino drives RGB LED strip according to pattern, using PWM, transistors, and external power.
