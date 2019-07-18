@@ -265,7 +265,12 @@ const SetBrightnessIntentHandler = {
         var data = await LEDS("brightness", "post", { level: level });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
         } else {
             speechText = data.message;
         }
@@ -297,7 +302,12 @@ const IncBrightnessIntentHandler = {
         var data = await LEDS("brightness", "post", { increment: inc });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
         } else {
             speechText = data.message;
         }
@@ -329,7 +339,12 @@ const DecBrightnessIntentHandler = {
         var data = await LEDS("brightness", "post", { increment: inc });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
         } else {
             speechText = data.message;
         }
@@ -381,7 +396,12 @@ const SetSpeedIntentHandler = {
         var data = await LEDS("speed", "post", { level: level });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
         } else {
             speechText = data.message;
         }
@@ -413,7 +433,12 @@ const IncSpeedIntentHandler = {
         var data = await LEDS("speed", "post", { increment: inc });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
         } else {
             speechText = data.message;
         }
@@ -445,7 +470,61 @@ const DecSpeedIntentHandler = {
         var data = await LEDS("speed", "post", { increment: inc });
         var speechText = "";
         if (data.success) {
-            speechText = "Level " + data.payload.level;
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Level " + data.payload.level;
+            } else {
+                speechText = data2.message;
+            }
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
+    }
+};
+// turn on intent
+const OnIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name === "OnIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var data = await LEDS("brightness", "post", { level: 100 });
+        var speechText = "";
+        if (data.success) {
+            var data2 = await LEDS("playcurrent", "post");
+            if (data2.success) {
+                speechText = "Lights on.";
+            } else {
+                speechText = data2.message;
+            }
+        } else {
+            speechText = data.message;
+        }
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt()
+            .getResponse();
+    }
+};
+// turn off intent
+const OffIntentHandler = {
+    canHandle(handlerInput) {
+        return (
+            handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+            handlerInput.requestEnvelope.request.intent.name === "OffIntent"
+        );
+    },
+    async handle(handlerInput) {
+        var data = await LEDS("brightness", "post", { level: 0 });
+        var speechText = "";
+        if (data.success) {
+            speechText = "Lights off.";
         } else {
             speechText = data.message;
         }
@@ -506,6 +585,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         SetSpeedIntentHandler,
         IncSpeedIntentHandler,
         DecSpeedIntentHandler,
+        OnIntentHandler,
+        OffIntentHandler,
 
         HelpIntentHandler,
         CancelAndStopIntentHandler,
