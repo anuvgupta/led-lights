@@ -334,7 +334,7 @@ class ColorsController: UIViewController {
             colorView.setImage(image, for: .normal)
         }
         colorView.imageView?.contentMode = .scaleAspectFit
-        colorView.imageEdgeInsets = UIEdgeInsets(top: 35, left: 0, bottom: 35, right: 0)
+        colorView.imageEdgeInsets = UIEdgeInsets(top: 25, left: 0, bottom: 25, right: 0)
     }
     
 }
