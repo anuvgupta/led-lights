@@ -14,6 +14,7 @@ var app = {
         b: 0,
         id: ""
     },
+    bwThreshold: 200,
     direct: {
         brightness: 100,
         speed: 100,
@@ -134,6 +135,9 @@ var app = {
                                                         r: d.data[colorID].r,
                                                         g: d.data[colorID].g,
                                                         b: d.data[colorID].b,
+                                                        name:
+                                                            d.data[colorID]
+                                                                .name,
                                                         id: colorID
                                                     }
                                                 });
@@ -149,6 +153,7 @@ var app = {
                                 g: d.data.g,
                                 b: d.data.b,
                                 id: d.data.id,
+                                name: d.data.name,
                                 sw: d.data.switch
                             }
                         });
@@ -159,6 +164,7 @@ var app = {
                                 r: d.data.r,
                                 g: d.data.g,
                                 b: d.data.b,
+                                name: d.data.name,
                                 id: d.data.id
                             }
                         });
@@ -341,6 +347,16 @@ var app = {
                     b: app.rgb.b,
                     id: app.rgb.id,
                     latent: latent
+                })
+            );
+        }
+    },
+    nameColor: function(name) {
+        if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
+            app.socket.send(
+                app.encodeMSG("namecolor", {
+                    id: app.rgb.id,
+                    name: name
                 })
             );
         }
@@ -643,7 +659,7 @@ var app = {
                 app.util.lpad(String(parseInt(b)), 3, "0")
             );
         },
-        capitalize: function (word) {
+        capitalize: function(word) {
             return word.charAt(0).toUpperCase() + word.slice(1);
         }
     },

@@ -547,7 +547,10 @@ app
                             .key('green', 0)
                             .key('blue', 0)
                             .key('id', '')
+                            .key('name', '')
+                            .key('foreground', 'white')
                             .key('selected', false)
+                            .key('lastclicked', 0)
                             .css({
                                 backgroundColor: 'black',
                                 display: 'inline-block',
@@ -558,25 +561,44 @@ app
                                 var width = block.parent().$().width() / block.parent().key('squaresPerRow') - 8;
                                 block.css({
                                     width: width + 'px',
-                                    height: width + 'px'
+                                    height: (width / 1.8) + 'px'
                                 });
                             })
+                            .add(Block('block', 'content')
+                                .add(Block('text', 1)
+                                    .css({
+                                        color: 'white',
+                                        fontSize: '17px'
+                                    })
+                                    .data('')
+                                )
+                            )
                             .on('recolor', function (e, b, d) {
                                 var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
                                 b.css('background-color', rgb);
                                 if (!b.key('selected'))
                                     b.css('border', '4px solid ' + rgb)
+                                block.on('recolorcontent');
                             })
-                            .on('mouseover', function (e, b, d) {
-                                if (!b.key('selected'))
-                                    b.css('border', '4px solid #fff');
-                            })
-                            .on('mouseout', function (e, b, d) {
-                                if (!b.key('selected')) {
-                                    var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
-                                    b.css('border', '4px solid ' + rgb);
+                            .on('recolorcontent', function (e, b, d) {
+                                if (b.key('red') > app.bwThreshold && b.key('green') > app.bwThreshold && b.key('blue') > app.bwThreshold) {
+                                    b.key('foreground', 'black');
+                                    b.child('content/text').css('color', 'black');
+                                } else {
+                                    b.key('foreground', 'white');
+                                    b.child('content/text').css('color', 'white');
                                 }
                             })
+                            //.on('mouseover', function (e, b, d) {
+                            //    if (!b.key('selected'))
+                            //        b.css('border', '4px solid #fff');
+                            //})
+                            //.on('mouseout', function (e, b, d) {
+                            //    if (!b.key('selected')) {
+                            //        var rgb = app.util.rgbcss(b.key('red'), b.key('green'), b.key('blue'));
+                            //        b.css('border', '4px solid ' + rgb);
+                            //    }
+                            //})
                             .on('select', function (e, b, d) {
                                 var siblings = b.parent().children();
                                 for (var s in siblings) {
@@ -585,7 +607,7 @@ app
                                     }
                                 }
                                 b.key('selected', true);
-                                b.css('border', '4px solid #444');
+                                b.css('border', '4px solid ' + b.key('foreground'));
                                 app.rgb.r = b.key('red');
                                 app.rgb.g = b.key('green');
                                 app.rgb.b = b.key('blue');
@@ -605,9 +627,34 @@ app
                                 b.parent().sibling('picker').child('buttons/button2').on('disable');
                             })
                             .on('click', function (e, b, d) {
-                                if (b.key('selected'))
-                                    b.on('deselect');
-                                else b.on('select');
+                                var doubleClickTimeout = 200;
+                                var newclicked = Date.now();
+                                var lastclicked = b.key('lastclicked');
+                                b.key('lastclicked', newclicked)
+                                if (newclicked - lastclicked < doubleClickTimeout) {
+                                    if (b.key('selected'))
+                                        b.on('deselect');
+                                    else b.on('select');
+                                } else {
+                                    setTimeout(function () {
+                                        if (b.key('lastclicked') == newclicked) {
+                                            // no double click occurred
+                                            if (app.rgb.id == b.key('id')) {
+                                                var newname = prompt('Rename color "' + b.key('name') + '"?', b.key('name'));
+                                                if (newname != null && newname.length > 0) {
+                                                    app.nameColor(newname);
+                                                }
+                                            } else {
+                                                app.rgb.r = b.key('red');
+                                                app.rgb.g = b.key('green');
+                                                app.rgb.b = b.key('blue');
+                                                var picker = b.parent().sibling('picker').child('rect').node().jscolor;
+                                                picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
+                                                app.colorPickerUpdate(picker, app.rgb.id.trim().length > 1 && app.rgb.id.trim() != b.key('id').trim());
+                                            }
+                                        }
+                                    }, doubleClickTimeout + 10);
+                                }
                             })
                         ;
                     }
@@ -634,6 +681,11 @@ app
                         data('id', function (id) {
                             block.key('id', id);
                         });
+                        data('name', function (name) {
+                            block.key('name', name);
+                            block.child('content/text').html('').data(name);
+                            block.on('recolorcontent');
+                        });
                         data('sw', function (sw) {
                             if (sw) {
                                 block.on('select');
@@ -642,7 +694,7 @@ app
                     }
             div presets
                 {
-                    block.key('squaresPerRow', 8);
+                    block.key('squaresPerRow', 4);
                 }
                 css
                     overflow-y scroll
@@ -670,7 +722,8 @@ app
                             block.child(updatepreset.id).data({
                                 r: updatepreset.r,
                                 g: updatepreset.g,
-                                b: updatepreset.b
+                                b: updatepreset.b,
+                                name: updatepreset.name
                             });
                         }
                         if (updatepreset.id == app.rgb.id) {
