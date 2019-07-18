@@ -959,7 +959,7 @@ var api = {
             }
         }
     },
-    fade_time: 1500,
+    fade_time: 1200,
     fade_interval: 50
 };
 
