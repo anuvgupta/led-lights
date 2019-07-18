@@ -958,7 +958,9 @@ var api = {
                 });
             }
         }
-    }
+    },
+    fade_time: 1500,
+    fade_interval: 50
 };
 
 app.get("/api", function(req, res) {
@@ -1190,15 +1192,55 @@ app.post("/api/brightness", function(req, res) {
                     if (isNaN(level)) level = 100;
                     if (level < 0) level = 0;
                     if (level > 100) level = 100;
-                    // send brightness to all clients
-                    database.brightness = level;
-                    sendToAll("brightness", database.brightness);
-                    // send brightness to arduino
-                    sendToArduino("@b-" + lpad(database.brightness, 3, "0"));
+                    var fade_val = ("" + req.body["fade"]).trim();
+                    if (
+                        req.body.hasOwnProperty("fade") &&
+                        fade_val &&
+                        fade_val != "" &&
+                        fade_val == "true"
+                    ) {
+                        var fadeFuncTemp;
+                        var delta = level - database.brightness;
+                        var interval = 50;
+                        var step =
+                            delta /
+                            (api.fade_time /
+                                api.fade_interval);
+                        fadeFuncTemp = function() {
+                            database.brightness += step;
+                            if (
+                                delta == 0 ||
+                                (delta < 0 && database.brightness < level) ||
+                                (delta > 0 && database.brightness > level)
+                            ) {
+                                database.brightness = level;
+                            }
+                            sendToAll("brightness", database.brightness);
+                            sendToArduino(
+                                "@b-" + lpad(database.brightness, 3, "0")
+                            );
+                            if (database.brightness != level)
+                                setTimeout(
+                                    fadeFuncTemp,
+                                    api.fade_interval
+                                );
+                            else saveDB();
+                        };
+                        fadeFuncTemp();
+                    } else {
+                        // send brightness to all clients
+                        database.brightness = level;
+                        sendToAll("brightness", database.brightness);
+                        // send brightness to arduino
+                        sendToArduino(
+                            "@b-" + lpad(database.brightness, 3, "0")
+                        );
+                        saveDB();
+                    }
                     res.send({
                         success: true,
                         message: "brightness updated",
-                        payload: { level: database.brightness }
+                        payload: { level: level }
                     });
                 },
                 function(req, res) {
@@ -1217,11 +1259,63 @@ app.post("/api/brightness", function(req, res) {
                             var newbrightness = database.brightness + increment;
                             if (newbrightness < 0) newbrightness = 0;
                             if (newbrightness > 100) newbrightness = 100;
-                            database.brightness = newbrightness;
-                            sendToAll("brightness", database.brightness);
-                            sendToArduino(
-                                "@b-" + lpad(database.brightness, 3, "0")
+                            log(
+                                "http",
+                                "alexa client setting brightness to " +
+                                    newbrightness
                             );
+
+                            var fade_val = ("" + req.body["fade"]).trim();
+                            if (
+                                req.body.hasOwnProperty("fade") &&
+                                fade_val &&
+                                fade_val != "" &&
+                                fade_val == "true"
+                            ) {
+                                var fadeFuncTemp;
+                                var delta = newbrightness - database.brightness;
+                                var step =
+                                    delta /
+                                    (api.fade_time /
+                                        api.fade_interval);
+                                fadeFuncTemp = function() {
+                                    database.brightness += step;
+                                    if (
+                                        delta == 0 ||
+                                        (delta < 0 &&
+                                            database.brightess <
+                                                newbrightness) ||
+                                        (delta > 0 &&
+                                            database.brightess > newbrightness)
+                                    ) {
+                                        database.brightness = newbrightness;
+                                    }
+                                    sendToAll(
+                                        "brightness",
+                                        database.brightness
+                                    );
+                                    sendToArduino(
+                                        "@b-" +
+                                            lpad(database.brightness, 3, "0")
+                                    );
+                                    if (database.brightness != newbrightness)
+                                        setTimeout(
+                                            fadeFuncTemp,
+                                            api.fade_interval
+                                        );
+                                    else saveDB();
+                                };
+                                fadeFuncTemp();
+                            } else {
+                                // send brightness to all clients
+                                database.brightness = newbrightness;
+                                sendToAll("brightness", database.brightness);
+                                // send brightness to arduino
+                                sendToArduino(
+                                    "@b-" + lpad(database.brightness, 3, "0")
+                                );
+                                saveDB();
+                            }
                             res.send({
                                 success: true,
                                 message: "brightness updated",
@@ -1262,16 +1356,17 @@ app.post("/api/speed", function(req, res) {
                 res,
                 function(level, req, res) {
                     log("http", "alexa client setting speed to " + level);
-                    // correct brightness
+                    // correct speed
                     level = parseInt(level);
                     if (isNaN(level)) level = 500;
                     if (level < 0) level = 0;
                     if (level > 500) level = 500;
-                    // send brightness to all clients
+                    // send speed to all clients
                     database.speed = level;
                     sendToAll("speed", database.speed);
-                    // send brightness to arduino
+                    // send speed to arduino
                     sendToArduino("@s-" + lpad(database.speed, 3, "0"));
+                    saveDB();
                     res.send({
                         success: true,
                         message: "speed updated",
@@ -1296,9 +1391,14 @@ app.post("/api/speed", function(req, res) {
                             var newspeed = database.speed + increment;
                             if (newspeed < 0) newspeed = 0;
                             if (newspeed > 500) newspeed = 500;
+                            log(
+                                "http",
+                                "alexa client setting speed to " + newspeed
+                            );
                             database.speed = newspeed;
                             sendToAll("speed", database.speed);
                             sendToArduino("@s-" + lpad(database.speed, 3, "0"));
+                            saveDB();
                             res.send({
                                 success: true,
                                 message: "speed updated",
