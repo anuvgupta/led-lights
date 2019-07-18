@@ -163,6 +163,16 @@
                         "speed down",
                         "decrease speed"
                     ]
+                },
+                {
+                    "name": "OffIntent",
+                    "slots": [],
+                    "samples": ["turn down", "turn off", "off"]
+                },
+                {
+                    "name": "OnIntent",
+                    "slots": [],
+                    "samples": ["turn up", "turn on", "on"]
                 }
             ],
             "types": []

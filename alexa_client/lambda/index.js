@@ -494,7 +494,7 @@ const OnIntentHandler = {
         );
     },
     async handle(handlerInput) {
-        var data = await LEDS("brightness", "post", { level: 100 });
+        var data = await LEDS("brightness", "post", { level: 100, fade: true });
         var speechText = "";
         if (data.success) {
             var data2 = await LEDS("playcurrent", "post");
@@ -521,7 +521,7 @@ const OffIntentHandler = {
         );
     },
     async handle(handlerInput) {
-        var data = await LEDS("brightness", "post", { level: 0 });
+        var data = await LEDS("brightness", "post", { level: 0, fade: true });
         var speechText = "";
         if (data.success) {
             speechText = "Lights off.";

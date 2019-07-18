@@ -959,7 +959,7 @@ var api = {
             }
         }
     },
-    fade_time: 1200,
+    fade_time: 750,
     fade_interval: 50
 };
 
@@ -1202,12 +1202,11 @@ app.post("/api/brightness", function(req, res) {
                         var fadeFuncTemp;
                         var delta = level - database.brightness;
                         var interval = 50;
-                        var step =
-                            delta /
-                            (api.fade_time /
-                                api.fade_interval);
+                        var step = delta / (api.fade_time / api.fade_interval);
+                        var brightness_float = parseFloat(database.brightness);
                         fadeFuncTemp = function() {
-                            database.brightness += step;
+                            brightness_float += step;
+                            database.brightness = parseInt(brightness_float);
                             if (
                                 delta == 0 ||
                                 (delta < 0 && database.brightness < level) ||
@@ -1220,10 +1219,7 @@ app.post("/api/brightness", function(req, res) {
                                 "@b-" + lpad(database.brightness, 3, "0")
                             );
                             if (database.brightness != level)
-                                setTimeout(
-                                    fadeFuncTemp,
-                                    api.fade_interval
-                                );
+                                setTimeout(fadeFuncTemp, api.fade_interval);
                             else saveDB();
                         };
                         fadeFuncTemp();
@@ -1275,11 +1271,15 @@ app.post("/api/brightness", function(req, res) {
                                 var fadeFuncTemp;
                                 var delta = newbrightness - database.brightness;
                                 var step =
-                                    delta /
-                                    (api.fade_time /
-                                        api.fade_interval);
+                                    delta / (api.fade_time / api.fade_interval);
+                                var brightness_float = parseFloat(
+                                    database.brightness
+                                );
                                 fadeFuncTemp = function() {
-                                    database.brightness += step;
+                                    brightness_float += step;
+                                    database.brightness = parseInt(
+                                        brightness_float
+                                    );
                                     if (
                                         delta == 0 ||
                                         (delta < 0 &&
