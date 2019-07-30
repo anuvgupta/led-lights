@@ -1,71 +1,135 @@
-// libraries
-const WebSocket = require("ws");
+/* LIBRARIES */
+const websocket = require("ws");
 const http = require("http");
 const express = require("express");
-const rn = require("random-number");
-const arrayMove = require("array-move");
-const bodyParser = require("body-parser");
-const fs = require("fs");
+const random_number = require("random-number");
+const array_move = require("array-move");
+const body_parser = require("body-parser");
+const read_line = require('readline');
+const file_system = require("fs");
 const secrets = require("./secrets");
 
-// constants
-const test = process.argv.slice(2)[0] == "test";
-const wss_port = test ? 30003 : 3003;
-const http_port = test ? 30002 : 3002;
+/* CONSTANTS */
+const debug = process.argv.slice(2)[0] == "debug";
+const wss_port = debug ? 30003 : 3003;
+const http_port = debug ? 30002 : 3002;
 const password = secrets.password;
 
-// convenience logger
-const DEBUG = test;
-function log(category, message1, message2 = "", override = false) {
-    if (DEBUG || override) {
-        console.log("[" + category + "]", message1, message2);
+/* UTILITIES */
+var util = {
+    // log levels (0 = top priority)
+    ERR: 0, // errors
+    IMP: 1, // important info
+    INF: 2, // unimportant info
+    REP: 3, // repetitive info
+    EXT: 4, // extra info
+    LEVEL: debug ? 2 : 1,
+    log: function (category, level, message1, message2 = "") {
+        if (level <= util.LEVEL) {
+            console.log("[" + category + "]", message1, message2);
+        }
+    },
+    input: read_line.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    }),
+    // generate random alphanumeric key
+    rand_id: function (length = 10) {
+        var key = "";
+        var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (var i = 0; i < length; i++)
+            key += chars[random_number({
+                min: 0,
+                max: chars.length - 1,
+                integer: true
+            })];
+        return key;
+    },
+    // left pad string
+    lpad: function (s, width, char) {
+        return s.length >= width
+            ? s
+            : (new Array(width).join(char) + s).slice(-width);
+    },
+    // validate/correct bounded integer
+    validate_int: function (n, l_b, u_b) {
+        n = parseInt(n);
+        if (n < l_b) n = l_b;
+        else if (n > u_b) n = u_b;
+        return n;
+    },
+    // convert RGB values to padded RGB string
+    rgb_string: function (r, g, b) {
+        return (
+            util.lpad(String(parseInt(r)), 3, "0") +
+            util.lpad(String(parseInt(g)), 3, "0") +
+            util.lpad(String(parseInt(b)), 3, "0")
+        );
+    },
+    // validate/correct rgb integer
+    rgb_validate: function (n) {
+        return util.validate_int(n, 0, 255);
+    },
+    condense_pattern: function (p) {
+        // condense pattern into fRGBh strings
+        var pattern_string = "";
+        for (var p_c in p.list) {
+            var pattern_color = p.list[p_c];
+            pattern_string +=
+                util.lpad(pattern_color.fade, 5, "0") +
+                util.rgb_string(pattern_color.r, pattern_color.g, pattern_color.b) +
+                util.lpad(pattern_color.time, 5, "0") +
+                ",";
+        }
+        pattern_string = pattern_string.substring(0, pattern_string.length - 1);
+        return pattern_string;
     }
-}
-// ws server
-const wss = new WebSocket.Server({ port: wss_port });
-var ws_online = false;
-var clients = {}; // client socket list
-var database; // database of color presets, patterns, currently playing
-try {
-    // load from file
-    fs.readFile("database.json", function(err, data) {
-        if (err) throw err;
-        database = JSON.parse(data);
-    });
-} catch (e) {
-    log("db", "file read error", e, true);
-    // default empty database
-    database = {
+};
+
+/* DATABASE */
+var database = {
+    data: {
         colors: {},
         patterns: {},
-        currentPattern: null,
-        currentHue: null,
-        currentMusic: false,
-        brightness: 100,
-        speed: 100
-    };
-}
-// save database async (for while running)
-function saveDB() {
-    var dbjson = JSON.stringify(database);
-    fs.writeFile("database.json", dbjson, function(e) {
-        if (e) {
-            log("db", "file save error", e, true);
-        } else log("db", "file saved");
-    });
-}
-// save database sync (for on quit)
-function saveDBSync() {
-    var dbjson = JSON.stringify(database);
-    fs.writeFileSync("database.json", dbjson);
-    log("db", "file saved");
-}
-
+        devices: {}
+    },
+    // save database async (for while running)
+    save: function (pretty = false) {
+        var db_json = pretty ? JSON.stringify(database.data, null, 3) : JSON.stringify(database.data);
+        file_system.writeFile("database.json", db_json, function (e) {
+            if (e) {
+                util.log("db", util.ERR, "file save error", e, true);
+            } else util.log("db", util.INF, "file saved");
+        });
+    },
+    // save database sync (for on quit)
+    save_sync: function () {
+        var db_json = JSON.stringify(database.data);
+        file_system.writeFileSync("database.json", db_json);
+        util.log("db", util.INF, "file saved");
+    },
+    load: function () {
+        try {
+            // load from file
+            file_system.readFile("database.json", function (err, data) {
+                try {
+                    if (err) throw err;
+                    data = JSON.parse(data);
+                    database.data = data;
+                } catch (e) {
+                    util.log("db", util.ERR, "file read error", e, true);
+                }
+            });
+        } catch (e) {
+            util.log("db", util.ERR, "file read error", e, true);
+        }
+    }
+};
 // exit handler
 // process.stdin.resume();
 // function exitHandler(options, code) {
 //     // if (options.cleanup) console.log("clean");
-//     saveDBSync(); // save db on exit
+//     database.save_sync(); // save db on exit
 //     // if (code || code === 0) console.log(code);
 //     if (options.exit) process.exit();
 // }
@@ -75,834 +139,704 @@ function saveDBSync() {
 // process.on("SIGUSR2", exitHandler.bind(null, { exit: true })); // kill pid
 // process.on("uncaughtException", exitHandler.bind(null, { exit: true })); // catch exception
 
-// encode event+data to JSON
-function encodeMSG(e, d) {
-    return JSON.stringify({
-        event: e,
-        data: d
-    });
-}
-// decode event+data from JSON
-function decodeMSG(m) {
-    try {
-        m = JSON.parse(m);
-    } catch (e) {
-        log("ws", "invalid json msg", e);
-        m = null;
-    }
-    return m;
-}
-// generate random alphanumeric key
-function randID(length = 10) {
-    key = "";
-    chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (var i = 0; i < length; i++)
-        key +=
-            chars[
-                rn({
-                    min: 0,
-                    max: chars.length - 1,
-                    integer: true
-                })
-            ];
-    return key;
-}
-// left pad string
-function lpad(s, width, char) {
-    return s.length >= width
-        ? s
-        : (new Array(width).join(char) + s).slice(-width);
-} // https://stackoverflow.com/questions/10841773/javascript-format-number-to-day-with-always-3-digits
-// conver RGB values to padded RGB string
-function rgbstring(r, g, b) {
-    return (
-        lpad(String(parseInt(r)), 3, "0") +
-        lpad(String(parseInt(g)), 3, "0") +
-        lpad(String(parseInt(b)), 3, "0")
-    );
-}
-// send data to all non-arduino clients
-function sendToAll(event, data) {
-    for (var c_id in clients) {
+/* WEBSOCKET SERVER */
+var wss = {
+    socket: new websocket.Server({ port: wss_port }),
+    online: false,
+    clients: {}, // client sockets
+    events: {}, // event handlers
+    // encode event+data to JSON
+    encode_msg: function (e, d) {
+        return JSON.stringify({
+            event: e,
+            data: d
+        });
+    },
+    // decode event+data from JSON
+    decode_msg: function (m) {
+        try {
+            m = JSON.parse(m);
+        } catch (e) {
+            util.log("ws", util.ERR, "invalid json msg", e);
+            m = null;
+        }
+        return m;
+    },
+    // send data to specific authenticated non-arduino client
+    send_to_client: function (event, data, client) {
+        client.socket.send(wss.encode_msg(event, data));
+    },
+    // send data to all authenticated non-arduino clients
+    send_to_clients: function (event, data) {
+        for (var c_id in wss.clients) {
+            if (
+                wss.clients.hasOwnProperty(c_id) &&
+                c_id.substring(0, 7) != "arduino" &&
+                wss.clients[c_id] !== null &&
+                wss.clients[c_id].auth
+            ) {
+                wss.clients[c_id].socket.send(wss.encode_msg(event, data));
+            }
+        }
+    },
+    // send data to almost all authenticated non-arduino clients (excluding one)
+    send_to_clients_but: function (event, data, client) {
+        for (var c_id in wss.clients) {
+            if (
+                wss.clients.hasOwnProperty(c_id) &&
+                c_id.substring(0, 7) != "arduino" &&
+                c_id != client.id &&
+                wss.clients[c_id] !== null &&
+                wss.clients[c_id].auth
+            ) {
+                wss.clients[c_id].socket.send(wss.encode_msg(event, data));
+            }
+        }
+    },
+    // send color palette to client
+    send_color_palette: function (client) {
+        wss.send_to_client("color_palette", database.data.colors, client);
+        util.log("ws", util.INF, `color palette update sent to client ${client.id}`);
+    },
+    // send pattern list to client
+    send_pattern_list: function (client) {
+        var patterns = database.data.patterns;
+        var pattern_list = [];
+        // summarize pattern IDs and names
+        for (var p in patterns) {
+            if (patterns.hasOwnProperty(p)) {
+                pattern_list.push({
+                    id: p,
+                    name: patterns[p].name
+                });
+            }
+        }
+        wss.send_to_client("pattern_list", pattern_list, client);
+        util.log("ws", util.INF, `pattern list update sent to client ${client.id}`);
+    },
+    // send data to arduino client
+    send_to_arduino: function (device_id, data) {
         if (
-            clients.hasOwnProperty(c_id) &&
-            c_id != "arduino" &&
-            clients[c_id] !== null &&
-            clients[c_id].auth
-        ) {
-            clients[c_id].socket.send(encodeMSG(event, data));
-        }
-    }
-}
-// send data to almost all non-arduino clients (excluding one)
-function sendToAllBut(event, data, client) {
-    for (var c_id in clients) {
-        if (
-            clients.hasOwnProperty(c_id) &&
-            c_id != "arduino" &&
-            c_id != client.id &&
-            clients[c_id] !== null &&
-            clients[c_id].auth
-        ) {
-            clients[c_id].socket.send(encodeMSG(event, data));
-        }
-    }
-}
-// send data to arduino client
-function sendToArduino(data) {
-    if (
-        clients.hasOwnProperty("arduino") &&
-        clients["arduino"] !== null &&
-        clients["arduino"].auth
-    )
-        clients["arduino"].socket.send(data);
-}
-// play current pattern
-function playCurrentPattern() {
-    // check for current pattern
-    if (database.currentPattern != null) {
-        // condense pattern into fRGBh strings
-        var currentPattern = database.patterns[database.currentPattern.id];
-        var pattern_string = "";
-        for (var p_c in currentPattern.list) {
-            var pattern_color = currentPattern.list[p_c];
-            pattern_string +=
-                lpad(pattern_color.fade, 5, "0") +
-                rgbstring(pattern_color.r, pattern_color.g, pattern_color.b) +
-                lpad(pattern_color.time, 5, "0") +
-                ",";
-        }
-        pattern_string = pattern_string.substring(0, pattern_string.length - 1);
-        // send pattern string to arduino
-        log("ws", "playing pattern", database.currentPattern.id);
-        sendToArduino("@p-" + pattern_string);
-    }
-}
-// send currently playing to all
-function getCurrentlyPlaying() {
-    var current = {
-        type: "none",
-        data: null
-    };
-    if (database.currentMusic) current.type = "music";
-    else if (database.currentPattern != null) {
-        current.type = "pattern";
-        current.data = database.currentPattern;
-    } else if (database.currentHue != null) {
-        current.type = "hue";
-        current.data = database.currentHue;
-    }
-    return current;
-}
-// send color palette to client
-function sendColorPalette(client) {
-    client.socket.send(encodeMSG("colorpalette", database.colors));
-    log("ws", "color palette update sent to client", client.id);
-}
-// send pattern list to client
-function sendPatternList(client) {
-    var names = [];
-    // summarize pattern IDs and names
-    for (var p in database.patterns) {
-        if (database.patterns.hasOwnProperty(p)) {
-            names.push({
-                id: p,
-                name: database.patterns[p].name
+            wss.clients.hasOwnProperty(device_id) &&
+            wss.clients[device_id] !== null
+        )
+            wss.clients[device_id].socket.send(data);
+    },
+    test_color: function (device_id, color, latent = true) {
+        var db = database.data;
+        if (db.devices.hasOwnProperty(device_id)) {
+            // convert color RGB values to RGB string
+            if (!color.hasOwnProperty('left')) {
+                if (db.devices[device_id].current.type == "hue") {
+                    color.left = db.devices[device_id].current.data.left;
+                } else {
+                    color.left = {
+                        r: 0, g: 0, b: 0,
+                        string: "000000000"
+                    };
+                }
+            } else {
+                color.left.r = util.rgb_validate(color.left.r);
+                color.left.g = util.rgb_validate(color.left.g);
+                color.left.b = util.rgb_validate(color.left.b);
+                color.left.string = util.rgb_string(color.left.r, color.left.g, color.left.b);
+            }
+            if (!color.hasOwnProperty('right')) {
+                if (db.devices[device_id].current.type == "hue") {
+                    color.right = db.devices[device_id].current.data.right;
+                } else {
+                    color.right = {
+                        r: 0, g: 0, b: 0,
+                        string: "000000000"
+                    };
+                }
+            } else {
+                color.right.r = util.rgb_validate(color.right.r);
+                color.right.g = util.rgb_validate(color.right.g);
+                color.right.b = util.rgb_validate(color.right.b);
+                color.right.string = util.rgb_string(color.right.r, color.right.g, color.right.b);
+            }
+            util.log("ws", latent ? util.INF : util.REP, `testing color ${color.left.string}–${color.right.string} on device ${device_id}`);
+            // update current hue
+            db.devices[device_id].current.type = "hue";
+            db.devices[device_id].current.data = {
+                left: color.left,
+                right: color.right
+            };
+            // send RGB string to arduino
+            wss.play_current(device_id);
+            // send currently playing to all
+            wss.send_to_clients("current", {
+                device_id: device_id,
+                data: db.devices[device_id].current
             });
+            // save database if update is latent
+            if (latent) database.save();
         }
-    }
-    client.socket.send(encodeMSG("patternlist", names));
-    log("ws", "pattern list update sent to client", client.id);
-}
-var arduinoTracker = {
+    },
+    play_pattern: function (device_id, pattern_id) {
+        var db = database.data;
+        if (db.devices.hasOwnProperty(device_id) && db.patterns.hasOwnProperty(pattern_id)) {
+            // update current pattern
+            db.devices[device_id].current.type = "pattern";
+            db.devices[device_id].current.data = {
+                id: pattern_id,
+                name: db.patterns[pattern_id].name
+            };
+            // summarize and send current pattern to arduino
+            util.log("ws", util.INF, `playing pattern ${pattern_id} on device ${device_id}`);
+            wss.play_current(device_id);
+            // send currently playing
+            wss.send_to_clients("current", {
+                device_id: device_id,
+                data: db.devices[device_id].current
+            });
+            database.save();
+        }
+    },
+    play_current: function (device_id) {
+        if (database.data.devices.hasOwnProperty(device_id)) {
+            var current = database.data.devices[device_id].current;
+            if (current.type == "pattern")
+                wss.send_to_arduino(device_id, "@p-" + util.condense_pattern(database.data.patterns[current.data.id]));
+            else if (current.type == "hue")
+                wss.send_to_arduino(device_id, "@h-" + "l" + current.data.left.string + "r" + current.data.right.string);
+            else if (current.type == 'music')
+                wss.send_to_arduino(device_id, "@music");
+        }
+    },
     // arduino status tracking
-    heartbeatInterval: 2700,
-    heartbeatMonitorInterval: 1000,
-    heartbeatMonitorThreshold: 4000,
-    data: {
-        lastEvent: "",
-        lastTimestamp: 0
-    },
-    log: function(eventName) {
-        arduinoTracker.data.lastEvent = eventName;
-        arduinoTracker.data.lastTimestamp = Date.now();
-        log("ws", "ARDUINO", eventName.toUpperCase());
-        sendToAll("arduinostatus", arduinoTracker.data);
-    },
-    loop: function() {
-        if (
-            arduinoTracker.data.lastEvent != "disconnected" &&
-            Date.now() - arduinoTracker.data.lastTimestamp >=
-                arduinoTracker.heartbeatMonitorThreshold
-        ) {
-            arduinoTracker.log("disconnected");
+    arduino_tracker: {
+        heartbeat_interval: 2700, // how often to send heartbeats
+        heartbeat_monitor_interval: 1000, // how often to check arduino statuses
+        heartbeat_monitor_threshold: 4000, // how much time arduinos have to respond to heartbeat
+        log: function (device_id, event_name) {
+            if (database.data.devices.hasOwnProperty(device_id)) {
+                var rep_ol = event_name == 'online' && database.data.devices[device_id].last_event == 'online';
+                database.data.devices[device_id].last_event = event_name;
+                database.data.devices[device_id].last_timestamp = Date.now();
+                if (rep_ol) util.log("ws", util.REP, "ARDUINO: " + device_id, event_name);
+                else util.log("ws", util.INF, "ARDUINO: " + device_id, event_name);
+                wss.send_to_clients("device_list", database.data.devices);
+            }
+        },
+        loop: function () {
+            for (var d in database.data.devices) {
+                if (database.data.devices.hasOwnProperty(d)) {
+                    if (
+                        database.data.devices[d].last_event != "disconnected" &&
+                        Date.now() - database.data.devices[d].last_timestamp >=
+                        wss.arduino_tracker.heartbeat_monitor_threshold
+                    ) {
+                        wss.arduino_tracker.log(d, "disconnected");
+                    }
+                }
+            }
+            wss.arduino_tracker.reloop();
+        },
+        reloop: function () {
+            setTimeout(function () {
+                wss.arduino_tracker.loop();
+            }, wss.arduino_tracker.heartbeat_monitor_interval);
         }
-        setTimeout(function() {
-            arduinoTracker.loop();
-        }, arduinoTracker.heartbeatMonitorInterval);
     },
-    sendTo: function(client) {
-        client.socket.send(encodeMSG("arduinostatus", arduinoTracker.data));
+    // bind handler to client event
+    bind: function (event, handler, auth_req = true) {
+        wss.events[event] = function (client, req, db) {
+            if (!auth_req || client.auth)
+                handler(client, req, db);
+        };
+    },
+    // initialize & attach events
+    initialize: function () {
+        // attach server socket events
+        wss.socket.on("connection", function (client_socket) {
+            // create client object on new connection
+            var client = {
+                socket: client_socket,
+                id: util.rand_id(),
+                auth: false,
+                type: "app"
+            };
+            util.log("ws", util.INF, `client ${client.id} – connected`);
+            // client socket event handlers
+            client.socket.addEventListener("message", function (m) {
+                var d = wss.decode_msg(m.data); // parse message
+                if (d != null) {
+                    // console.log('    ', d.event, d.data);
+                    util.log("ws", util.EXT, `client ${client.id} – message: ${d.event}`, d.data);
+                    // handle various events
+                    if (wss.events.hasOwnProperty(d.event))
+                        wss.events[d.event](client, d.data, database.data);
+                    else util.log("ws", util.ERR, "unknown event", d.event);
+                } else {
+                    util.log("ws", util.ERR, `client ${client.id} – invalid message: `, m.data);
+                }
+            });
+            client.socket.addEventListener("error", function (e) {
+                util.log("ws", util.ERR, "client " + client.id + " – error", e);
+            });
+            client.socket.addEventListener("close", function (c, r) {
+                util.log("ws", util.INF, `client ${client.id} – disconnected`);
+                if (client.id.substring(0, 7) == "arduino")
+                    wss.arduino_tracker.log(client.id, "disconnected");
+                delete wss.clients[client.id]; // remove client object on disconnect
+            });
+            // add client object to client object list
+            wss.clients[client.id] = client;
+        });
+        wss.socket.on("listening", function () {
+            util.log("ws", util.IMP, "listening on", wss_port);
+            wss.online = true;
+            wss.arduino_tracker.reloop();
+        });
+        wss.socket.on("error", function (e) {
+            util.log("ws", util.ERR, "server error", e);
+            wss.online = false;
+        });
+        wss.socket.on("close", function () {
+            util.log("ws", util.IMP, "server closed");
+            wss.online = false;
+        });
+
+        // attach client socket events
+        wss.bind('auth', function (client, req, db) {
+            // validate password
+            if (req.password == password) {
+                util.log("ws", util.INF, `client ${client.id} – authenticated`);
+                // set auth in client object
+                client.auth = true;
+                if (client.id.substring(0, 7) == "arduino") {
+                    // if arduino 
+                    client.socket.send("@auth"); // confirm auth with client
+                    wss.arduino_tracker.log(client.id, "authenticated");
+                    // send current brightness & speed
+                    client.socket.send("@b-" + util.lpad(db.devices[client.id].brightness, 3, "0"));
+                    client.socket.send("@s-" + util.lpad(db.devices[client.id].speed, 3, "0"));
+                    setTimeout(function () {
+                        // send currently playing pattern or hue, if any
+                        wss.play_current(client.id);
+                        // begin heartbeat
+                        setTimeout(function () {
+                            client.socket.send("@hb");
+                        }, 1000);
+                    }, 500);
+                } else {
+                    // if regular client
+                    wss.send_to_client("auth", true, client); // confirm auth with client
+                    // send full color palette and pattern list
+                    wss.send_color_palette(client);
+                    wss.send_pattern_list(client);
+                    // send device list
+                    wss.send_to_client("device_list", db.devices, client);
+                }
+            }
+        }, false);
+        // [color]
+        wss.bind('get_color_palette', function (client, req, db) {
+            wss.send_color_palette(client);
+        });
+        wss.bind('color_new', function (client, req, db) {
+            // generate color ID
+            var color_id = util.rand_id();
+            while (db.colors.hasOwnProperty(color_id))
+                color_id = util.rand_id();
+            req.r = util.rgb_validate(req.r);
+            req.g = util.rgb_validate(req.g);
+            req.b = util.rgb_validate(req.b);
+            util.log("ws", util.INF, `client ${client.id} adding new color with id ${color_id} - rgb(${req.r}, ${req.g}, ${req.b})`);
+            // add new color preset to database with RGB values
+            db.colors[color_id] = {
+                r: req.r, g: req.g, b: req.b,
+                d: Date.now(), name: ""
+            };
+            // send new preset to all other clients
+            wss.send_to_clients_but(
+                "color_new",
+                {
+                    r: req.r, g: req.g, b: req.b,
+                    id: color_id, name: "",
+                    switch: false
+                },
+                client
+            );
+            // send new preset back to original client
+            wss.send_to_client('color_new', {
+                r: req.r, g: req.g, b: req.b,
+                id: color_id, name: "",
+                switch: true // tells client to switch currently editing preset to the new preset
+            }, client);
+            database.save();
+        });
+        wss.bind('color_name', function (client, req, db) {
+            req.name = ("" + req.name).trim();
+            if (req.name != "") {
+                util.log("ws", util.INF, `client ${client.id} naming color ${req.id}, to ${req.name}`);
+                db.colors[req.id].name = req.name;
+                wss.send_to_clients("color_update", {
+                    r: db.colors[req.id].r,
+                    g: db.colors[req.id].g,
+                    b: db.colors[req.id].b,
+                    name: req.name,
+                    id: req.id
+                });
+                database.save();
+            }
+        });
+        wss.bind('color_delete', function (client, req, db) {
+            util.log("ws", util.INF, `client ${client.id} deleting color ${req.id}`);
+            // remove color preset from database
+            db.colors[req.id] = null;
+            delete db.colors[req.id];
+            // send delete update to clients
+            wss.send_to_clients("color_delete", { id: req.id });
+            database.save();
+        });
+        wss.bind('color_update', function (client, req, db) {
+            req.r = util.rgb_validate(req.r);
+            req.g = util.rgb_validate(req.g);
+            req.b = util.rgb_validate(req.b);
+            util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} updating color ${req.id} - rgb(${req.r}, ${req.g}, ${req.b})`);
+            // update color preset RGB values in database
+            db.colors[req.id].r = req.r;
+            db.colors[req.id].g = req.g;
+            db.colors[req.id].b = req.b;
+            // send color update to clients
+            wss.send_to_clients("color_update", {
+                r: req.r, g: req.g, b: req.b,
+                name: db.colors[req.id].name,
+                id: req.id
+            });
+            // save database if update is latent
+            // (latent = not part of a heavy series of immediate realtime updates)
+            if (req.latent) database.save();
+        });
+        wss.bind('color_test', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.latent = req.latent ? true : false;
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} testing color`);
+                wss.test_color(req.device_id, req.color, req.latent);
+            }
+        });
+        // [pattern]
+        wss.bind('get_pattern_list', function (client, req, db) {
+            wss.send_pattern_list(client);
+        });
+        wss.bind('pattern_new', function (client, req, db) {
+            // generate new pattern ID
+            var pattern_id = util.rand_id();
+            while (db.patterns.hasOwnProperty(pattern_id))
+                pattern_id = util.rand_id();
+            util.log("ws", util.INF, `client ${client.id} adding new pattern with id ${pattern_id}`);
+            // add pattern to database
+            db.patterns[pattern_id] = {
+                name: "untitled",
+                list: []
+            };
+            // send new pattern to clients
+            wss.send_to_clients_but(
+                "pattern_new",
+                {
+                    id: pattern_id,
+                    name: "untitled",
+                    switch: false
+                },
+                client
+            );
+            wss.send_to_client(
+                "pattern_new",
+                {
+                    id: pattern_id,
+                    name: "untitled",
+                    switch: true
+                },
+                client
+            );
+            database.save();
+        });
+        wss.bind('pattern_name', function (client, req, db) {
+            // check database for pattern
+            if (db.patterns.hasOwnProperty(req.id)) {
+                req.name = ("" + req.name).trim();
+                util.log("ws", util.INF, `client ${client.id} naming pattern ${req.id} to ${req.name}`);
+                // set pattern name in database
+                db.patterns[req.id].name = req.name;
+                // send name update to clients
+                wss.send_to_clients("pattern_name", {
+                    id: req.id,
+                    name: req.name
+                });
+                database.save();
+            }
+        });
+        wss.bind('pattern_delete', function (client, req, db) {
+            // check database for pattern
+            if (db.patterns.hasOwnProperty(req.id)) {
+                util.log("ws", util.INF, `client ${client.id} deleting pattern ${req.id}`);
+                // remove pattern from database
+                db.patterns[req.id] = null;
+                delete db.patterns[req.id];
+                // update currently playing
+                for (var d in db.devices) {
+                    if (db.devices.hasOwnProperty(d)) {
+                        if (db.devices[d].current.type == "pattern" && req.id == db.devices[d].current.data.id) {
+                            db.devices[d].current.type = "none";
+                            db.devices[d].current.data = null;
+                            wss.send_to_clients("current", {
+                                device_id: d,
+                                data: db.devices[d].current
+                            });
+                        }
+                    }
+                }
+                // send deleted pattern id to clients
+                wss.send_to_clients(
+                    "pattern_delete",
+                    { id: req.id }
+                );
+                database.save();
+            }
+        });
+        wss.bind('pattern_add_color', function (client, req, db) {
+            if (db.patterns.hasOwnProperty(req.id)) {
+                util.log("ws", util.INF, `client ${client.id} adding color to pattern ${req.id}`);
+                // add fRGBh color object to pattern in database
+                db.patterns[req.id].list.push({
+                    fade: 0,
+                    r: 0, g: 0, b: 0,
+                    time: 0
+                });
+                // send full updated pattern to clients
+                wss.send_to_clients("pattern_update", {
+                    id: req.id,
+                    list: db.patterns[req.id].list
+                });
+                database.save();
+            }
+        });
+        wss.bind('pattern_update_color', function (client, req, db) {
+            var color_id = parseInt(req.color.id);
+            if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
+                util.log("ws", util.INF, `client ${client.id} updating color ${color_id} of pattern ${req.id}`);
+                // update fRGBh color object in pattern in database
+                db.patterns[req.id].list[color_id].fade = req.color.fade;
+                db.patterns[req.id].list[color_id].r = req.color.r;
+                db.patterns[req.id].list[color_id].g = req.color.g;
+                db.patterns[req.id].list[color_id].b = req.color.b;
+                db.patterns[req.id].list[color_id].time = req.color.time;
+                // send full updated pattern to clients
+                wss.send_to_clients("pattern_update", {
+                    id: req.id,
+                    list: db.patterns[req.id].list
+                });
+                database.save();
+            }
+        });
+        wss.bind('pattern_move_color', function (client, req, db) {
+            var color_id = parseInt(req.color.id);
+            if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
+                util.log("ws", util.INF, `client ${client.id} moving color ${color_id} (to ${req.new_pos} of pattern ${req.id})`);
+                // shift fRGBh color object position in list in preset in database
+                array_move.mutate(
+                    db.patterns[req.id].list,
+                    color_id, req.new_pos
+                );
+                // send full updated pattern to clients
+                wss.send_to_clients("pattern_update", {
+                    id: req.id,
+                    list: db.patterns[req.id].list
+                });
+                database.save();
+            }
+        });
+        wss.bind('pattern_delete_color', function (client, req, db) {
+            var color_id = parseInt(req.color.id);
+            if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
+                util.log("ws", util.INF, `client ${client.id} deleting color ${color_id} of pattern ${req.id}`);
+                // remove color from pattern in database
+                db.patterns[req.id].list.splice(req.color_id, 1);
+                // send full updated pattern to clients
+                wss.send_to_clients("pattern_update", {
+                    id: req.id,
+                    list: db.patterns[req.id].list
+                });
+                database.save();
+            }
+        });
+        wss.bind('pattern_load', function (client, req, db) {
+            // check database for pattern
+            if (db.patterns.hasOwnProperty(req.id)) {
+                // send pattern data to client
+                wss.send_to_client("pattern_load", {
+                    id: req.id,
+                    name: db.patterns[req.id].name,
+                    list: db.patterns[req.id].list
+                }, client)
+            }
+        });
+        wss.bind('pattern_play', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                // check database for pattern
+                if (db.patterns.hasOwnProperty(req.id)) {
+                    util.log("ws", util.INF, `client ${client.id} playing pattern`);
+                    wss.play_pattern(req.device_id, req.id);
+                }
+            }
+        });
+        // [arduino]
+        wss.bind('arduino_sync', function (client, req, db) {
+            var device_id = "arduino_" + ("" + req).trim();
+            util.log("ws", util.INF, `client ${client.id} – identified as ARDUINO: ${device_id}`);
+            // rename client in client list
+            var old_id = client.id;
+            client.id = device_id;
+            wss.clients[device_id] = client;
+            wss.clients[old_id] = null;
+            delete wss.clients[old_id];
+            if (!db.devices.hasOwnProperty(device_id)) {
+                db.devices[device_id] = {
+                    name: device_id,
+                    last_event: "",
+                    last_timestamp: 0,
+                    current: {
+                        type: "none",
+                        data: null
+                    },
+                    brightness: 100,
+                    speed: 100
+                };
+            }
+            wss.send_to_arduino(device_id, "@arduinosync");
+            wss.arduino_tracker.log(device_id, "connected")
+            database.save();
+        }, false);
+        wss.bind('arduino_heartbeat', function (client, req, db) {
+            wss.arduino_tracker.log(client.id, "online");
+            setTimeout(function () {
+                wss.send_to_arduino(client.id, "@hb");
+            }, wss.arduino_tracker.heartbeat_interval);
+        });
+        wss.bind('arduino_direct', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                util.log("ws", req.silent === true ? util.REQ : util.INF, `direct: ${req.data}`);
+                wss.send_to_arduino(req.device_id, req);
+            }
+        });
+        // [control]
+        wss.bind('get_device_list', function (client, req, db) {
+            wss.send_to_client("device_list", db.devices, client);
+        });
+        wss.bind('get_device_data', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                // send currently playing
+                wss.send_to_client("current", {
+                    data: db.devices[req.device_id].current,
+                    device_id: req.device_id
+                }, client);
+                // send current brightness & speed
+                wss.send_to_client("brightness", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].brightness,
+                }, client);
+                wss.send_to_client("speed", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].speed,
+                }, client);
+            }
+        });
+        wss.bind('get_brightness', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                wss.send_to_client("brightness", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].brightness,
+                }, client);
+            }
+        });
+        wss.bind('set_brightness', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting brightness to ${req.brightness} for device ${req.device_id}`);
+                // correct brightness
+                req.brightness = parseInt(req.brightness);
+                if (isNaN(req.brightness)) req.brightness = 100;
+                req.brightness = util.validate_int(req.brightness, 0, 100);
+                // send brightness to all clients except sender
+                db.devices[req.device_id].brightness = req.brightness;
+                wss.send_to_clients_but("brightness", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].brightness,
+                }, client);
+                // send brightness to arduino
+                wss.send_to_arduino(req.device_id, "@b-" + util.lpad(db.devices[req.device_id].brightness, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('get_speed', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                wss.send_to_client("speed", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].speed,
+                }, client);
+            }
+        });
+        wss.bind('set_speed', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting speed to ${req.speed} for device ${req.device_id}`);
+                // correct speed
+                req.speed = parseInt(req.speed);
+                if (isNaN(req.speed)) req.speed = 100;
+                req.speed = util.validate_int(req.speed, 0, 500);
+                // send speed to all clients except sender
+                db.devices[req.device_id].speed = req.speed;
+                wss.send_to_clients_but("speed", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].speed,
+                }, client);
+                // send speed to arduino
+                wss.send_to_arduino(req.device_id, "@s-" + util.lpad(db.devices[req.device_id].speed, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('get_current', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                wss.send_to_clients("current", {
+                    device_id: req.device_id,
+                    data: db.devices[req.device_id].current
+                });
+            }
+        });
+        wss.bind('play_current', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                wss.play_current(req.device_id);
+            }
+        });
+        // [music]
+        wss.bind('music', function (client, req, db) {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                util.log('ws', util.INF, `music reactive mode (beta) for device ${req.device_id}`);
+                db.devices[req.device_id].current.type = "music";
+                db.devices[req.device_id].current.data = true;
+                // send currently playing to all
+                wss.send_to_clients("current", {
+                    device_id: req.device_id,
+                    data: db.devices[req.device_id].current
+                });
+                // send to arduino
+                wss.send_to_arduino(req.device_id, "@music");
+            }
+        });
     }
 };
 
-// websocket event handlers
-wss.on("connection", function(ws) {
-    // create client object on new connection
-    var client = {
-        socket: ws,
-        id: randID(),
-        auth: false
-    };
-    log("ws", "client " + client.id + " – connected");
-    // client socket event handlers
-    ws.addEventListener("message", function(m) {
-        // console.log('[ws] client ' + client.id + ' – message: ');
-        var d = decodeMSG(m.data); // parse message
-        if (d != null) {
-            // console.log('    ', d.event, d.data);
-            // handle various events
-            switch (d.event) {
-                // client identifying as arduino
-                case "arduinosync":
-                    log(
-                        "ws",
-                        "client " + client.id + " – identified as ARDUINO"
-                    );
-                    // rename client in client list
-                    var oldid = client.id;
-                    client.id = "arduino";
-                    clients["arduino"] = client;
-                    clients[oldid] = null;
-                    delete clients[oldid];
-                    ws.send("@arduinosync");
-                    arduinoTracker.log("connected");
-                    break;
-                // client arduino sending heartbeat
-                case "arduinoheartbeat":
-                    arduinoTracker.log("online");
-                    setTimeout(function() {
-                        sendToArduino("@hb");
-                    }, arduinoTracker.heartbeatInterval);
-                    break;
-                // client authenticating
-                case "auth":
-                    // validate password
-                    if (d.data.password == password) {
-                        log("ws", "client " + client.id + " – authenticated");
-                        // set auth in client list object
-                        client.auth = true;
-                        if (client.id == "arduino") {
-                            // if arduino authenticated
-                            ws.send("@auth"); // confirm auth with client
-                            arduinoTracker.log("authenticated");
-                            // send current brightness & speed
-                            sendToArduino(
-                                "@b-" + lpad(database.brightness, 3, "0")
-                            );
-                            sendToArduino("@s-" + lpad(database.speed, 3, "0"));
-                            setTimeout(function() {
-                                // send currently playing pattern or hue, if any
-                                if (database.currentPattern != null) {
-                                    playCurrentPattern();
-                                } else if (database.currentHue != null) {
-                                    sendToArduino(
-                                        "@h-" + database.currentHue.colorstring
-                                    );
-                                } else if (database.currentMusic) {
-                                    sendToArduino("@music");
-                                }
-                                // begin heartbeat
-                                setTimeout(function() {
-                                    sendToArduino("@hb");
-                                }, 1000);
-                            }, 500);
-                        } else {
-                            // if regular client
-                            ws.send(encodeMSG("auth", "true")); // confirm auth with client
-                            // send full color palette and pattern list
-                            sendColorPalette(client);
-                            sendPatternList(client);
-                            // send currently playing
-                            ws.send(
-                                encodeMSG("current", getCurrentlyPlaying())
-                            );
-                            // send current brightness & speed
-                            ws.send(
-                                encodeMSG("brightness", database.brightness)
-                            );
-                            ws.send(encodeMSG("speed", database.speed));
-                            // send arduino status
-                            arduinoTracker.sendTo(client);
-                        }
-                    }
-                    break;
-                case "arduinostatus":
-                    arduinoTracker.sendTo(client);
-                    break;
-                // client forwarding message directly to arduino
-                case "direct":
-                    if (!client.auth) break;
-                    log("ws", "direct", d.data);
-                    sendToArduino(d.data);
-                    break;
-                // client forwarding message directly to arduino (silent version)
-                // meant for heavy series of realtime updates, reduces log clutter
-                case "direct_silent":
-                    if (!client.auth) break;
-                    sendToArduino(d.data);
-                    break;
-                // client requesting color palette
-                case "getcolorpalette":
-                    if (!client.auth) break;
-                    sendColorPalette(client);
-                    break;
-                // client requesting pattern list
-                case "getpatternlist":
-                    if (!client.auth) break;
-                    sendPatternList(client);
-                    break;
-                // client creating new color preset
-                case "newcolor":
-                    if (!client.auth) break;
-                    // generate color ID
-                    var colorID = randID();
-                    while (database.colors.hasOwnProperty(colorID))
-                        colorID = randID();
-                    d.data.r = parseInt(d.data.r);
-                    d.data.g = parseInt(d.data.g);
-                    d.data.b = parseInt(d.data.b);
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " adding new color with id " +
-                            colorID +
-                            " – rgb(" +
-                            d.data.r +
-                            ", " +
-                            d.data.g +
-                            ", " +
-                            d.data.b +
-                            ")"
-                    );
-                    // add new color preset to database with current color RGB values
-                    database.colors[colorID] = {
-                        r: d.data.r,
-                        g: d.data.g,
-                        b: d.data.b,
-                        d: Date.now(),
-                        name: ""
-                    };
-                    // send new preset to all other clients
-                    sendToAllBut(
-                        "newcolor",
-                        {
-                            r: d.data.r,
-                            g: d.data.g,
-                            b: d.data.b,
-                            id: colorID,
-                            name: "",
-                            switch: false
-                        },
-                        client
-                    );
-                    // send new preset back to original client
-                    ws.send(
-                        encodeMSG("newcolor", {
-                            r: d.data.r,
-                            g: d.data.g,
-                            b: d.data.b,
-                            id: colorID,
-                            name: "",
-                            switch: true // tells client to switch currently editing preset to the new preset
-                        })
-                    );
-                    saveDB();
-                    break;
-                // client updating color preset
-                case "updatecolor":
-                    if (!client.auth) break;
-                    d.data.r = parseInt(d.data.r);
-                    d.data.g = parseInt(d.data.g);
-                    d.data.b = parseInt(d.data.b);
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " updating color " +
-                            d.data.id +
-                            " – rgb(" +
-                            d.data.r +
-                            ", " +
-                            d.data.g +
-                            ", " +
-                            d.data.b +
-                            ")"
-                    );
-                    // update color preset RGB values in database
-                    database.colors[d.data.id].r = d.data.r;
-                    database.colors[d.data.id].g = d.data.g;
-                    database.colors[d.data.id].b = d.data.b;
-                    // send color update to clients
-                    sendToAll("updatecolor", {
-                        r: d.data.r,
-                        g: d.data.g,
-                        b: d.data.b,
-                        name: database.colors[d.data.id].name,
-                        id: d.data.id
-                    });
-                    // save database if update is latent
-                    // (latent = not part of a heavy series of immediate realtime updates)
-                    if (d.data.latent) saveDB();
-                    break;
-                // client naming color preset
-                case "namecolor":
-                    if (!client.auth) break;
-                    d.data.name = ("" + d.data.name).trim();
-                    if (d.data.name == "") break;
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " naming color " +
-                            d.data.id +
-                            " to " +
-                            d.data.name
-                    );
-                    database.colors[d.data.id].name = d.data.name;
-                    sendToAll("updatecolor", {
-                        r: database.colors[d.data.id].r,
-                        g: database.colors[d.data.id].g,
-                        b: database.colors[d.data.id].b,
-                        name: d.data.name,
-                        id: d.data.id
-                    });
-                    saveDB();
-                    break;
-                // client deleting color preset
-                case "deletecolor":
-                    if (!client.auth) break;
-                    log(
-                        "ws",
-                        "client " + client.id + " deleting color " + d.data.id
-                    );
-                    // remove color preset from database
-                    database.colors[d.data.id] = null;
-                    delete database.colors[d.data.id];
-                    // send delete update to clients
-                    sendToAll("deletecolor", { id: d.data.id });
-                    saveDB();
-                    break;
-                // client testing color preset
-                case "testcolor":
-                    if (!client.auth) break;
-                    d.data.r = parseInt(d.data.r);
-                    d.data.g = parseInt(d.data.g);
-                    d.data.b = parseInt(d.data.b);
-                    // convert color RGB values ot RGB string
-                    var colorstring = rgbstring(d.data.r, d.data.g, d.data.b);
-                    log(
-                        "ws",
-                        "client " + client.id + " testing color " + colorstring
-                    );
-                    // update current hue
-                    database.currentPattern = null;
-                    database.currentHue = {
-                        r: d.data.r,
-                        g: d.data.g,
-                        b: d.data.b,
-                        colorstring: colorstring
-                    };
-                    database.currentMusic = false;
-                    // send RGB string to arduino
-                    sendToArduino("@h-" + colorstring);
-                    // send currently playing to all
-                    sendToAll("current", getCurrentlyPlaying());
-                    break;
-                // client testing color preset (silent version)
-                // meant for heavy series of realtime updates, reduces log clutter
-                case "testcolor_silent":
-                    if (!client.auth) break;
-                    d.data.r = parseInt(d.data.r);
-                    d.data.g = parseInt(d.data.g);
-                    d.data.b = parseInt(d.data.b);
-                    var colorstring = rgbstring(d.data.r, d.data.g, d.data.b);
-                    database.currentPattern = null;
-                    database.currentHue = {
-                        r: d.data.r,
-                        g: d.data.g,
-                        b: d.data.b,
-                        colorstring: colorstring
-                    };
-                    database.currentMusic = false;
-                    sendToArduino("@h-" + colorstring);
-                    sendToAll("current", getCurrentlyPlaying());
-                    break;
-                // client creating new pattern
-                case "newpattern":
-                    if (!client.auth) break;
-                    // generate new pattern ID
-                    var patternID = randID();
-                    while (database.patterns.hasOwnProperty(patternID))
-                        patternID = randID();
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " adding new pattern with id " +
-                            patternID
-                    );
-                    // add pattern to database
-                    database.patterns[patternID] = {
-                        name: "untitled",
-                        list: []
-                    };
-                    // send new pattern to clients
-                    sendToAllBut(
-                        "newpattern",
-                        {
-                            id: patternID,
-                            name: "untitled",
-                            switch: false
-                        },
-                        client
-                    );
-                    ws.send(
-                        encodeMSG("newpattern", {
-                            id: patternID,
-                            name: "untitled"
-                        })
-                    );
-                    saveDB();
-                    break;
-                // client loading pattern
-                case "loadpattern":
-                    if (!client.auth) break;
-                    // check database for pattern
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        // send pattern data to client
-                        ws.send(
-                            encodeMSG("loadpattern", {
-                                id: d.data.id,
-                                name: database.patterns[d.data.id].name,
-                                list: database.patterns[d.data.id].list
-                            })
-                        );
-                    }
-                    break;
-                // client renaming pattern
-                case "renamepattern":
-                    if (!client.auth) break;
-                    // check database for pattern
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        d.data.name = String(d.data.name).trim();
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " renaming pattern " +
-                                d.data.id +
-                                "to " +
-                                d.data.name
-                        );
-                        // set pattern name in database
-                        database.patterns[d.data.id].name = d.data.name;
-                        // send name update to clients
-                        sendToAll("renamepattern", {
-                            id: d.data.id,
-                            name: d.data.name
-                        });
-                    }
-                    saveDB();
-                    break;
-                // client playing pattern
-                case "playpattern":
-                    if (!client.auth) break;
-                    // check database for pattern
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        // update current pattern
-                        database.currentHue = null;
-                        database.currentPattern = {
-                            id: d.data.id,
-                            name: database.patterns[d.data.id].name
-                        };
-                        database.currentMusic = false;
-                        // summarize and send current pattern to arduino
-                        playCurrentPattern();
-                        // send currently playing
-                        sendToAll("current", getCurrentlyPlaying());
-                        saveDB();
-                    }
-                    break;
-                // client adding color to pattern
-                case "addpatterncolor":
-                    if (!client.auth) break;
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " adding color to pattern " +
-                                d.data.id
-                        );
-                        // add fRGBh color object to pattern in database
-                        database.patterns[d.data.id].list.push({
-                            fade: 0,
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            time: 0
-                        });
-                        // send full updated pattern to clients
-                        sendToAll("updatepattern", {
-                            id: d.data.id,
-                            list: database.patterns[d.data.id].list
-                        });
-                        saveDB();
-                    }
-                    break;
-                // client updating color in pattern
-                case "updatepatterncolor":
-                    if (!client.auth) break;
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " updating color " +
-                                d.data.colorID +
-                                " of pattern " +
-                                d.data.id
-                        );
-                        // update fRGBh color object in pattern in database
-                        var colorID = parseInt(d.data.colorID);
-                        database.patterns[d.data.id].list[colorID].fade =
-                            d.data.colorData.fade;
-                        database.patterns[d.data.id].list[colorID].r =
-                            d.data.colorData.r;
-                        database.patterns[d.data.id].list[colorID].g =
-                            d.data.colorData.g;
-                        database.patterns[d.data.id].list[colorID].b =
-                            d.data.colorData.b;
-                        database.patterns[d.data.id].list[colorID].time =
-                            d.data.colorData.time;
-                        // send full updated pattern to clients
-                        sendToAll("updatepattern", {
-                            id: d.data.id,
-                            list: database.patterns[d.data.id].list
-                        });
-                        saveDB();
-                    }
-                    break;
-                // client moving color in pattern
-                case "movepatterncolor":
-                    if (!client.auth) break;
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " moving color " +
-                                d.data.colorID +
-                                " (to " +
-                                d.data.newPos +
-                                ") of pattern " +
-                                d.data.id
-                        );
-                        // shift fRGBh color object position in list in preset in database
-                        var colorID = parseInt(d.data.colorID);
-                        arrayMove.mutate(
-                            database.patterns[d.data.id].list,
-                            d.data.colorID,
-                            d.data.newPos
-                        );
-                        // send full updated pattern to clients
-                        sendToAll("updatepattern", {
-                            id: d.data.id,
-                            list: database.patterns[d.data.id].list
-                        });
-                        saveDB();
-                    }
-                    break;
-                // client deleting color from pattern
-                case "deletepatterncolor":
-                    if (!client.auth) break;
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " deleting color " +
-                                d.data.colorID +
-                                " of pattern " +
-                                d.data.id
-                        );
-                        // remove color from pattern in database
-                        database.patterns[d.data.id].list.splice(
-                            d.data.colorID,
-                            1
-                        );
-                        // send full updated pattern to clients
-                        sendToAll("updatepattern", {
-                            id: d.data.id,
-                            list: database.patterns[d.data.id].list
-                        });
-                        saveDB();
-                    }
-                    break;
-                // client deleting pattern
-                case "deletepattern":
-                    if (!client.auth) break;
-                    if (database.patterns.hasOwnProperty(d.data.id)) {
-                        log(
-                            "ws",
-                            "client " +
-                                client.id +
-                                " deleting pattern " +
-                                d.data.id
-                        );
-                        // remove pattern from database
-                        database.patterns[d.data.id] = null;
-                        delete database.patterns[d.data.id];
-                        // update currently playing
-                        if (d.data.id == database.currentPattern) {
-                            database.currentPattern = null;
-                            sendToAll("current", getCurrentlyPlaying());
-                        }
-                        // send deleted pattern id to clients
-                        sendToAllBut(
-                            "deletepattern",
-                            {
-                                id: d.data.id
-                            },
-                            client
-                        );
-                        ws.send(
-                            encodeMSG("deletepattern", {
-                                id: d.data.id
-                            })
-                        );
-                        saveDB();
-                    }
-                    break;
-                // client setting brightness
-                case "setbrightness":
-                    if (!client.auth) break;
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " setting brightness to " +
-                            d.data.brightness
-                    );
-                    // correct brightness
-                    d.data.brightness = parseInt(d.data.brightness);
-                    if (isNaN(d.data.brightness)) d.data.brightness = 100;
-                    if (d.data.brightness < 0) d.data.brightness = 0;
-                    if (d.data.brightness > 100) d.data.brightness = 100;
-                    // send brightness to all clients
-                    database.brightness = d.data.brightness;
-                    sendToAllBut("brightness", database.brightness, client);
-                    // send brightness to arduino
-                    sendToArduino("@b-" + lpad(database.brightness, 3, "0"));
-                    break;
-                // client setting speed
-                case "setspeed":
-                    if (!client.auth) break;
-                    log(
-                        "ws",
-                        "client " +
-                            client.id +
-                            " setting speed to " +
-                            d.data.speed
-                    );
-                    // correct speed
-                    d.data.speed = parseInt(d.data.speed);
-                    if (isNaN(d.data.speed)) d.data.speed = 100;
-                    if (d.data.speed < 0) d.data.speed = 0;
-                    if (d.data.speed > 500) d.data.speed = 500;
-                    // send speed to all clients
-                    database.speed = d.data.speed;
-                    sendToAllBut("speed", database.speed, client);
-                    // send speed to arduino
-                    sendToArduino("@s-" + lpad(d.data.speed, 3, "0"));
-                    break;
-                // client requesting global brightness
-                case "getbrightness":
-                    if (!client.auth) break;
-                    ws.send(encodeMSG("brightness", database.brightness));
-                    break;
-                // client requesting global pattern speed
-                case "getspeed":
-                    if (!client.auth) break;
-                    ws.send(encodeMSG("speed", database.speed));
-                    break;
-                // client requesting currently playing
-                case "getcurrent":
-                    if (!client.auth) break;
-                    ws.send(encodeMSG("current", getCurrentlyPlaying()));
-                    break;
-                // client requesting arduino status
-                case "getarduinostatus":
-                    if (!client.auth) break;
-                    arduinoTracker.sendTo(client);
-                    break;
-                // client playing music mode
-                case "music":
-                    log("ws", "play music (beta)");
-                    database.currentHue = null;
-                    database.currentPattern = null;
-                    database.currentMusic = true;
-                    // send currently playing to all
-                    sendToAll("current", getCurrentlyPlaying());
-                    // send to arduino
-                    sendToArduino("@music");
-                    break;
-                // client sent unknown event
-                default:
-                    log("ws", "unknown event", d.event);
-                    break;
-            }
-        } else {
-            // console.log('[ws] invalid message', m.data)
-        }
-    });
-    ws.addEventListener("error", function(e) {
-        log("ws", "client " + client.id + " – error", e, true);
-    });
-    ws.addEventListener("close", function(c, r) {
-        log("ws", "client " + client.id + " – disconnected");
-        if (client.id == "arduino") arduinoTracker.log("disconnected");
-        delete clients[client.id]; // remove client object on disconnect
-    });
-    // add client object to client object list
-    clients[client.id] = client;
-});
-wss.on("listening", function() {
-    log("ws", "listening on", wss_port, true);
-    ws_online = true;
-    arduinoTracker.loop();
-});
-wss.on("error", function(e) {
-    log("ws", "server error", e, true);
-    ws_online = false;
-});
-wss.on("close", function() {
-    log("ws", "server closed", "", true);
-    ws_online = false;
-});
-
-// http server
+/* HTTP SERVER */
 var app = express();
 var server = http.Server(app);
-app.use(bodyParser.json());
+app.use(body_parser.json());
 app.use(
-    bodyParser.urlencoded({
+    body_parser.urlencoded({
         extended: true
     })
 );
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
         "Access-Control-Allow-Headers",
@@ -911,11 +845,12 @@ app.use(function(req, res, next) {
     next();
 });
 app.use(express.static("html"));
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
     res.sendFile(__dirname + "/html/index.html");
 });
+/*
 var api = {
-    auth: function(req, res, next) {
+    auth: function (req, res, next) {
         if (
             req.headers.authorization &&
             req.headers.authorization.trim() == password
@@ -929,8 +864,8 @@ var api = {
             });
         }
     },
-    ws_online: function(req, res, next) {
-        if (ws_online) {
+    ws_server.online: function(req, res, next) {
+        if (ws_server.online) {
             next(req, res);
         } else {
             res.send({
@@ -940,7 +875,7 @@ var api = {
             });
         }
     },
-    require: function(param_name, req, res, next, fail = null) {
+    require: function (param_name, req, res, next, fail = null) {
         var param_val = ("" + req.body[param_name]).trim();
         if (
             req.body.hasOwnProperty(param_name) &&
@@ -963,8 +898,8 @@ var api = {
     fade_interval: 50
 };
 
-app.get("/api", function(req, res) {
-    api.auth(req, res, function(req, res) {
+app.get("/api", function (req, res) {
+    api.auth(req, res, function (req, res) {
         res.send({
             success: true,
             message: "led-lights api",
@@ -972,9 +907,9 @@ app.get("/api", function(req, res) {
         });
     });
 });
-app.get("/api/arduinostatus", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
+app.get("/api/arduinostatus", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
             var lastEvent = arduinoTracker.data.lastEvent;
             var lastTimestamp = arduinoTracker.data.lastTimestamp;
             var deltaSec =
@@ -1016,8 +951,8 @@ app.get("/api/arduinostatus", function(req, res) {
         });
     });
 });
-app.get("/api/colorlist", function(req, res) {
-    api.auth(req, res, function(req, res) {
+app.get("/api/colorlist", function (req, res) {
+    api.auth(req, res, function (req, res) {
         var colors = [];
         for (var c in database.colors) {
             if (database.colors.hasOwnProperty(c)) {
@@ -1034,10 +969,10 @@ app.get("/api/colorlist", function(req, res) {
         });
     });
 });
-app.post("/api/testcolor", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
-            api.require("name", req, res, function(name, req, res) {
+app.post("/api/testcolor", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
+            api.require("name", req, res, function (name, req, res) {
                 var id = "";
                 for (var c in database.colors) {
                     if (database.colors[c].name == name) {
@@ -1048,7 +983,7 @@ app.post("/api/testcolor", function(req, res) {
                 if (id != "") {
                     var color = database.colors[id];
                     // convert color RGB values to RGB string
-                    var colorstring = rgbstring(color.r, color.g, color.b);
+                    var colorstring = rgb_string(color.r, color.g, color.b);
                     log("http", "alexa client testing color " + colorstring);
                     // update current hue
                     database.currentPattern = null;
@@ -1062,8 +997,8 @@ app.post("/api/testcolor", function(req, res) {
                     // send RGB string to arduino
                     sendToArduino("@h-" + colorstring);
                     // send currently playing to all
-                    sendToAll("current", getCurrentlyPlaying());
-                    saveDB();
+                    send_to_clients("current", get_currently_playing());
+                    database.save();
                     res.send({
                         success: true,
                         message: "testing color " + name + " (" + id + ")",
@@ -1084,8 +1019,8 @@ app.post("/api/testcolor", function(req, res) {
         });
     });
 });
-app.get("/api/patternlist", function(req, res) {
-    api.auth(req, res, function(req, res) {
+app.get("/api/patternlist", function (req, res) {
+    api.auth(req, res, function (req, res) {
         var patterns = [];
         for (var p in database.patterns) {
             if (database.patterns.hasOwnProperty(p)) {
@@ -1104,10 +1039,10 @@ app.get("/api/patternlist", function(req, res) {
         });
     });
 });
-app.post("/api/playpattern", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
-            api.require("name", req, res, function(name, req, res) {
+app.post("/api/playpattern", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
+            api.require("name", req, res, function (name, req, res) {
                 var id = "";
                 var realName = "";
                 for (var p in database.patterns) {
@@ -1130,10 +1065,10 @@ app.post("/api/playpattern", function(req, res) {
                     };
                     database.currentMusic = false;
                     // summarize and send current pattern to arduino
-                    playCurrentPattern();
+                    play_current_pattern();
                     // send currently playing
-                    sendToAll("current", getCurrentlyPlaying());
-                    saveDB();
+                    send_to_clients("current", get_currently_playing());
+                    database.save();
                     res.send({
                         success: true,
                         message:
@@ -1154,11 +1089,11 @@ app.post("/api/playpattern", function(req, res) {
         });
     });
 });
-app.post("/api/playcurrent", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
-            var current = getCurrentlyPlaying();
-            if (current.type == "pattern") playCurrentPattern();
+app.post("/api/playcurrent", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
+            var current = get_currently_playing();
+            if (current.type == "pattern") play_current_pattern();
             else if (current.type == "hue")
                 sendToArduino("@h-" + current.data.colorstring);
             res.send({
@@ -1169,8 +1104,8 @@ app.post("/api/playcurrent", function(req, res) {
         });
     });
 });
-app.get("/api/brightness", function(req, res) {
-    api.auth(req, res, function(req, res) {
+app.get("/api/brightness", function (req, res) {
+    api.auth(req, res, function (req, res) {
         res.send({
             success: true,
             message: "brightness retrieved",
@@ -1178,14 +1113,14 @@ app.get("/api/brightness", function(req, res) {
         });
     });
 });
-app.post("/api/brightness", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
+app.post("/api/brightness", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
             api.require(
                 "level",
                 req,
                 res,
-                function(level, req, res) {
+                function (level, req, res) {
                     log("http", "alexa client setting brightness to " + level);
                     // correct brightness
                     level = parseInt(level);
@@ -1204,7 +1139,7 @@ app.post("/api/brightness", function(req, res) {
                         var interval = 50;
                         var step = delta / (api.fade_time / api.fade_interval);
                         var brightness_float = parseFloat(database.brightness);
-                        fadeFuncTemp = function() {
+                        fadeFuncTemp = function () {
                             brightness_float += step;
                             database.brightness = parseInt(brightness_float);
                             if (
@@ -1214,24 +1149,24 @@ app.post("/api/brightness", function(req, res) {
                             ) {
                                 database.brightness = level;
                             }
-                            sendToAll("brightness", database.brightness);
+                            send_to_clients("brightness", database.brightness);
                             sendToArduino(
                                 "@b-" + lpad(database.brightness, 3, "0")
                             );
                             if (database.brightness != level)
                                 setTimeout(fadeFuncTemp, api.fade_interval);
-                            else saveDB();
+                            else database.save();
                         };
                         fadeFuncTemp();
                     } else {
                         // send brightness to all clients
                         database.brightness = level;
-                        sendToAll("brightness", database.brightness);
+                        send_to_clients("brightness", database.brightness);
                         // send brightness to arduino
                         sendToArduino(
                             "@b-" + lpad(database.brightness, 3, "0")
                         );
-                        saveDB();
+                        database.save();
                     }
                     res.send({
                         success: true,
@@ -1239,12 +1174,12 @@ app.post("/api/brightness", function(req, res) {
                         payload: { level: level }
                     });
                 },
-                function(req, res) {
+                function (req, res) {
                     api.require(
                         "increment",
                         req,
                         res,
-                        function(increment, req, res) {
+                        function (increment, req, res) {
                             if (increment == "up") {
                                 increment = 5;
                             } else if (increment == "down") {
@@ -1258,7 +1193,7 @@ app.post("/api/brightness", function(req, res) {
                             log(
                                 "http",
                                 "alexa client setting brightness to " +
-                                    newbrightness
+                                newbrightness
                             );
 
                             var fade_val = ("" + req.body["fade"]).trim();
@@ -1275,7 +1210,7 @@ app.post("/api/brightness", function(req, res) {
                                 var brightness_float = parseFloat(
                                     database.brightness
                                 );
-                                fadeFuncTemp = function() {
+                                fadeFuncTemp = function () {
                                     brightness_float += step;
                                     database.brightness = parseInt(
                                         brightness_float
@@ -1284,37 +1219,37 @@ app.post("/api/brightness", function(req, res) {
                                         delta == 0 ||
                                         (delta < 0 &&
                                             database.brightess <
-                                                newbrightness) ||
+                                            newbrightness) ||
                                         (delta > 0 &&
                                             database.brightess > newbrightness)
                                     ) {
                                         database.brightness = newbrightness;
                                     }
-                                    sendToAll(
+                                    send_to_clients(
                                         "brightness",
                                         database.brightness
                                     );
                                     sendToArduino(
                                         "@b-" +
-                                            lpad(database.brightness, 3, "0")
+                                        lpad(database.brightness, 3, "0")
                                     );
                                     if (database.brightness != newbrightness)
                                         setTimeout(
                                             fadeFuncTemp,
                                             api.fade_interval
                                         );
-                                    else saveDB();
+                                    else database.save();
                                 };
                                 fadeFuncTemp();
                             } else {
                                 // send brightness to all clients
                                 database.brightness = newbrightness;
-                                sendToAll("brightness", database.brightness);
+                                send_to_clients("brightness", database.brightness);
                                 // send brightness to arduino
                                 sendToArduino(
                                     "@b-" + lpad(database.brightness, 3, "0")
                                 );
-                                saveDB();
+                                database.save();
                             }
                             res.send({
                                 success: true,
@@ -1324,7 +1259,7 @@ app.post("/api/brightness", function(req, res) {
                                 }
                             });
                         },
-                        function(req, res) {
+                        function (req, res) {
                             res.send({
                                 success: false,
                                 message:
@@ -1338,8 +1273,8 @@ app.post("/api/brightness", function(req, res) {
         });
     });
 });
-app.get("/api/speed", function(req, res) {
-    api.auth(req, res, function(req, res) {
+app.get("/api/speed", function (req, res) {
+    api.auth(req, res, function (req, res) {
         res.send({
             success: true,
             message: "speed retrieved",
@@ -1347,14 +1282,14 @@ app.get("/api/speed", function(req, res) {
         });
     });
 });
-app.post("/api/speed", function(req, res) {
-    api.auth(req, res, function(req, res) {
-        api.ws_online(req, res, function(req, res) {
+app.post("/api/speed", function (req, res) {
+    api.auth(req, res, function (req, res) {
+        api.ws_server.online(req, res, function (req, res) {
             api.require(
                 "level",
                 req,
                 res,
-                function(level, req, res) {
+                function (level, req, res) {
                     log("http", "alexa client setting speed to " + level);
                     // correct speed
                     level = parseInt(level);
@@ -1363,10 +1298,10 @@ app.post("/api/speed", function(req, res) {
                     if (level > 500) level = 500;
                     // send speed to all clients
                     database.speed = level;
-                    sendToAll("speed", database.speed);
+                    send_to_clients("speed", database.speed);
                     // send speed to arduino
                     sendToArduino("@s-" + lpad(database.speed, 3, "0"));
-                    saveDB();
+                    database.save();
                     res.send({
                         success: true,
                         message: "speed updated",
@@ -1375,12 +1310,12 @@ app.post("/api/speed", function(req, res) {
                         }
                     });
                 },
-                function(req, res) {
+                function (req, res) {
                     api.require(
                         "increment",
                         req,
                         res,
-                        function(increment, req, res) {
+                        function (increment, req, res) {
                             if (increment == "up") {
                                 increment = 20;
                             } else if (increment == "down") {
@@ -1396,9 +1331,9 @@ app.post("/api/speed", function(req, res) {
                                 "alexa client setting speed to " + newspeed
                             );
                             database.speed = newspeed;
-                            sendToAll("speed", database.speed);
+                            send_to_clients("speed", database.speed);
                             sendToArduino("@s-" + lpad(database.speed, 3, "0"));
-                            saveDB();
+                            database.save();
                             res.send({
                                 success: true,
                                 message: "speed updated",
@@ -1407,7 +1342,7 @@ app.post("/api/speed", function(req, res) {
                                 }
                             });
                         },
-                        function(req, res) {
+                        function (req, res) {
                             res.send({
                                 success: true,
                                 message:
@@ -1421,9 +1356,25 @@ app.post("/api/speed", function(req, res) {
         });
     });
 });
+*/
 
-server.listen(http_port, function() {
-    log("http", "listening on", http_port, true);
+/* CLI */
+util.input.on('line', function (line) {
+    line = line.trim();
+    if (line != '') {
+        line = line.split(' ');
+        if (line[0] == "db" || line[0] == "database") {
+            if (line[1] == "save") {
+                database.save(line[2] && line[2] == "pretty");
+            }
+        }
+    }
 });
 
+/* MAIN */
 console.log("RGB Lights Control");
+database.load();
+wss.initialize();
+server.listen(http_port, function () {
+    util.log("http", util.IMP, "listening on", http_port);
+});

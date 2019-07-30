@@ -50,6 +50,239 @@
             if (width !== null) block.css('width', width);
             if (alt !== null) block.attribute('title', alt);
         }
+
+!switch
+    init
+        {
+            var block;
+            block = Block('div')
+                .key('state', false)
+                .css({
+                    width: 'auto',
+                    height: '30px',
+                    cursor: 'pointer',
+                    margin: '5px 10px'
+                })
+                .add(Block('block', 'label')
+                    .css({
+                        display: 'inline-table',
+                        width: '70px',
+                        float: 'left',
+                        marginRight: '10px',
+                        cursor: 'inherit',
+                        fontSize: '17px'
+                    })
+                    .__child('content')
+                        .css('text-align', 'left')
+                        .__parent()
+                    .add(Block('text', 1)
+                        .data('Label 1: ')
+                    )
+                    .on('click', function (e, b, d) {
+                        if (block.key('enabled')) {
+                            block.key('state', (!block.key('state')));
+                            block.on('modified');
+                        }
+                    })
+                )
+                .add(Block('div', 'main')
+                    .css({
+                        width: '65px',
+                        height: '100%',
+                        position: 'relative',
+                        cursor: 'inherit',
+                        display: 'inline-block'
+                    })
+                    .add(Block('div', 'bg')
+                        .css({
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '16px',
+                            backgroundColor: '#e4e4e4',
+                            position: 'absolute',
+                            top: '0',
+                            left: '0',
+                            zIndex: '1',
+                            transition: 'background-color 0.2s ease-in-out'
+                        })
+                    )
+                    .add(Block('block', 'circle')
+                        .css({
+                            width: '30px',
+                            height: '100%',
+                            position: 'absolute',
+                            top: '0.5px',
+                            left: '1px',
+                            zIndex: '2',
+                            transition: 'left 0.2s ease-in-out'
+                        })
+                        .add(Block('div')
+                            .css({
+                                width: '75%',
+                                height: '75%',
+                                borderRadius: '100%',
+                                backgroundColor: 'white',
+                                margin: '0 auto'
+                            })
+                        )
+                    )
+                    .on('click', function (e, b, d) {
+                        if (block.key('enabled')) {
+                            block.key('state', (!block.key('state')));
+                            block.on('modified');
+                        }
+                    })
+                )
+                .on('updateUI', function (e, b, d) {
+                    if (block.key('state')) {
+                        block.child('main/circle').css({
+                            left: '34px'
+                        }).sibling('bg').css({
+                            backgroundColor: '#558fed'
+                        });
+                    } else {
+                        block.child('main/circle').css({
+                            left: '1px',
+                        }).sibling('bg').css({
+                            backgroundColor: '#e4e4e4'
+                        });
+                    }
+                })
+                .on('modified', function (e, b, d) {
+                    block.on('updateUI');
+                })
+                .key('enabled', true)
+                .on('enable', function (e, b, d) {
+                    block.key('enabled', true);
+                    block.css({
+                        opacity: '1',
+                        cursor: 'pointer'
+                    });
+                    e.stopPropagation();
+                })
+                .on('disable', function (e, b, d) {
+                    block.key('enabled', false);
+                    block.css({
+                        opacity: '0.6',
+                        cursor: 'default'
+                    });
+                    e.stopPropagation();
+                })
+            ;
+            return block;
+        }
+    load
+        {
+            data('val', function (val) {
+                block.key('state', (val == 'on'));
+                block.on('modified');
+            });
+            data('label', function (label) {
+                block.child('label/text').html('').data(label);
+            });
+        }
+
+!selector-menu
+    init
+        {
+            var block = Block();
+            block
+                .key('visible', false)
+                .css({
+                    "position": "relative",
+                    "width": "105px",
+                    "height": "40px",
+                    "border": "1px solid #e8e8e8",
+                    "padding": "0 40px 0 10px",
+                    "border-radius": "4px",
+                    "cursor": "pointer",
+                    "box-sizing": "border-box"
+                })
+                .__child('content')
+                    .__add(Block('div', 'options')
+                        .css({
+                            "position": "absolute",
+                            "width": "101%",
+                            "min-height": "50px",
+                            "bottom": "35px",
+                            "left": "-1px",
+                            "background-color": "white",
+                            "border": "1px solid #eee",
+                            "border-radius": "5px 5px 5px 0",
+                            "cursor": "default",
+                            "box-shadow": "rgba(210, 210, 210, 0.3) 0px 2px 4px",
+                            "z-index": "10",
+                            "display": "none",
+                            "opacity": "0",
+                            "transition": "opacity 0.15s ease"
+                        })
+                        .on('show', function (e, b, d) {
+                            b.css('display', 'block');
+                            setTimeout(function () {
+                                b.css('opacity', '1');
+                            }, 10);
+                        })
+                        .on('hide', function (e, b, d) {
+                            b.css('opacity', '0');
+                            setTimeout(function () {
+                                b.css('display', 'block');
+                            }, 160);
+                        })
+                    )
+                    .__add(Block('text', 1)
+                        .data('selector')
+                        .css({
+                            "color" : "#333",
+                            "letter-spacing": "0.4px",
+                            "font-size": "15px"
+                        })
+                    )
+                    .__add(Block('image', 'arrow')
+                        .data({
+                            src: "img/down_b.png",
+                            height: "20px",
+                            width: "20px"
+                        })
+                        .css({
+                            "position": "absolute",
+                            "right": "4px",
+                            "top": "10px",
+                            "bottom": "10px",
+                            "margin": "auto",
+                            "opacity": "0.8",
+                            "transition": "transform 0.1s ease",
+                            "transform": "rotate(90deg)"
+                        })
+                        .on('up', function (e, b, d) {
+                            b.css('transform', 'rotate(90deg');
+                        })
+                        .on('down', function (e, b, d) {
+                            b.css('transform', 'rotate(180deg');
+                        })
+                    )
+                    .__parent()
+                .on('click', function (e, b, d) {
+                    if (b.key('visible')) {
+                        b.__child('content/options').on('hide');
+                        b.__child('content/arrow').on('up');
+                        b.key('visible', false);
+                    } else {
+                        b.__child('content/options').on('show');
+                        b.__child('content/arrow').on('down');
+                        b.key('visible', true);
+                    }
+                })
+                .setAdd(block.__child("content/options"))
+            ;
+            return block;
+        }
+    load
+        {
+            data('select', function (option) {
+                block.__child("content/text").html('').data(option);
+            });
+        }
+
 // app UI content layer
 app
     id app
@@ -205,7 +438,7 @@ app
                         number.child('hexinput').$().val(color.hex);
                     }
                 css
-                    height 480px
+                    height 460px
                     border-bottom 1px solid #eee
                 button rect
                     css
@@ -257,7 +490,7 @@ app
                             {
                                 block.on('input');
                                 app.updateColor(true);
-                                if (app.trackLiveUpdates) app.testColor(true);
+                                if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) app.testColor(true);
                             }
                     text t1R
                         html 0
@@ -295,7 +528,7 @@ app
                             {
                                 block.on('input');
                                 app.updateColor(true);
-                                if (app.trackLiveUpdates) app.testColor(true);
+                                if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) app.testColor(true);
                             }
                     text t2R
                         html 0
@@ -333,7 +566,7 @@ app
                             {
                                 block.on('input');
                                 app.updateColor(true);
-                                if (app.trackLiveUpdates) app.testColor(true);
+                                if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) app.testColor(true);
                             }
                     text t3R
                         html 0
@@ -365,16 +598,65 @@ app
                     div spacer5
                         css
                             height 5px
-                div buttons
+                div sync
                     css
                         float left
                         height 140px
                         width 195px
-                    div spacer1
+                    {
+                        block.key('enabled', true);
+                    }
+                    :enable
+                        {
+                            block.key('enabled', true);
+                            block.child('trackLeft/switch').on('enable');
+                            block.child('trackRight/switch').on('enable');
+                        }
+                    :disable
+                        {
+                            block.key('enabled', false);
+                            block.child('trackLeft/switch').on('disable');
+                            block.child('trackRight/switch').on('disable');
+                        }
+                    div trackLeft
                         css
-                            height 25px
+                            width 180px
+                            display inline-block
+                            height auto
+                            float left
+                            margin-left 10px
+                            margin-top 20px
+                        switch switch
+                            val off
+                            label Live Left
+                            :modified
+                                {
+                                    app.trackLiveUpdates.left = block.key('state') === true;
+                                }
+                    div trackRight
+                        css
+                            width 180px
+                            display inline-block
+                            height auto
+                            float left
+                            margin-left 10px
+                        switch switch
+                            val off
+                            label Live Right
+                            :modified
+                                {
+                                    app.trackLiveUpdates.right = block.key('state') === true;
+                                }
+                div buttons
+                    css
+                        margin-top 6px
+                        width auto
+                        height 40px
+                        float left
+                        margin-left 17%
                     div button1
                         css
+                            float left
                             margin 0 auto
                             padding 8px 0
                             width 150px
@@ -409,18 +691,21 @@ app
                             }
                     div spacer2
                         css
-                            height 10px
+                            float left
+                            width 30px
+                            height 30px
                     div button2
                         {
-                            block.key('enabled', false);
+                            block.key('enabled', true);
                         }
                         css
+                            float left
                             margin 0 auto
                             padding 8px 0
                             width 150px
                             text-align center
                             border-radius 4px
-                            cursor pointer
+                            cursor default
                             color white
                             transition background-color 0.15s ease, opacity 0.1s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
                             border 1px solid #ffffff
@@ -447,12 +732,18 @@ app
                         :enable
                             {
                                 block.key('enabled', true);
-                                block.css('opacity', '0.9');
+                                block.css({
+                                    'opacity': '0.9',
+                                    'cursor': 'pointer'
+                                });
                             }
                         :disable
                             {
                                 block.key('enabled', false);
-                                block.css('opacity', '0.5');
+                                block.css({
+                                    'opacity': '0.5',
+                                    'cursor': 'default'
+                                });
                             }
                         text text
                             val delete
@@ -460,85 +751,6 @@ app
                                 font-size 20px
                                 letter-spacing 1.5px
                                 // text-transform uppercase
-                div sync
-                    css
-                        margin-top 10px
-                        width 100%
-                        height 60px
-                        float left
-                    div push
-                        css
-                            margin-left 95px
-                            display inline-block
-                            width auto
-                            height 42px
-                            float left
-                        div button3
-                            css
-                                margin 0 auto
-                                padding 8px 0
-                                width 150px
-                                text-align center
-                                border-radius 4px
-                                cursor pointer
-                                color white
-                                transition background-color 0.15s ease, box-shadow 0.15s ease, -moz-box-shadow 0.15s ease, -webkit-box-shadow 0.15s ease
-                                border 1px solid #ffffff
-                                opacity 0.9
-                            @query window height != 0
-                                {
-                                    var inset = 'inset 0px 39px 0px -18px ' + app.colors[app.scheme].button['inset'];
-                                    block.css({
-                                        backgroundColor: app.colors[app.scheme].button['default'],
-                                        '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
-                                    });
-                                }
-                            :mouseover, mouseout, mousedown, mouseup
-                                {
-                                    block.css('background-color', app.colors[app.scheme].button[event.type]);
-                                }
-                            text text
-                                val push
-                                css
-                                    font-size 20px
-                                    letter-spacing 1.5px
-                                    // text-transform uppercase
-                            :click
-                                {
-                                    app.testColor(true);
-                                }
-                    div track
-                        css
-                            width 180px
-                            cursor pointer
-                            display inline-block
-                            height 33px
-                            padding-top 9px
-                            float left
-                            margin-left 25px
-                        input input
-                            id track-checkbox
-                            type checkbox
-                            css
-                                display inline-block
-                                cursor pointer
-                            :input, click
-                                {
-                                    var val = block.node().checked;
-                                    app.trackLiveUpdates = val == true;
-                                }
-                        label label
-                            for track-checkbox
-                            text text
-                                val Live Tracking
-                                css
-                                    margin-left 7px
-                                    font-size 15px
-                                    letter-spacing 1px
-                                    display inline-block
-                                    height 20px
-                                    cursor pointer
-                                    text-transform uppercase
             !preset
                 init
                     {
@@ -651,6 +863,7 @@ app
                                                 var picker = b.parent().sibling('picker').child('rect').node().jscolor;
                                                 picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
                                                 app.colorPickerUpdate(picker, app.rgb.id.trim().length > 1 && app.rgb.id.trim() != b.key('id').trim());
+                                                if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) app.testColor(true);
                                             }
                                         }
                                     }, doubleClickTimeout + 10);
@@ -940,113 +1153,362 @@ app
                     bottom 0
                     left 0
                     border-right 1px solid #eee
-                panel-item status
+                panel-item devices
                     icon memory
                     {
-                        block.key('lastTimestamp', 0);
-                        block.key('deleteRed', 'rgba(237, 69, 61, 1)');
-                        block.key('buttonBlue', 'rgba(40, 124, 246, 1)');
-                        block.key('statusGreen', 'rgba(85, 196, 110, 1)');
-                        block.key('timeUpdater', null);
+                        block.key('timeUpdater', "null")
+                            .key('deleteRed', 'rgba(237, 69, 61, 1)')
+                            .key('buttonBlue', 'rgba(40, 124, 246, 1)')
+                            .key('statusGreen', 'rgba(85, 196, 110, 1)')
+                            .key('lastTimestamp', 0);
                     }
-                    #statusevent
+                    #device_list
                         {
-                            var text = "Arduino ";
-                            var color = block.key('buttonBlue');
-                            if (statusevent.event != "") {
-                                if (statusevent.event == "disconnected") {
-                                    text +=  "Offline";
-                                    color = block.key('deleteRed');
-                                } else if (statusevent.event == "connected") {
-                                    text +=  "Syncing";
-                                    color = block.key('buttonBlue');
-                                } else if (statusevent.event == "authenticated") {
-                                    text +=  "Syncing";
-                                    color = block.key('buttonBlue');
-                                } else if (statusevent.event == "online") {
-                                    text +=  "Online";
-                                    color = block.key('statusGreen');
+                            var device_blocks = block.child('menu').children();
+                            for (var id in device_list) {
+                                if (device_list.hasOwnProperty(id)) {
+                                    if (device_blocks.hasOwnProperty(id)) {
+                                        block.child('menu/' + id).data(device_list[id]);
+                                    } else {
+                                        block.child('menu').add(Block('selector-device', id)
+                                            .data(device_list[id])
+                                        );
+                                    }
                                 }
-                                block.child('status/text').html('').data(text);
-                                block.child('indicator/circle').css('background-color', color);
-                                block.key('lastTimestamp', statusevent.time);
-                                block.on('updatetime');
                             }
-                            if (block.key('timeUpdater') === null) {
-                                block.key('timeUpdater', setInterval(function () {
-                                    block.on('updatetime');
-                                }, 500));
-                            }
+                            block.on('refresh');
                         }
                     :updatetime
                         {
                             var lTS = parseInt(block.key('lastTimestamp'));
-                            var deltaSec = parseInt(Date.now() / 1000) - parseInt(lTS / 1000);
-                            if (deltaSec < 0) {
-                                deltaSec = 0;
-                            }
-                            var outputString = "";
-                            if (deltaSec < 5) {
-                                outputString += "now";
-                            } else if (deltaSec < 60) {
-                                outputString += "" + parseInt(Math.floor(parseFloat(deltaSec) / 5.0) * 5.0) + " seconds ago";
-                            } else if (deltaSec < 3600) {
-                                var mins = parseInt(deltaSec / 60);
-                                if (mins == 1) {
-                                    outputString += "" + mins + " minute ago";
-                                } else {
-                                    outputString += "" + mins + " minutes ago";
-                                }
-                            } else {
-                                var hrs = parseInt(deltaSec / 3600);
-                                if (hrs == 1) {
-                                    outputString += "" + hrs + " hour ago";
-                                } else {
-                                    outputString += "" + hrs + " hours ago";
-                                }
-                            }
-                            block.child('time/text').html('').data(outputString);
+                            var time_string = app.util.duration_desc(lTS);
+                            block.child('menu').__child('content/block/content/status/time').html('').data(time_string);
+                            event.stopPropagation();
                         }
-                    block indicator
+                    :refresh
+                        {
+                            if (app.device_id != null && app.devices.hasOwnProperty(app.device_id)) {
+                                var device_data = app.devices[app.device_id];
+                                block.key('lastTimestamp', device_data.last_timestamp);
+                                if (block.key('timeUpdater') === "null") {
+                                    block.key('timeUpdater', setInterval(function () {
+                                        block.on('updatetime');
+                                    }, 500));
+                                }
+                                var text = "";
+                                var color = block.key('buttonBlue');
+                                if (device_data.last_event != "") {
+                                    if (device_data.last_event == "disconnected") {
+                                        text +=  "Offline";
+                                        color = block.key('deleteRed');
+                                    } else if (device_data.last_event == "connected") {
+                                        text +=  "Syncing";
+                                        color = block.key('buttonBlue');
+                                    } else if (device_data.last_event == "authenticated") {
+                                        text +=  "Syncing";
+                                        color = block.key('buttonBlue');
+                                    } else if (device_data.last_event == "online") {
+                                        text +=  "Online";
+                                        color = block.key('statusGreen');
+                                    }
+                                }
+                                block.child('menu').__child('content/placeholder')
+                                        .css('display', 'none')
+                                    .__sibling('block')
+                                        .__child('content')
+                                            .__child('name/text')
+                                                .html('').data(device_data.name)
+                                                .__parent(1)
+                                            .__child('status/event')
+                                                .html(text + '&nbsp;')
+                                                .__parent(1)
+                                            .__child('indicator')
+                                                .child('circle')
+                                                    .css('background-color', color)
+                                                    .parent()
+                                                .__parent()
+                                            .__parent()
+                                        .css('display', 'table');
+                                block.on('updatetime');
+                            } else {
+                                block.child('menu').__child('content/placeholder')
+                                        .css('display', 'table')
+                                    .__sibling('block')
+                                        .css('display', 'none');
+                            }
+                        }
+                    !selector-device
+                        init
+                            {
+                                return Block('div')
+                                    .key('lastTimestamp', 0)
+                                    .key('deleteRed', 'rgba(237, 69, 61, 1)')
+                                    .key('buttonBlue', 'rgba(40, 124, 246, 1)')
+                                    .key('statusGreen', 'rgba(85, 196, 110, 1)')
+                                    .key('timeUpdater', "null")
+                                    .css({
+                                        width: '100%',
+                                        height: '50px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0)',
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid #fafafa',
+                                    })
+                                    .add(Block('block', 1)
+                                        .css({
+                                            position: 'relative'
+                                        })
+                                        .add(Block('block', 'indicator')
+                                            .css({
+                                                'height': '100%',
+                                                'width': '20px',
+                                                'margin': '0',
+                                                'margin-top': '1px',
+                                                'margin-right': '10px',
+                                                'position': 'absolute',
+                                                'left': '15px',
+                                                'top': '0'
+                                            })
+                                            .add(Block('div', 'circle')
+                                                .css({
+                                                    'border-radius': '100%',
+                                                    'height': '10px',
+                                                    'width': '10px',
+                                                    'margin': '0 auto',
+                                                    'background-color': 'rgba(20, 20, 20, 0.6)'
+                                                })
+                                            )
+                                        )
+                                        .add(Block('div', 'name')
+                                            .css({
+                                                'float': 'left',
+                                                'width': 'auto',
+                                                'height': '36%',
+                                                'position': 'absolute',
+                                                'left': '50px',
+                                                'top': '12%'
+                                            })
+                                            .add(Block('text', 1)
+                                                .data('Device Name')
+                                                .css({
+                                                    'font-size': '18px',
+                                                    'margin-bottom': '1px',
+                                                    'display': 'block',
+                                                    'margin-right': '10px',
+                                                    'color': '#222',
+                                                    'cursor': 'pointer'
+                                                })
+                                            )
+                                        )
+                                        .add(Block('div', 'status')
+                                            .css({
+                                                'float': 'left',
+                                                'width': 'auto',
+                                                'height': '48%',
+                                                'position': 'absolute',
+                                                'left': '50px',
+                                                'bottom': '0'
+                                            })
+                                            .add(Block('text', 'event')
+                                                .html('Event&nbsp;')
+                                                .css({
+                                                    'font-size': '11px',
+                                                    'margin-top': '0',
+                                                    'display': 'block',
+                                                    'float': 'left',
+                                                    'color': '#666',
+                                                    'cursor': 'pointer',
+                                                    'font-style': 'italic'
+                                                })
+                                            )
+                                            .add(Block('text', 'time')
+                                                .data('...')
+                                                .css({
+                                                    'font-size': '11px',
+                                                    'margin-top': '0',
+                                                    'display': 'block',
+                                                    'float': 'left',
+                                                    'color': '#666',
+                                                    'cursor': 'pointer',
+                                                    'font-style': 'italic'
+                                                })
+                                            )
+                                        )
+                                        .__child('content')
+                                            .css('text-align', 'left')
+                                            .__parent()
+                                    )
+                                    .on('mouseover', function (e, b) {
+                                        b.css('background-color', '#f3f3f3');
+                                    })
+                                    .on('mouseout', function (e, b) {
+                                        b.css('background-color', 'rgba(255, 255, 255, 0)');
+                                    })
+                                    .on('updatetime', function (e, b, d) {
+                                        var lTS = parseInt(b.key('lastTimestamp'));
+                                        var time_string = app.util.duration_desc(lTS);
+                                        b.child('block/status/time').html('').data(time_string);
+                                        e.stopPropagation();
+                                    })
+                                    .on('click', function (e, b, d) {
+                                        app.selectDevice(b.mark());
+                                    })
+                                ;
+                            }
+                        load
+                            {
+                                data('name', function (name) {
+                                    block.key('name', name);
+                                    block.child('block/name/text').html('').data(name);
+                                });
+                                data('last_event', function (last_event) {
+                                    var text = "";
+                                    var color = block.key('buttonBlue');
+                                    if (last_event != "") {
+                                        if (last_event == "disconnected") {
+                                            text +=  "Offline";
+                                            color = block.key('deleteRed');
+                                        } else if (last_event == "connected") {
+                                            text +=  "Syncing";
+                                            color = block.key('buttonBlue');
+                                        } else if (last_event == "authenticated") {
+                                            text +=  "Syncing";
+                                            color = block.key('buttonBlue');
+                                        } else if (last_event == "online") {
+                                            text +=  "Online";
+                                            color = block.key('statusGreen');
+                                        }
+                                        block.child('block/status/event').html(text + '&nbsp;');
+                                        block.child('block/indicator/circle').css('background-color', color);
+                                    }
+                                });
+                                data('last_timestamp', function (last_timestamp) {
+                                    if (block.key('timeUpdater') === "null") {
+                                        block.key('timeUpdater', setInterval(function () {
+                                            block.on('updatetime');
+                                        }, 500));
+                                    }
+                                    block.key('lastTimestamp', last_timestamp);
+                                    block.on('updatetime');
+                                });
+                            }
+                    selector-menu menu
                         css
-                            height 100%
-                            width 20px
-                            float left
-                            margin 0
-                            margin-top 1px
-                            margin-right 10px
-                        div circle
-                            css
-                                border-radius 100%
-                                height 10px
-                                width 10px
-                                margin 0 auto
-                                background-color rgba(20, 20, 20, 0.6)
-                    block status
-                        css
-                            float left
-                            width auto
-                        text text
-                            val Arduino Status
-                            css
-                                font-size 20px
-                                margin-bottom 1px
-                                display block
-                                margin-right 10px
-                                color #222
-                                cursor default
-                    block time
-                        css
-                            float left
-                            width auto
-                        text text
-                            val 2 mins ago
-                            css
-                                font-size 12.5px
-                                margin-top 3px
-                                display block
-                                color #555
-                                cursor default
+                            width 230px
+                            height 50px
+                        {
+                            block.__child('content/options').css({
+                                bottom: '47px'
+                            });
+                            block.__child('content')
+                                .__remove('text')
+                                .__child('arrow')
+                                    .css({
+                                        right: '8px',
+                                        height: '25px',
+                                        width: '25px'
+                                    })
+                                    .__parent()
+                                .__add(Block('block', 'placeholder')
+                                    .add(Block('text', 1)
+                                        .data('Device List')
+                                        .css({
+                                            fontSize: '18px',
+                                            paddingLeft: '8px',
+                                            color: '#333'
+                                        })
+                                    )
+                                    .__child('content')
+                                        .css('text-align', 'left')
+                                        .__parent()
+                                )
+                                .__add(Block('block', 1)
+                                    .css({
+                                        position: 'absolute',
+                                        top: '0',
+                                        left: '0',
+                                        display: 'none'
+                                    })
+                                    .__child('content')
+                                        .__add(Block('block', 'indicator')
+                                            .css({
+                                                'height': '100%',
+                                                'width': '20px',
+                                                'margin': '0',
+                                                'margin-top': '1px',
+                                                'margin-right': '10px',
+                                                'position': 'absolute',
+                                                'left': '15px',
+                                                'top': '0'
+                                            })
+                                            .add(Block('div', 'circle')
+                                                .css({
+                                                    'border-radius': '100%',
+                                                    'height': '10px',
+                                                    'width': '10px',
+                                                    'margin': '0 auto',
+                                                    'background-color': 'rgba(20, 20, 20, 0.6)'
+                                                })
+                                            )
+                                        )
+                                        .__add(Block('div', 'name')
+                                            .css({
+                                                'float': 'left',
+                                                'width': 'auto',
+                                                'height': '36%',
+                                                'position': 'absolute',
+                                                'left': '50px',
+                                                'top': '12%'
+                                            })
+                                            .__add(Block('text', 1)
+                                                .data('Device Name')
+                                                .css({
+                                                    'font-size': '18px',
+                                                    'margin-bottom': '1px',
+                                                    'display': 'block',
+                                                    'margin-right': '10px',
+                                                    'color': '#222',
+                                                    'cursor': 'pointer'
+                                                })
+                                            )
+                                        )
+                                        .__add(Block('div', 'status')
+                                            .css({
+                                                'float': 'left',
+                                                'width': 'auto',
+                                                'height': '46%',
+                                                'position': 'absolute',
+                                                'left': '50px',
+                                                'bottom': '0'
+                                            })
+                                            .__add(Block('text', 'event')
+                                                .html('Event&nbsp;')
+                                                .css({
+                                                    'font-size': '11px',
+                                                    'margin-top': '0',
+                                                    'display': 'block',
+                                                    'float': 'left',
+                                                    'color': '#666',
+                                                    'cursor': 'pointer',
+                                                    'font-style': 'italic'
+                                                })
+                                            )
+                                            .__add(Block('text', 'time')
+                                                .data('...')
+                                                .css({
+                                                    'font-size': '11px',
+                                                    'margin-top': '0',
+                                                    'display': 'block',
+                                                    'float': 'left',
+                                                    'color': '#666',
+                                                    'cursor': 'pointer',
+                                                    'font-style': 'italic'
+                                                })
+                                            )
+                                        )
+                                    .__parent()
+                                )    
+                            ;
+                        }
                 panel-item current
                     icon play
                     :hidechildren
@@ -1062,13 +1524,27 @@ app
                         {
                             block.on('hidechildren');
                             if (current.type == 'hue') {
-                                block.child('hue/color/view').css('background-color', app.util.rgbcss(current.data.r, current.data.g, current.data.b));
+                                console.log(current);
+                                var colorLeft = current.data.left;
+                                var colorRight = current.data.right;
+                                block.child('hue/color/views')
+                                    .child('viewL')
+                                        .css('background-color', app.util.rgbcss(colorLeft.r, colorLeft.g, colorLeft.b))
+                                    .sibling('viewR')
+                                        .css('background-color', app.util.rgbcss(colorRight.r, colorRight.g, colorRight.b))
+                                ;
                                 block.child('hue').css('display', 'block');
                             } else if (current.type == 'pattern') {
                                 block.child('pattern/text').html('').data(current.data.name);
                                 block.child('pattern').css('display', 'block');
                             } else if (current.type == 'music') {
                                 block.child('music').css('display', 'block');
+                            } else if (current.type == 'none') {
+                                block.child('pattern/text').html('<span style="font-size:17px;font-style:italic;font-color:#333;">None</span>');
+                                block.child('pattern').css('display', 'block');
+                            } else if (current.type == 'no_device') {
+                                block.child('pattern/text').html('<span style="font-size:17px;font-style:italic;font-color:#333;">No device</span>');
+                                block.child('pattern').css('display', 'block');
                             }
                         }
                     div hue
@@ -1091,16 +1567,32 @@ app
                         block color
                             css
                                 width 50%
-                                max-width 100px
+                                max-width 150px
                                 float left
-                                margin-left 5px
-                            div view
+                                margin-left 0.5px
+                            div views
                                 css
                                     width 100%
                                     height 50%
-                                    border-radius 6px
-                                    border 1px solid #eee
-                                    margin-top 2px
+                                div viewL
+                                    css
+                                        width 50%
+                                        height 100%
+                                        border-radius 6px 0 0 6px
+                                        border 1px solid #eee
+                                        margin-top 2px
+                                        float left
+                                        box-sizing border-box
+                                div viewR
+                                    css
+                                        width 50%
+                                        height 100%
+                                        border-radius 0 6px 6px 0
+                                        border 1px solid #eee
+                                        margin-top 2px
+                                        float left
+                                        box-sizing border-box
+                                        border-left none
                     div pattern
                         css
                             display none
@@ -1124,6 +1616,20 @@ app
                         {
                             block.child('brightslider/slider/input').$().val(update);
                             block.child('brightslider/value/text').html('').data("" + update);
+                        }
+                    :enable
+                        {
+                            block.child('brightslider/slider/input').css({
+                                'opacity': '1',
+                                'cursor': 'pointer'
+                            }).node().disabled = false;
+                        }
+                    :disable
+                        {
+                            block.child('brightslider/slider/input').css({
+                                'opacity': '0.7',
+                                'cursor': 'default'
+                            }).node().disabled = true;
                         }
                     div brightslider
                         css
@@ -1155,12 +1661,12 @@ app
                                             if (val > 100) val = 100;
                                             block.parent().sibling('value').child('text').html('' + val);
                                             app.direct.brightness = val;
-                                            app.sendBrightness();
+                                            app.sendBrightness(data.latent ? true : false);
                                         }
                                     }
                                 :mouseup
                                     {
-                                        block.on('input');
+                                        block.on('input', { latent: true });
                                         app.playCurrent();
                                     }
                         block value
@@ -1181,6 +1687,20 @@ app
                         {
                             block.child('speedslider/slider/input').$().val(update);
                             block.child('speedslider/value/text').html('').data("" + update);
+                        }
+                    :enable
+                        {
+                            block.child('speedslider/slider/input').css({
+                                'opacity': '1',
+                                'cursor': 'pointer'
+                            }).node().disabled = false;
+                        }
+                    :disable
+                        {
+                            block.child('speedslider/slider/input').css({
+                                'opacity': '0.7',
+                                'cursor': 'default'
+                            }).node().disabled = true;
                         }
                     div speedslider
                         css
@@ -1213,12 +1733,12 @@ app
                                             if (val > 500) val = 500;
                                             block.parent().sibling('value').child('text').html('' + val);
                                             app.direct.speed = val;
-                                            app.sendSpeed();
+                                            app.sendSpeed(data.latent ? true : false);
                                         }
                                     }
                                 :mouseup
                                     {
-                                        block.on('input');
+                                        block.on('input', { latent: true });
                                         app.playCurrent();
                                     }
                         block value
@@ -1290,142 +1810,62 @@ app
                                     font-size 15px
                 panel-item scheme
                     icon palette
-                    block selector
-                        {
-                            block.key('visible', false);
-                        }
-                        css
-                            position relative
-                            width auto
-                            height 40px
-                            border 1px solid #e8e8e8
-                            padding 0 40px 0 10px
-                            border-radius 4px
-                            cursor pointer
-                            box-sizing border-box
-                        !selector-option
-                            init
-                                {
-                                    return Block('div')
-                                        .css({
-                                            width: '100%',
-                                            height: '40px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0)',
-                                            cursor: 'pointer'
-                                        })
-                                        .add(Block('block', 1)
-                                            .add(Block('text', 1)
-                                                .data('title')
-                                                .css({
-                                                    fontSize: '15px',
-                                                    paddingLeft: '15px',
-                                                    color: '#333',
-                                                    letterSpacing: '0.4px'
-                                                })
-                                            )
-                                            .__child('content')
-                                                .css('text-align', 'left')
-                                                .__parent()
+                    !selector-scheme
+                        init
+                            {
+                                return Block('div')
+                                    .css({
+                                        width: '100%',
+                                        height: '40px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0)',
+                                        cursor: 'pointer'
+                                    })
+                                    .add(Block('block', 1)
+                                        .add(Block('text', 1)
+                                            .data('title')
+                                            .css({
+                                                fontSize: '15px',
+                                                paddingLeft: '15px',
+                                                color: '#333',
+                                                letterSpacing: '0.4px'
+                                            })
                                         )
-                                        .on('mouseover', function (e, b) {
-                                            b.css('background-color', '#f3f3f3');
-                                        })
-                                        .on('mouseout', function (e, b) {
-                                            b.css('background-color', 'rgba(255, 255, 255, 0)');
-                                        })
-                                        .on('click', function (e, b) {
-                                            app.setScheme(b.key('scheme'));
-                                            // e.stopPropagation();
-                                        })
-                                    ;
-                                }
-                            load
-                                {
-                                    data('scheme', function (scheme) {
-                                        block.key('scheme', scheme);
-                                        block.child('block/text').html('').data(app.util.capitalize(scheme));
-                                    });
-                                }
-                        div options
-                            css
-                                position absolute
-                                width 150px
-                                min-height 50px
-                                bottom 35px
-                                left -1px
-                                background-color white
-                                border 1px solid #eee
-                                border-radius 5px 5px 5px 0
-                                cursor default
-                                box-shadow rgba(210, 210, 210, 0.3) 0px 2px 4px
-                                z-index 10
-                                display none
-                                opacity 0
-                                transition opacity 0.15s ease
+                                        .__child('content')
+                                            .css('text-align', 'left')
+                                            .__parent()
+                                    )
+                                    .on('mouseover', function (e, b) {
+                                        b.css('background-color', '#f3f3f3');
+                                    })
+                                    .on('mouseout', function (e, b) {
+                                        b.css('background-color', 'rgba(255, 255, 255, 0)');
+                                    })
+                                    .on('click', function (e, b, d) {
+                                        app.setScheme(b.key('name'));
+                                    })
+                                ;
+                            }
+                        load
                             {
-                                for (var color in app.colors) {
-                                    if (app.colors.hasOwnProperty(color)) {
-                                        block.add(Block('selector-option', color).data({ scheme: color }));
-                                    }
+                                data('name', function (name) {
+                                    block.key('name', name);
+                                    block.child('block/text').html('').data(app.util.capitalize(name));
+                                });
+                            }
+                    selector-menu selector
+                        {
+                            for (var color in app.colors) {
+                                if (app.colors.hasOwnProperty(color)) {
+                                    block.add(Block('selector-scheme', color)
+                                        .data({ name: color })
+                                    );
                                 }
                             }
-                            :show
-                                {
-                                    block.css('display', 'block');
-                                    setTimeout(function () {
-                                        block.css('opacity', '1');
-                                    }, 10);
-                                }
-                            :hide
-                                {
-                                    block.css('opacity', '0');
-                                    setTimeout(function () {
-                                        block.css('display', 'block');
-                                    }, 160);
-                                }
-                        text text
-                            val selector
-                            css
-                                color #333
-                                letter-spacing 0.4px
-                                font-size 15px
-                        image arrow
-                            src img/down_b.png
-                            height 20px
-                            width 20px
-                            css
-                                position absolute
-                                right 4px
-                                top 10px
-                                opacity 0.8
-                                transition transform 0.1s ease
-                                transform rotate(90deg)
-                            :up
-                                {
-                                    block.css('transform', 'rotate(90deg)');
-                                }
-                            :down
-                                {
-                                    block.css('transform', 'rotate(180deg)');
-                                }
-                            }
-                        :click
-                            {
-                                if (block.key('visible')) {
-                                    block.child('options').on('hide');
-                                    block.child('arrow').on('up');
-                                    block.key('visible', false);
-                                } else {
-                                    block.child('options').on('show');
-                                    block.child('arrow').on('down');
-                                    block.key('visible', true);
-                                }
-                            }
+                        }
                     #select
                         {
-                            var name = app.util.capitalize(select);
-                            // name = select;
-                            block.child('selector/text').html('').data(name);
+                            var option = app.util.capitalize(select);
+                            block.child('selector').data({ select: option });
                         }
             div area
                 css
@@ -2024,13 +2464,33 @@ app
                                     '-moz-box-shadow': inset, '-webkit-box-shadow': inset, 'box-shadow': inset
                                 });
                             }
+                        {
+                            block.key('enabled', true);
+                        }
                         :mouseover, mouseout, mousedown, mouseup
                             {
-                                block.css('background-color', app.colors[app.scheme].button[event.type]);
+                                if (block.key('enabled')) block.css('background-color', app.colors[app.scheme].button[event.type]);
                             }
                         :click
                             {
-                                app.playPattern();
+                                if (block.key('enabled'))
+                                    app.playPattern();
+                            }
+                        :enable
+                            {
+                                block.key('enabled', true);
+                                block.css({
+                                    'opacity': '0.9',
+                                    'cursor': 'pointer'
+                                });
+                            }
+                        :disable
+                            {
+                                block.key('enabled', false);
+                                block.css({
+                                    'opacity': '0.5',
+                                    'cursor': 'default'
+                                });
                             }
                         image img
                             src img/play_w.png

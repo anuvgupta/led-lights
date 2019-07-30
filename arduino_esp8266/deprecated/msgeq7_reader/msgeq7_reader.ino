@@ -5,12 +5,14 @@
 #define BLUEPIN 11
 #define STROBEPIN 2
 #define RESETPIN 4
-#define OUTRPIN A5
-#define OUTLPIN A6
+#define OUTRPIN A6
+#define OUTLPIN A5
 
-#define AMPLIFY 1.0 // int 1 - 20, 1 (15 for invert)
+#define PREAMP 1.5 // double 1 - 2, 1 (2 for low volume)
+#define POSTAMP 1 // int 1 - 20, 1 (10 if inverted)
+#define NOISE 30 // int 0 - 50, 15
 #define INVERT false // boolean, false
-#define SMOOTHING 95 // int 0 - 99, 0
+#define SMOOTHING 94 // int 0 - 99, 0
 
 int bands[7];
 int record[7];
@@ -53,6 +55,8 @@ void loop() {
   
   for (int i = 0; i < 7; i++) {
     double level = bands[i];
+    // pre-amplify
+    level *= PREAMP;
     // correct
     level /= 2.0;
     level *= 255.0 / 1023.0;
@@ -60,13 +64,11 @@ void loop() {
     level /= 5.0;
     level = (int) level;
     level *= 5.0;
-    // amplify
-    level *= AMPLIFY;
+    // post-amplify
+    level *= POSTAMP;
     // bound
-    if (level <= 15) level = 0;
+    if (level <= NOISE) level = 0;
     if (level > 255) level = 255;
-    // invert
-    if (INVERT) level = 255 - level;
     // smooth
     if (SMOOTHING > 0) {
       double weight = (SMOOTHING / 100.0);
@@ -74,6 +76,8 @@ void loop() {
     }
     // save
     record[i] = level;
+    // invert
+    if (INVERT) level = 255 - level;
     // display
     if (i == 0) {
       blue(level);

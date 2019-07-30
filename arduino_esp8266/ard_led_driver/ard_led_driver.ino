@@ -1,25 +1,47 @@
 // includes
 #include "SoftwareSerialMod.h"
 
+// debug
+#define DEBUG false
+
 // LED PWM pins
-#define REDPIN 9
-#define GREENPIN 10
-#define BLUEPIN 11
+#define REDPIN_L 9
+#define GREENPIN_L 10
+#define BLUEPIN_L 11
+#define REDPIN_R 3
+#define GREENPIN_R 5
+#define BLUEPIN_R 6
+// msgeq7 pins
+#define STROBEPIN 2
+#define RESETPIN 4
+#define OUTRPIN A6
+#define OUTLPIN A5
+// msgeq7 settings
+#define PREAMP 1.5 // double 1 - 2, 1 (2 for low volume)
+#define POSTAMP 1 // int 1 - 20, 1 (10 if inverted)
+#define NOISE 30 // int 0 - 50, 15
+#define INVERT false // boolean, false
+#define SMOOTHING 94 // int 0 - 99, 0
 
-#define DEBUG true
-
+// esp8266 data
+bool ready = false;
+SoftwareSerial ESP8266(7, 8); // ARD 7 => ESP TX, ARD 8 => ESP RX
+unsigned long lastTimestamp = 0;
 // parsing data
 int mb_i = 0;
 char msgbuff[500]; // extra size just in case
 char tokenbuff[20]; // 5(f) + 3(r) + 3(g) + 3(b) + 5(t) + 1(\0)
 char databuff[6]; // 5(int dig max) + 1(\0)
-bool ready = false;
-SoftwareSerial ESP8266(6, 7);
-unsigned long lastTimestamp = 0;
+// msgeq7 data
+int bands[7];
+int bands_record[7];
 // rgb data
-double r = 0; // hue red
-double g = 0; // hue green
-double b = 0; // hue blue
+double r_l = 0; // hue red (left)
+double g_l = 0; // hue green (left)
+double b_l = 0; // hue blue (left)
+double r_r = 0; // hue red (right)
+double g_r = 0; // hue green (right)
+double b_r = 0; // hue blue (right)
 double t = 0; // hue time
 double n_r = 0; // new hue red
 double n_g = 0; // new hue green
@@ -31,7 +53,7 @@ double brightness = 100; // brightness
 double speedmult = 100; // speed mult
 int fade = 0; // transition (ms)
 #define PRECISION 5 // 5 millisecond precision for fades
-#define RESET_INTERVAL 10 // reset ESP8266 every 10 minutes
+#define RESET_INTERVAL 5 // reset ESP8266 every 5 minutes
 
 void setup() {
   // init hardware and software serials
@@ -41,20 +63,41 @@ void setup() {
   if (DEBUG) Serial.println(F("LED Strip Driver"));
 
   // init LED PWM pins
-  pinMode(REDPIN, OUTPUT);
-  pinMode(GREENPIN, OUTPUT);
-  pinMode(BLUEPIN, OUTPUT);
-  red(0); green(0); blue(0);
+  pinMode(REDPIN_L, OUTPUT);
+  pinMode(GREENPIN_L, OUTPUT);
+  pinMode(BLUEPIN_L, OUTPUT);
+  red_l(0); green_l(0); blue_l(0);
+  pinMode(REDPIN_R, OUTPUT);
+  pinMode(GREENPIN_R, OUTPUT);
+  pinMode(BLUEPIN_R, OUTPUT);
+  red_r(0); green_r(0); blue_r(0);
 
+  // init msgeq7 pins
+  pinMode(STROBEPIN, OUTPUT);
+  pinMode(RESETPIN, OUTPUT);
+  pinMode(OUTRPIN, INPUT);
+  pinMode(OUTLPIN, INPUT);
+  digitalWrite(RESETPIN, LOW);
+  digitalWrite(STROBEPIN, LOW);
+  delay(1);
+  // reset sequence
+  digitalWrite(RESETPIN,  HIGH);
+  delay(1);
+  digitalWrite(RESETPIN,  LOW);
+  digitalWrite(STROBEPIN, HIGH);
+  delay(1);
+
+  // init esp8266
   if (DEBUG) Serial.println(F("[nano] connecting to ESP8266"));
   lastTimestamp = millis();
 }
 
 void loop() {
   // drive LED's
-  red(r); green(g); blue(b);
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
 
-  // check time interval and send reset message
+  // check time interval/reset esp8266
   unsigned long newTimestamp = millis();
   unsigned long interval = 60000;
   interval *= RESET_INTERVAL;
@@ -89,16 +132,12 @@ void loop() {
             if (msgbuff[0] == 'h') {
               if (DEBUG) Serial.print(F("[update] new hue: "));
               if (DEBUG) Serial.println(msgbuff);
-              bool f = 1;
-              while (ESP8266.available() <= 0 && !resetRequired()) {
-                hue(f && DEBUG);
-                if (f) f = 0;
-              }
+              hue(DEBUG);
             } else if (msgbuff[0] == 'p') {
               if (DEBUG) Serial.print(F("[update] new pattern: "));
               if (DEBUG) Serial.println(msgbuff);
               bool f = 1;
-              while (ESP8266.available() <= 0 && !resetRequired()) {
+              while (uninterrupted()) {
                 pattern(f && DEBUG);
                 if (f) f = 0;
               }
@@ -110,6 +149,9 @@ void loop() {
               if (DEBUG) Serial.print(F("[update] new speed: "));
               if (DEBUG) Serial.println(msgbuff);
               speedm(DEBUG);
+            } else if (msgbuff[0] == 'm') {
+              if (DEBUG) Serial.print(F("[update] music mode"));
+              music(DEBUG);
             }
           }
           mb_i = 0;
@@ -132,6 +174,11 @@ bool resetRequired() {
   return ready && newTimestamp - lastTimestamp >= interval;
 }
 
+// check if current process should be interrupted
+bool uninterrupted() {
+  return ready && ESP8266.available() <= 0 && Serial.available() <= 0 && !resetRequired();
+}
+
 // process brightness from msgbuff
 void bright(bool v) {
   int i, j;
@@ -140,7 +187,8 @@ void bright(bool v) {
   databuff[3] = '\0';
   brightness = atoi(databuff);
   if (v) { Serial.print("[nano] brightness – "); Serial.println(brightness); }
-  red(r); green(g); blue(b);
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
 }
 
 // process speed from msgbuff
@@ -151,37 +199,59 @@ void speedm(bool v) {
   databuff[3] = '\0';
   speedmult = atoi(databuff);
   if (v) { Serial.print("[nano] speed – "); Serial.println(speedmult); }
-  red(r); green(g); blue(b);
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
 }
 
 // process hue from msgbuff
 void hue(bool v) {
   // parse message data
   int i, j;
-  for (i = 1, j = 0; j < 3; i++, j++)
+  // parse left
+  for (i = 2, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_r = atoi(databuff);
-  for (i = 4, j = 0; j < 3; i++, j++)
+  for (i = 5, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_g = atoi(databuff);
-  for (i = 7, j = 0; j < 3; i++, j++)
+  for (i = 8, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_b = atoi(databuff);
-  if (v) { Serial.print(F("[nano] hue – rgb(")); Serial.print(n_r); Serial.print(F(", ")); Serial.print(n_g); Serial.print(F(", ")); Serial.print(n_b); Serial.println(")"); }
-  // change color
-  while (ESP8266.available() <= 0 && !resetRequired()) {
-    r = n_r; red(r);
-    g = n_g; green(g);
-    b = n_b; blue(b);
+  r_l = n_r; g_l = n_g; b_l = n_b;
+  // parse right
+  for (i = 2 + 10, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_r = atoi(databuff);
+  for (i = 5 + 10, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_g = atoi(databuff);
+  for (i = 8 + 10, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  n_b = atoi(databuff);
+  r_r = n_r; g_r = n_g; b_r = n_b;
+  if (v) {
+    Serial.print(F("[nano] hue – LEFT  rgb(")); Serial.print(r_l); Serial.print(F(", ")); Serial.print(g_l); Serial.print(F(", ")); Serial.print(b_l); Serial.println(")");
+    Serial.print(F("             RIGHT rgb(")); Serial.print(r_r); Serial.print(F(", ")); Serial.print(g_r); Serial.print(F(", ")); Serial.print(b_r); Serial.println(")");
   }
+  // change color
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
 }
 
 // process pattern from msgbuff
 void pattern(bool v) {
-  for (int z = 1; ESP8266.available() <= 0 && !resetRequired() && tokenize(tokenbuff, msgbuff + 1, ',', z); z++) {
+  // match left and right
+  r_r = r_l; g_r = g_l; b_r = b_l;
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
+  // loop through tokens
+  for (int z = 1; uninterrupted() && tokenize(tokenbuff, msgbuff + 1, ',', z); z++) {
     fade = 0; // reset fade to default (none)
     // parse message data
     int i, j;
@@ -210,7 +280,7 @@ void pattern(bool v) {
     // fade into color
     fadeColor();
     // hold color for time
-    for (j = t / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && j > 0 && !resetRequired(); j--) {
+    for (j = t / PRECISION / (speedmult / 100.0); uninterrupted() && j > 0; j--) {
       delay(PRECISION);
     }
   }
@@ -221,33 +291,99 @@ void pattern(bool v) {
 void fadeColor() {
   // perform fade if exists
   if (fade != 0) {
-    r_st = ((double) PRECISION) * (n_r - r) / ((double) fade);
-    g_st = ((double) PRECISION) * (n_g - g) / ((double) fade);
-    b_st = ((double) PRECISION) * (n_b - b) / ((double) fade);
-    for (int z = fade / PRECISION / (speedmult / 100.0); ESP8266.available() <= 0 && z > 0 && !resetRequired(); z--) {
-      r += r_st; g += g_st; b += b_st;
-      if (r < 0) r = 0; if (r > 255) r = 255;
-      if (g < 0) g = 0; if (g > 255) g = 255;
-      if (b < 0) b = 0; if (b > 255) b = 255;
-      red(r); green(g); blue(b);
+    r_st = ((double) PRECISION) * (n_r - r_l) / ((double) fade);
+    g_st = ((double) PRECISION) * (n_g - g_l) / ((double) fade);
+    b_st = ((double) PRECISION) * (n_b - b_l) / ((double) fade);
+    for (int z = fade / PRECISION / (speedmult / 100.0); uninterrupted() && z > 0; z--) {
+      r_l += r_st; g_l += g_st; b_l += b_st;
+      if (r_l < 0) r_l = 0; if (r_l > 255) r_l = 255;
+      if (g_l < 0) g_l = 0; if (g_l > 255) g_l = 255;
+      if (b_l < 0) b_l = 0; if (b_l > 255) b_l = 255;
+      r_r = r_l; g_r = g_l; b_r = b_l;
+      red_l(r_l); green_l(g_l); blue_l(b_l);
+      red_r(r_r); green_r(g_r); blue_r(b_r);
       delay(PRECISION);
     }
   }
   // change final color
-  r = n_r; red(r);
-  g = n_g; green(g);
-  b = n_b; blue(b);
+  r_l = n_r; g_l = n_g; b_l = n_b;
+  r_r = r_l; g_r = g_l; b_r = b_l;
+  red_l(r_l); green_l(g_l); blue_l(b_l);
+  red_r(r_r); green_r(g_r); blue_r(b_r);
+}
+
+// music reactive mode
+void music(bool v) {
+  while (uninterrupted()) {
+    // pulse strobe to cycle bands
+    for (int i = 0; i < 7; i++) {
+      // cycle
+      digitalWrite(STROBEPIN, LOW);
+      delayMicroseconds(100);
+      // read
+      bands[i] = analogRead(OUTRPIN) + analogRead(OUTLPIN);
+      digitalWrite(STROBEPIN, HIGH);
+      delayMicroseconds(1);
+      double level = bands[i];
+      // pre-amplify
+      level *= PREAMP;
+      // correct
+      level /= 2.0;
+      level *= 255.0 / 1023.0;
+      // round
+      level /= 5.0;
+      level = (int) level;
+      level *= 5.0;
+      // post-amplify
+      level *= POSTAMP;
+      // bound
+      if (level <= NOISE) level = 0;
+      if (level > 255) level = 255;
+      // smooth
+      if (SMOOTHING > 0) {
+        double weight = (SMOOTHING / 100.0);
+        level = (level * (1.0 - weight)) + (bands_record[i] * weight);
+      }
+      // save
+      bands_record[i] = level;
+      // invert
+      if (INVERT) level = 255 - level;
+      // display
+      if (i == 0) {
+        level /=  255.0;
+        red_l(((double) r_l) * level);
+        green_l(((double) g_l) * level);
+        blue_l(((double) b_l) * level);
+        red_r(((double) r_r) * level);
+        green_r(((double) g_r) * level);
+        blue_r(((double) b_r) * level);
+        if (DEBUG) {
+          int l = level;
+          Serial.println(l, DEC);
+        }
+      }
+    }
+  }
 }
 
 // LED PWM functions
-void red(int v) {
-  analogWrite(REDPIN, (int) (brightness / 100.0 * ((double) v)));
+void red_l(int v) {
+  analogWrite(REDPIN_L, (int) (brightness / 100.0 * ((double) v)));
 }
-void green(int v) {
-  analogWrite(GREENPIN, (int) (brightness / 100.0 * ((double) v)));
+void green_l(int v) {
+  analogWrite(GREENPIN_L, (int) (brightness / 100.0 * ((double) v)));
 }
-void blue(int v) {
-  analogWrite(BLUEPIN, (int) (brightness / 100.0 * ((double) v)));
+void blue_l(int v) {
+  analogWrite(BLUEPIN_L, (int) (brightness / 100.0 * ((double) v)));
+}
+void red_r(int v) {
+  analogWrite(REDPIN_R, (int) (brightness / 100.0 * ((double) v)));
+}
+void green_r(int v) {
+  analogWrite(GREENPIN_R, (int) (brightness / 100.0 * ((double) v)));
+}
+void blue_r(int v) {
+  analogWrite(BLUEPIN_R, (int) (brightness / 100.0 * ((double) v)));
 }
 
 // convenience custom tokenizer

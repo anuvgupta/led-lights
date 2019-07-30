@@ -14,10 +14,10 @@ WebSocketsClient ws;
 #define SERIAL Serial
 #define ESP_DEBUG_V false
 #define DEBUG_MODE false
-//#define SERVER "10.0.1.40"
-//#define PORT 30003
-#define SERVER "leds.anuv.me"
-#define PORT 3003
+#define SERVER "10.0.1.40"
+#define PORT 30003
+//#define SERVER "leds.anuv.me"
+//#define PORT 3003
 
 // parsing data
 int mb_i = 0;
@@ -27,11 +27,12 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
       if (DEBUG_MODE) SERIAL.printf("[ws] disconnected\n");
+      restartESP();
       break;
     case WStype_CONNECTED:
        if (DEBUG_MODE) SERIAL.printf("[ws] connected to %s\n", payload);
        if (DEBUG_MODE) SERIAL.printf("[ws] syncing as arduino\n");
-      ws.sendTXT("{\"event\":\"arduinosync\",\"data\":true}");
+      ws.sendTXT(DEVICE_SYNC_JSON);
       break;
     case WStype_TEXT:
       // SERIAL.printf("[ws] received text – %s\n", payload);
@@ -56,7 +57,7 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
         Serial.printf("s%s\n", payload + 3);
       } else if (memcmp(payload, "@hb", 3) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] heartbeat\n");
-        ws.sendTXT("{\"event\":\"arduinoheartbeat\"}");
+        ws.sendTXT("{\"event\":\"arduino_heartbeat\"}");
       } else if (memcmp(payload, "@music", 6) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] music mode\n");
         Serial.printf("music\n");
@@ -111,16 +112,19 @@ void loop() {
         if (c == '\n') {
           msgbuff[mb_i] = '\0';
           if (memcmp(msgbuff + mb_i - 5, "reset", 5) == 0) {
-            if (DEBUG_MODE) Serial.println(F("[boot] resetting...\n"));
-            ESP.restart();
+            restartESP();
           }
           mb_i = 0;
         } else if (c != 0 && c > 32 && c < 126) {
           msgbuff[mb_i] = c;
-          // Serial.println("msgbuff[" + String(mb_i) + "] " + String(msgbuff[mb_i]) + " (" + String((uint8_t) msgbuff[mb_i]) + ")");
           mb_i++;
         }
       }
     }
   }
+}
+
+void restartESP() {
+  if (DEBUG_MODE) Serial.println(F("[boot] resetting...\n"));
+  ESP.restart();
 }

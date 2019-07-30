@@ -1,20 +1,22 @@
 var app = {
     id: 0,
-    block: Block("div", "app"),
+    block: Block('div', 'app'),
     socket: null,
     wsurl:
-        "ws://" +
+        'ws://' +
         document.domain +
-        ":" +
-        (document.domain == "leds.anuv.me" ? 3003 : 30003),
-    password: "",
+        ':' +
+        (document.domain == 'leds.anuv.me' ? 3003 : 30003),
+    password: '',
     rgb: {
         r: 0,
         g: 0,
         b: 0,
-        id: ""
+        id: ''
     },
     bwThreshold: 200,
+    device_id: null,
+    devices: {},
     direct: {
         brightness: 100,
         speed: 100,
@@ -23,112 +25,110 @@ var app = {
         speedAllowed: true,
         speedInterval: 100
     },
-    trackLiveUpdates: false,
-    encodeMSG: function(e, d) {
+    trackLiveUpdates: {
+        left: false,
+        right: false,
+        testColorAllowed: true,
+        testColorInterval: 100
+    },
+    encode_msg: function (e, d) {
         return JSON.stringify({
             event: e,
             data: d
         });
     },
-    decodeMSG: function(m) {
+    decode_msg: function (m) {
         try {
             m = JSON.parse(m);
         } catch (e) {
-            console.log("[wss] invalid json msg ", e);
+            console.log('[wss] invalid json msg ', e);
             m = null;
         }
         return m;
     },
-    initblock: function(callback) {
+    init_block: function (callback) {
         app.block.fill(document.body);
-        var scheme = app.util.cookie("scheme");
+        var scheme = app.util.cookie('scheme');
         if (scheme != null) app.setScheme(scheme);
-        $(document.body).on("DOMNodeInserted", function(e) {
+        $(document.body).on('DOMNodeInserted', function (e) {
             if (e.target.parentNode == document.body) {
-                e.target.style.top = "65px";
+                e.target.style.top = '65px';
                 $(e.target)
                     .children()
                     .css({
-                        borderRadius: "1px",
-                        boxShadow: "none"
+                        borderRadius: '1px',
+                        boxShadow: 'none'
                     });
+                $(e.target).off('click.updatecolor');
+                $(e.target).on('click.updatecolor', function () {
+                    app.updateColor(true);
+                    if (app.trackLiveUpdates.left || app.trackLiveUpdates.right)
+                        app.testColor(true);
+                });
             }
         });
-        setInterval(function() {
-            var currentDetected = app.util.rgbstring(
-                app.rgb.r,
-                app.rgb.g,
-                app.rgb.b
-            );
-            if (
-                app.trackLiveUpdates &&
-                app.testColorData.lastDetected == currentDetected &&
-                app.testColorData.lastSent != currentDetected
-            ) {
-                app.testColorData.lastSent = currentDetected;
-                app.socket.send(
-                    app.encodeMSG("testcolor", {
-                        r: app.rgb.r,
-                        g: app.rgb.g,
-                        b: app.rgb.b
-                    })
-                );
-            }
-            app.testColorData.lastDetected = currentDetected;
-        }, app.testColorData.detectInterval);
-        setTimeout(function() {
-            app.block.css("opacity", "1");
-        }, 50);
         Block.queries();
-        setTimeout(function() {
+        setTimeout(function () {
+            app.block.css('opacity', '1');
+        }, 100);
+        setTimeout(function () {
             Block.queries();
-        }, 500);
-        if (app.util.mobile() || app.util.mobileAndTablet()) {
-            Block.queries("off");
-            $(window).on("orientationchange", function() {
-                setTimeout(function() {
+            setTimeout(function () {
+                Block.queries();
+            }, 200);
+        }, 50);
+        if (app.util.mobile() || app.util.mobile_tablet()) {
+            Block.queries('off');
+            $(window).on('orientationchange', function () {
+                setTimeout(function () {
                     Block.queries();
                 }, 250);
-                setTimeout(function() {
+                setTimeout(function () {
                     Block.queries();
                 }, 500);
                 Block.queries();
             });
         }
-        jscolor.installByClassName("jscolor");
+        jscolor.installByClassName('jscolor');
         callback();
     },
-    connect: function() {
+    connect: function () {
         var socket = new WebSocket(app.wsurl);
-        socket.addEventListener("open", function(e) {
-            console.log("socket connected");
-            app.initblock(function() {
-                if (app.util.cookie("password") != null)
-                    app.login(app.util.cookie("password"));
+        socket.addEventListener('open', function (e) {
+            console.log('socket connected');
+            app.init_block(function () {
+                app.selectDevice(null);
+                if (app.util.cookie('password') != null)
+                    app.login(app.util.cookie('password'));
             });
         });
-        socket.addEventListener("error", function(e) {
-            console.log("socket error ", e.data);
+        socket.addEventListener('error', function (e) {
+            console.log('socket error ', e.data);
         });
-        socket.addEventListener("message", function(e) {
-            var d = app.decodeMSG(e.data);
+        socket.addEventListener('message', function (e) {
+            var d = app.decode_msg(e.data);
             if (d != null) {
-                console.log("message from server:", d.event, d.data);
+                console.log('message from server:', d.event, d.data);
                 switch (d.event) {
-                    case "auth":
-                        app.util.cookie("password", app.password);
-                        app.block.on("panel");
+                    case 'auth':
+                        app.util.cookie('password', app.password);
+                        Block.queries();
+                        app.block.on('panel');
+                        Block.queries();
+                        setTimeout(function () {
+                            Block.queries();
+                        }, 10);
                         break;
-                    case "colorpalette":
+                    case 'color_palette':
                         app.block
-                            .child("controlpanel/colors/presets")
-                            .on("clear", {
-                                callback: function() {
+                            .child('controlpanel/colors/presets')
+                            .on('clear', {
+                                callback: function () {
                                     for (var colorID in d.data) {
                                         if (d.data.hasOwnProperty(colorID)) {
                                             app.block
                                                 .child(
-                                                    "controlpanel/colors/presets"
+                                                    'controlpanel/colors/presets'
                                                 )
                                                 .data({
                                                     newpreset: {
@@ -146,8 +146,8 @@ var app = {
                                 }
                             });
                         break;
-                    case "newcolor":
-                        app.block.child("controlpanel/colors/presets").data({
+                    case 'color_new':
+                        app.block.child('controlpanel/colors/presets').data({
                             newpreset: {
                                 r: d.data.r,
                                 g: d.data.g,
@@ -158,8 +158,8 @@ var app = {
                             }
                         });
                         break;
-                    case "updatecolor":
-                        app.block.child("controlpanel/colors/presets").data({
+                    case 'color_update':
+                        app.block.child('controlpanel/colors/presets').data({
                             updatepreset: {
                                 r: d.data.r,
                                 g: d.data.g,
@@ -169,19 +169,19 @@ var app = {
                             }
                         });
                         break;
-                    case "deletecolor":
-                        app.block.child("controlpanel/colors/presets").data({
+                    case 'color_delete':
+                        app.block.child('controlpanel/colors/presets').data({
                             deletepreset: {
                                 id: d.data.id
                             }
                         });
                         break;
-                    case "patternlist":
+                    case 'pattern_list':
                         app.block
-                            .child("controlpanel/patterns")
-                            .on("clearlist");
+                            .child('controlpanel/patterns')
+                            .on('clearlist');
                         for (var p in d.data) {
-                            app.block.child("controlpanel/patterns").data({
+                            app.block.child('controlpanel/patterns').data({
                                 newpattern: {
                                     id: d.data[p].id,
                                     name: d.data[p].name
@@ -191,45 +191,45 @@ var app = {
                         // var patterns = app.block.child('controlpanel/patterns/menu/list').children();
                         // patterns[Object.keys(patterns)[0]].on('click');
                         break;
-                    case "newpattern":
-                        app.block.child("controlpanel/patterns").data({
+                    case 'pattern_new':
+                        app.block.child('controlpanel/patterns').data({
                             newpattern: {
                                 id: d.data.id,
                                 name: d.data.name
                             }
                         });
                         break;
-                    case "loadpattern":
-                        app.block.child("controlpanel/patterns").data({
+                    case 'pattern_load':
+                        app.block.child('controlpanel/patterns').data({
                             patternname: {
                                 id: d.data.id,
                                 name: d.data.name
                             }
                         });
                         app.block
-                            .child("controlpanel/patterns/area/editor")
-                            .on("show");
+                            .child('controlpanel/patterns/area/editor')
+                            .on('show');
                         app.block
-                            .child("controlpanel/patterns/area/editor/colors")
+                            .child('controlpanel/patterns/area/editor/colors')
                             .data({
                                 list: d.data.list
                             });
                         app.currentPattern.list = d.data.list;
                         Block.queries();
                         break;
-                    case "renamepattern":
-                        app.block.child("controlpanel/patterns").data({
+                    case 'pattern_name':
+                        app.block.child('controlpanel/patterns').data({
                             patternname: {
                                 id: d.data.id,
                                 name: d.data.name
                             }
                         });
                         break;
-                    case "updatepattern":
+                    case 'pattern_update':
                         if (app.currentPattern.id == d.data.id) {
                             app.block
                                 .child(
-                                    "controlpanel/patterns/area/editor/colors"
+                                    'controlpanel/patterns/area/editor/colors'
                                 )
                                 .data({
                                     list: d.data.list
@@ -237,99 +237,103 @@ var app = {
                             app.currentPattern.list = d.data.list;
                         }
                         break;
-                    case "deletepattern":
-                        app.block.child("controlpanel/patterns").data({
+                    case 'pattern_delete':
+                        app.block.child('controlpanel/patterns').data({
                             deletepattern: {
                                 id: d.data.id
                             }
                         });
                         if (app.currentPattern.id == d.data.id) {
                             app.block
-                                .child("controlpanel/patterns/area/placeholder")
-                                .on("show");
-                            app.currentPattern.id = "";
-                            app.currentPattern.name = "";
+                                .child('controlpanel/patterns/area/placeholder')
+                                .on('show');
+                            app.currentPattern.id = '';
+                            app.currentPattern.name = '';
                             app.currentPattern.list = null;
                         }
                         break;
-                    case "arduinostatus":
+                    case 'device_list':
+                        app.devices = d.data;
                         app.block
-                            .child("controlpanel/patterns/directpanel/status")
-                            .data({
-                                statusevent: {
-                                    event: d.data.lastEvent,
-                                    time: d.data.lastTimestamp
-                                }
-                            });
+                            .child('controlpanel/patterns/directpanel/devices')
+                            .data({ device_list: d.data });
                         break;
-                    case "current":
-                        var type = d.data.type;
-                        if (type == "music") {
-                            app.currentItem.type = "music";
-                            app.currentItem.data = null;
-                        } else if (type == "pattern") {
-                            app.currentItem.type = "pattern";
-                            app.currentItem.data = {
-                                id: d.data.data.id,
-                                name: d.data.data.name
-                            };
-                        } else if (type == "hue") {
-                            app.currentItem.type = "hue";
-                            app.currentItem.data = {
-                                r: d.data.data.r,
-                                g: d.data.data.g,
-                                b: d.data.data.b
-                            };
-                        } else {
-                            app.currentItem.type = "none";
-                            app.currentItem.data = null;
+                    case 'current':
+                        if (d.data.device_id == app.device_id) {
+                            var current = d.data.data;
+                            var type = current ? current.type : "none";
+                            if (type == 'music') {
+                                app.currentItem.type = 'music';
+                                app.currentItem.data = null;
+                            } else if (type == 'pattern') {
+                                app.currentItem.type = 'pattern';
+                                app.currentItem.data = {
+                                    id: current.data.id,
+                                    name: current.data.name
+                                };
+                            } else if (type == 'hue') {
+                                app.currentItem.type = 'hue';
+                                app.currentItem.data = {
+                                    left: current.data.left,
+                                    right: current.data.right
+                                };
+                            } else {
+                                app.currentItem.type = 'none';
+                                app.currentItem.data = null;
+                            }
+                            app.block
+                                .child('controlpanel/patterns/directpanel/current')
+                                .data({
+                                    current: app.currentItem
+                                });
                         }
-                        app.block
-                            .child("controlpanel/patterns/directpanel/current")
-                            .data({
-                                current: app.currentItem
-                            });
                         break;
-                    case "brightness":
-                        app.direct.brightness = parseInt(d.data);
-                        app.block
-                            .child(
-                                "controlpanel/patterns/directpanel/brightness"
-                            )
-                            .data({
-                                update: app.direct.brightness
-                            });
+                    case 'brightness':
+                        if (d.data.device_id == app.device_id) {
+                            app.direct.brightness = parseInt(d.data.level);
+                            app.block
+                                .child(
+                                    'controlpanel/patterns/directpanel/brightness'
+                                )
+                                .data({
+                                    update: app.direct.brightness
+                                });
+                        }
                         break;
-                    case "speed":
-                        app.direct.speed = parseInt(d.data);
-                        app.block
-                            .child("controlpanel/patterns/directpanel/speed")
-                            .data({
-                                update: app.direct.speed
-                            });
+                    case 'speed':
+                        if (d.data.device_id == app.device_id) {
+                            app.direct.speed = parseInt(d.data.level);
+                            app.block
+                                .child(
+                                    'controlpanel/patterns/directpanel/speed'
+                                )
+                                .data({
+                                    update: app.direct.speed
+                                });
+                        }
                         break;
                     default:
-                        console.log("unknown event", d.event);
+                        console.log('unknown event', d.event);
                         break;
                 }
             } else {
-                console.log("message from server:", "invalid message", e.data);
+                console.log('message from server:', 'invalid message', e.data);
             }
         });
-        socket.addEventListener("close", function(e) {
-            console.log("socket disconnected");
+        socket.addEventListener('close', function (e) {
+            console.log('socket disconnected');
             // alert('disconnected from server');
             app.logout();
         });
-        window.addEventListener("beforeunload", function(e) {
+        window.addEventListener('beforeunload', function (e) {
             // socket.close(1001);
         });
         app.socket = socket;
     },
-    newColor: function() {
+    newColor: function () {
         if (app.socket.readyState == 1) {
             app.socket.send(
-                app.encodeMSG("newcolor", {
+                app.encode_msg('color_new', {
                     r: app.rgb.r,
                     g: app.rgb.g,
                     b: app.rgb.b
@@ -337,11 +341,11 @@ var app = {
             );
         }
     },
-    updateColor: function(latent) {
+    updateColor: function (latent) {
         if (latent == undefined) latent = false;
         if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
             app.socket.send(
-                app.encodeMSG("updatecolor", {
+                app.encode_msg('color_update', {
                     r: app.rgb.r,
                     g: app.rgb.g,
                     b: app.rgb.b,
@@ -351,224 +355,284 @@ var app = {
             );
         }
     },
-    nameColor: function(name) {
+    nameColor: function (name) {
         if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
             app.socket.send(
-                app.encodeMSG("namecolor", {
+                app.encode_msg('color_name', {
                     id: app.rgb.id,
                     name: name
                 })
             );
         }
     },
-    deleteColor: function() {
+    deleteColor: function () {
         if (app.socket.readyState == 1 && app.rgb.id.trim().length > 1) {
-            app.socket.send(app.encodeMSG("deletecolor", { id: app.rgb.id }));
+            app.socket.send(app.encode_msg('color_delete', { id: app.rgb.id }));
         }
     },
-    testColorData: {
-        delayInterval: 100,
-        detectInterval: 500,
-        allowed: true,
-        lastDetected: "",
-        lastSent: ""
-    },
-    testColor: function(override) {
+    testColor: function (latent) {
         if (app.socket.readyState == 1) {
             // console.log("testing color")
-            if (override == undefined) override = false;
-            if (app.testColorData.allowed) {
-                app.testColorData.allowed = false;
-                setTimeout(function() {
-                    app.testColorData.allowed = true;
-                }, app.testColorData.delayInterval);
-                app.socket.send(
-                    app.encodeMSG("testcolor_silent", {
-                        r: app.rgb.r,
-                        g: app.rgb.g,
-                        b: app.rgb.b
-                    })
-                );
-            } else if (override) {
-                app.socket.send(
-                    app.encodeMSG("testcolor", {
-                        r: app.rgb.r,
-                        g: app.rgb.g,
-                        b: app.rgb.b
-                    })
-                );
+            if (latent == undefined) latent = false;
+            if (app.device_id !== null) {
+                if (latent || app.trackLiveUpdates.testColorAllowed) {
+                    app.trackLiveUpdates.testColorAllowed = false;
+                    setTimeout(function () {
+                        app.trackLiveUpdates.testColorAllowed = true;
+                    }, app.trackLiveUpdates.testColorInterval);
+                    var color = null;
+                    if (app.trackLiveUpdates.left && app.trackLiveUpdates.right) {
+                        color = {
+                            left: {
+                                r: app.rgb.r,
+                                g: app.rgb.g,
+                                b: app.rgb.b,
+                            },
+                            right: {
+                                r: app.rgb.r,
+                                g: app.rgb.g,
+                                b: app.rgb.b,
+                            }
+                        };
+                    } else if (app.trackLiveUpdates.left) {
+                        color = {
+                            left: {
+                                r: app.rgb.r,
+                                g: app.rgb.g,
+                                b: app.rgb.b,
+                            }
+                        };
+                    } else if (app.trackLiveUpdates.right) {
+                        color = {
+                            right: {
+                                r: app.rgb.r,
+                                g: app.rgb.g,
+                                b: app.rgb.b,
+                            }
+                        };
+                    }
+                    if (color != null) {
+                        app.socket.send(
+                            app.encode_msg('color_test', {
+                                color: color,
+                                latent: latent,
+                                device_id: app.device_id
+                            })
+                        );
+                    }
+                }
             }
         }
     },
     currentPattern: {
-        id: "",
-        name: "",
+        id: '',
+        name: '',
         list: null
     },
     currentItem: {
-        type: "",
+        type: '',
         data: null
     },
     trackPatternColorBlock: null,
-    newPattern: function() {
+    newPattern: function () {
         if (app.socket.readyState == 1) {
-            app.socket.send(app.encodeMSG("newpattern", {}));
+            app.socket.send(app.encode_msg('pattern_new', {}));
         }
     },
-    loadPattern: function(id, name) {
+    loadPattern: function (id, name) {
         if (app.socket.readyState == 1) {
             app.currentPattern.id = id;
             app.currentPattern.name = name;
-            app.block.child("controlpanel/patterns/area/editor").data({
+            app.block.child('controlpanel/patterns/area/editor').data({
                 name: name
             });
-            app.socket.send(app.encodeMSG("loadpattern", { id: id }));
+            app.socket.send(app.encode_msg('pattern_load', { id: id }));
         }
     },
-    renamePattern: function(name) {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    renamePattern: function (name) {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
             app.socket.send(
-                app.encodeMSG("renamepattern", {
+                app.encode_msg('pattern_name', {
                     id: app.currentPattern.id,
                     name: name
                 })
             );
         }
     },
-    addPatternColor: function() {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    addPatternColor: function () {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
             app.socket.send(
-                app.encodeMSG("addpatterncolor", { id: app.currentPattern.id })
-            );
-        }
-    },
-    updatePatternColor: function(colorID, colorData) {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
-            app.socket.send(
-                app.encodeMSG("updatepatterncolor", {
-                    id: app.currentPattern.id,
-                    colorID: colorID,
-                    colorData: colorData
+                app.encode_msg('pattern_add_color', {
+                    id: app.currentPattern.id
                 })
             );
         }
     },
-    movePatternColor: function(colorID, newPos) {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    updatePatternColor: function (colorID, colorData) {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
+            colorData.id = colorID;
             app.socket.send(
-                app.encodeMSG("movepatterncolor", {
+                app.encode_msg('pattern_update_color', {
                     id: app.currentPattern.id,
-                    colorID: colorID,
-                    newPos: newPos
+                    color: colorData
                 })
             );
         }
     },
-    deletePatternColor: function(colorID) {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    movePatternColor: function (colorID, newPos) {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
             app.socket.send(
-                app.encodeMSG("deletepatterncolor", {
+                app.encode_msg('pattern_move_color', {
                     id: app.currentPattern.id,
-                    colorID: colorID
+                    color: { id: colorID },
+                    new_pos: newPos
                 })
             );
         }
     },
-    playPattern: function() {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    deletePatternColor: function (colorID) {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
             app.socket.send(
-                app.encodeMSG("playpattern", { id: app.currentPattern.id })
+                app.encode_msg('pattern_delete_color', {
+                    id: app.currentPattern.id,
+                    color: { id: colorID },
+                })
             );
         }
     },
-    deletePattern: function() {
-        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != "") {
+    playPattern: function () {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
+            if (app.device_id != null) {
+                app.socket.send(
+                    app.encode_msg('pattern_play', { id: app.currentPattern.id, device_id: app.device_id })
+                );
+            }
+        }
+    },
+    deletePattern: function () {
+        if (app.socket.readyState == 1 && app.currentPattern.id.trim() != '') {
             var conf = confirm(
-                "Delete pattern " + app.currentPattern.name + "?"
+                'Delete pattern ' + app.currentPattern.name + '?'
             );
             if (conf) {
                 app.socket.send(
-                    app.encodeMSG("deletepattern", {
+                    app.encode_msg('pattern_delete', {
                         id: app.currentPattern.id
                     })
                 );
             }
         }
     },
-    playCurrent: function() {
+    selectDevice: function (device_id) {
+        app.device_id = device_id;
+        if (device_id == null) {
+            app.block.child('controlpanel/patterns/directpanel')
+                .child('brightness').on('disable')
+                .sibling('speed').on('disable')
+                .sibling('current').data({ current: { type: 'no_device', data: null } })
+                .sibling('devices').on('refresh');
+            app.block.child('controlpanel/patterns/area/editor/playbutton').on('disable');
+            app.block.child('controlpanel/colors/picker/sync').on('disable');
+        } else {
+            app.block.child('controlpanel/patterns/directpanel')
+                .child('brightness').on('enable')
+                .sibling('speed').on('enable')
+                .sibling('devices').on('refresh');
+            app.block.child('controlpanel/patterns/area/editor/playbutton').on('enable');
+            app.block.child('controlpanel/colors/picker/sync').on('enable');
+            app.getDeviceData(device_id);
+        }
+    },
+    getDeviceData: function (device_id) {
+        if (app.socket.readyState == 1 && device_id != null && app.devices.hasOwnProperty(device_id)) {
+            app.socket.send(app.encode_msg("get_device_data", {
+                device_id: device_id
+            }));
+        }
+    },
+    playCurrent: function () {
         if (app.socket.readyState == 1) {
-            if (app.currentItem.type == "pattern") {
-                app.playPattern();
-            } else if (app.currentItem.type == "hue") {
-                app.socket.send(
-                    app.encodeMSG("testcolor", {
-                        r: app.rgb.r,
-                        g: app.rgb.g,
-                        b: app.rgb.b
-                    })
-                );
+            if (app.device_id !== null) {
+                app.socket.send(app.encode_msg('play_current', {
+                    device_id: app.device_id
+                }));
             }
         }
     },
-    sendBrightness: function() {
+    sendBrightness: function (latent) {
         if (app.socket.readyState == 1) {
-            if (app.direct.brightnessAllowed) {
-                app.direct.brightnessAllowed = false;
-                setTimeout(function() {
-                    app.direct.brightnessAllowed = true;
-                }, app.direct.brightnessInterval);
-                app.socket.send(
-                    app.encodeMSG("setbrightness", {
-                        brightness: app.direct.brightness
-                    })
-                );
+            if (app.device_id !== null) {
+                if (latent == undefined) latent = false;
+                if (latent || app.direct.brightnessAllowed) {
+                    app.direct.brightnessAllowed = false;
+                    setTimeout(function () {
+                        app.direct.brightnessAllowed = true;
+                    }, app.direct.brightnessInterval);
+                    app.socket.send(
+                        app.encode_msg('set_brightness', {
+                            device_id: app.device_id,
+                            brightness: app.direct.brightness,
+                            latent: latent
+                        })
+                    );
+                }
             }
         }
     },
-    sendSpeed: function() {
+    sendSpeed: function (latent) {
         if (app.socket.readyState == 1) {
-            if (app.direct.speedAllowed) {
-                app.direct.speedAllowed = false;
-                setTimeout(function() {
-                    app.direct.speedAllowed = true;
-                }, app.direct.speedInterval);
-                app.socket.send(
-                    app.encodeMSG("setspeed", { speed: app.direct.speed })
-                );
+            if (app.device_id !== null) {
+                if (latent == undefined) latent = false;
+                if (latent || app.direct.speedAllowed) {
+                    app.direct.speedAllowed = false;
+                    setTimeout(function () {
+                        app.direct.speedAllowed = true;
+                    }, app.direct.speedInterval);
+                    app.socket.send(
+                        app.encode_msg('set_speed', {
+                            device_id: app.device_id,
+                            speed: app.direct.speed,
+                            latent: latent
+                        })
+                    );
+                }
             }
         }
     },
-    playMusic: function() {
-        app.socket.send(app.encodeMSG("music", ""));
+    playMusic: function () {
+        if (app.device_id !== null) {
+            app.socket.send(app.encode_msg('music', {
+                device_id: app.device_id
+            }));
+        }
     },
-    login: function(pass) {
+    login: function (pass) {
         app.password = pass;
-        app.socket.send(app.encodeMSG("auth", { password: pass }));
+        app.socket.send(app.encode_msg('auth', { password: pass }));
     },
-    logout: function() {
-        app.util.deleteCookie("password");
+    logout: function () {
+        app.util.deleteCookie('password');
         // window.location.reload();
         window.location.href = String(window.location.href);
     },
-    loadImages: function(callback) {
-        var check = function() {
-            for (var name in app.img) {
-                if (!app.img[name].loaded) return false;
-            }
-            return true;
-        };
-        app.img.icon.$ = new Image();
-        app.img.icon.$.onload = function() {
-            app.img.icon.loaded = true;
-            if (check()) callback();
-        };
-        app.img.icon.$.src = "img/icon.png";
+    load_images: function (callback) {
+        var num_images = app.img.length;
+        var num_loaded = 0;
+        for (var i in app.img) {
+            var node = new Image();
+            node.onload = function () {
+                num_loaded++;
+                if (num_loaded >= num_images)
+                    callback();
+            };
+            node.src = "img/" + app.img[i];
+        }
     },
-    colorPickerUpdate: function(picker, update) {
+    colorPickerUpdate: function (picker, update) {
         app.rgb.r = picker.rgb[0];
         app.rgb.g = picker.rgb[1];
         app.rgb.b = picker.rgb[2];
-        app.block.child("controlpanel/colors/picker").data({
+        app.block.child('controlpanel/colors/picker').data({
             color: {
                 hex: picker.toHEXString(),
                 r: app.rgb.r,
@@ -577,7 +641,7 @@ var app = {
             }
         });
         if (update == undefined || update == true) app.updateColor();
-        if (app.trackLiveUpdates) {
+        if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) {
             app.testColor();
         }
         if (app.trackPatternColorBlock != null && app.trackPatternColorBlock) {
@@ -589,9 +653,9 @@ var app = {
         }
     },
     util: {
-        mobile: function() {
+        mobile: function () {
             var check = false;
-            (function(a) {
+            (function (a) {
                 if (
                     /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
                         a
@@ -604,9 +668,9 @@ var app = {
             })(navigator.userAgent || navigator.vendor || window.opera);
             return check;
         }, // https://stackoverflow.com/questions/11381673/detecting-a-mobile-browser
-        mobileAndTablet: function() {
+        mobile_tablet: function () {
             var check = false;
-            (function(a) {
+            (function (a) {
                 if (
                     /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
                         a
@@ -619,59 +683,103 @@ var app = {
             })(navigator.userAgent || navigator.vendor || window.opera);
             return check;
         }, // https://stackoverflow.com/questions/11381673/detecting-a-mobile-browser
-        cookie: function(id, val, date) {
+        cookie: function (id, val, date) {
             if (Block.is.unset(val))
-                document.cookie.split("; ").forEach(function(cookie) {
+                document.cookie.split('; ').forEach(function (cookie) {
                     if (cookie.substring(0, id.length) == id)
                         val = cookie.substring(id.length + 1);
                 });
             else
                 document.cookie =
                     id +
-                    "=" +
+                    '=' +
                     val +
-                    (Block.is.set(date) ? "; expires=" + date : "");
+                    (Block.is.set(date) ? '; expires=' + date : '');
             return Block.is.unset(val) ? null : val;
         },
-        deleteCookie: function(id) {
-            app.util.cookie(id, "", "Thu, 01 Jan 1970 00:00:00 GMT");
+        deleteCookie: function (id) {
+            app.util.cookie(id, '', 'Thu, 01 Jan 1970 00:00:00 GMT');
         },
-        lpad: function(s, width, char) {
+        lpad: function (s, width, char) {
             return s.length >= width
                 ? s
                 : (new Array(width).join(char) + s).slice(-width);
         }, // https://stackoverflow.com/questions/10841773/javascript-format-number-to-day-with-always-3-digits
-        rgbcss: function(r, g, b) {
+        rgbcss: function (r, g, b) {
             return (
-                "rgb(" +
+                'rgb(' +
                 parseInt(r) +
-                "," +
+                ',' +
                 parseInt(g) +
-                "," +
+                ',' +
                 parseInt(b) +
-                ")"
+                ')'
             );
         },
-        rgbstring: function(r, g, b) {
+        rgbstring: function (r, g, b) {
             return (
-                app.util.lpad(String(parseInt(r)), 3, "0") +
-                app.util.lpad(String(parseInt(g)), 3, "0") +
-                app.util.lpad(String(parseInt(b)), 3, "0")
+                app.util.lpad(String(parseInt(r)), 3, '0') +
+                app.util.lpad(String(parseInt(g)), 3, '0') +
+                app.util.lpad(String(parseInt(b)), 3, '0')
             );
         },
-        capitalize: function(word) {
+        capitalize: function (word) {
             return word.charAt(0).toUpperCase() + word.slice(1);
+        },
+        duration_desc: function (last_timestamp) {
+            var deltaSec = parseInt(Date.now() / 1000) - parseInt(last_timestamp / 1000);
+            if (deltaSec < 0) {
+                deltaSec = 0;
+            }
+            var outputString = "";
+            if (deltaSec < 5) {
+                outputString += "now";
+            } else if (deltaSec < 60) {
+                outputString += "" + parseInt(Math.floor(parseFloat(deltaSec) / 5.0) * 5.0) + " seconds ago";
+            } else if (deltaSec < 3600) {
+                var mins = parseInt(deltaSec / 60);
+                if (mins == 1) {
+                    outputString += "" + mins + " minute ago";
+                } else {
+                    outputString += "" + mins + " minutes ago";
+                }
+            } else {
+                var hrs = parseInt(deltaSec / 3600);
+                if (hrs == 1) {
+                    outputString += "" + hrs + " hour ago";
+                } else {
+                    outputString += "" + hrs + " hours ago";
+                }
+            }
+            return outputString;
         }
     },
-    img: {
-        icon: { $: null, loaded: false }
-    },
-    scheme: "chrome",
-    setScheme: function(name) {
+    img: [
+        'icon.png',
+        'bars3_b.png',
+        'clock_b.png',
+        'delete_b.png',
+        'down_b.png',
+        'edit_b.png',
+        'exit_w.png',
+        'github_w.png',
+        'memory_b.png',
+        'palette_b.png',
+        'play_b.png',
+        'play_w.png',
+        'plus_b.png',
+        'plus_bl.png',
+        'speaker_b.png',
+        'sun_b.png',
+        'up_b.png',
+        'x_b.png'
+    ],
+    scheme: 'chrome',
+    setScheme: function (name) {
         if (app.colors.hasOwnProperty(name)) {
             app.scheme = name;
-            app.util.cookie("scheme", name);
-            app.block.child("controlpanel/patterns/directpanel/scheme").data({
+            app.util.cookie('scheme', name);
+            app.block.child('controlpanel/patterns/directpanel/scheme').data({
                 select: name
             });
             Block.queries();
@@ -680,51 +788,51 @@ var app = {
     colors: {
         material: {
             navbar: {
-                background: "rgb(38, 118, 236)",
-                border: "rgb(50, 134, 255)"
+                background: 'rgb(38, 118, 236)',
+                border: 'rgb(50, 134, 255)'
             },
             button: {
-                default: "rgb(38, 118, 236)",
-                inset: "rgb(46, 126, 244)",
-                mouseover: "rgb(50, 130, 248)",
-                mouseout: "rgb(38, 118, 236)",
-                mouseup: "rgb(50, 130, 248)",
-                mousedown: "rgb(60, 140, 255)"
+                default: 'rgb(38, 118, 236)',
+                inset: 'rgb(46, 126, 244)',
+                mouseover: 'rgb(50, 130, 248)',
+                mouseout: 'rgb(38, 118, 236)',
+                mouseup: 'rgb(50, 130, 248)',
+                mousedown: 'rgb(60, 140, 255)'
             }
         },
         chrome: {
             navbar: {
-                background: "rgb(62, 62, 62)",
-                border: "rgb(74, 74, 74)"
+                background: 'rgb(62, 62, 62)',
+                border: 'rgb(74, 74, 74)'
             },
             button: {
-                default: "rgb(76, 76, 76)",
-                inset: "rgb(84, 84, 84)",
-                mouseover: "rgb(88, 88, 88)",
-                mouseout: "rgb(76, 76, 76)",
-                mouseup: "rgb(88, 88, 88)",
-                mousedown: "rgb(98, 98, 98)"
+                default: 'rgb(76, 76, 76)',
+                inset: 'rgb(84, 84, 84)',
+                mouseover: 'rgb(88, 88, 88)',
+                mouseout: 'rgb(76, 76, 76)',
+                mouseup: 'rgb(88, 88, 88)',
+                mousedown: 'rgb(98, 98, 98)'
             }
         }
     }
 };
 
-window.addEventListener("load", function() {
-    console.log("loading...");
-    setTimeout(function() {
+window.addEventListener('load', function () {
+    console.log('loading...');
+    setTimeout(function () {
         app.block.load(
-            function() {
-                console.log("blocks loaded");
-                app.loadImages(function() {
-                    console.log("images loaded");
-                    console.log("socket connecting");
+            function () {
+                console.log('blocks loaded');
+                app.load_images(function () {
+                    console.log('images loaded');
+                    console.log('socket connecting');
                     app.connect();
                 });
             },
-            "app",
-            "jQuery"
+            'app',
+            'jQuery'
         );
-    }, 300);
+    }, 50);
 });
 
 console.clear();
