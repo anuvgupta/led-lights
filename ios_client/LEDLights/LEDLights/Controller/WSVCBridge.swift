@@ -13,6 +13,7 @@ import Foundation
 class WSVCBridge {
     // singleton ViewControllers
     public var loginVC: LoginController?
+    public var musicVC: MusicController?
     public var colorsVC: ColorsController?
     public var controlsVC: ControlsController?
     public var patternsVC: PatternsController?

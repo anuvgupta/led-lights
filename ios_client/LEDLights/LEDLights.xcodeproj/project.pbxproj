@@ -10,6 +10,7 @@
 		7B3597A722C1EDE300823845 /* PatternColorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3597A622C1EDE300823845 /* PatternColorView.swift */; };
 		7B3A3C0E22BD5FC600D245F8 /* PatternView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3A3C0D22BD5FC600D245F8 /* PatternView.swift */; };
 		7B3A3C1022BD951000D245F8 /* PatternEditorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */; };
+		7B51ABB922EFB880006A57B0 /* MusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B51ABB822EFB880006A57B0 /* MusicController.swift */; };
 		7B5B71AF22D07F5C00AA329B /* ColorPickerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B5B71AE22D07F5C00AA329B /* ColorPickerController.swift */; };
 		7B64E2C922CC194100558F24 /* Buttons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B64E2C822CC194100558F24 /* Buttons.swift */; };
 		7B8431FC22B5DF2800222F47 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8431FB22B5DF2800222F47 /* AppDelegate.swift */; };
@@ -32,6 +33,7 @@
 		7B3597A622C1EDE300823845 /* PatternColorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternColorView.swift; sourceTree = "<group>"; };
 		7B3A3C0D22BD5FC600D245F8 /* PatternView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternView.swift; sourceTree = "<group>"; };
 		7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternEditorController.swift; sourceTree = "<group>"; };
+		7B51ABB822EFB880006A57B0 /* MusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicController.swift; sourceTree = "<group>"; };
 		7B5B71AE22D07F5C00AA329B /* ColorPickerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPickerController.swift; sourceTree = "<group>"; };
 		7B64E2C822CC194100558F24 /* Buttons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buttons.swift; sourceTree = "<group>"; };
 		7B8431F822B5DF2800222F47 /* LEDLights.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LEDLights.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -126,6 +128,7 @@
 				7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */,
 				7B5B71AE22D07F5C00AA329B /* ColorPickerController.swift */,
 				7BEBF91C22B64172005A1C46 /* ControlsController.swift */,
+				7B51ABB822EFB880006A57B0 /* MusicController.swift */,
 			);
 			path = Controller;
 			sourceTree = "<group>";
@@ -274,6 +277,7 @@
 				7BFB662D22B7A4D600C332B9 /* AppMain.swift in Sources */,
 				7BFB662F22B8D3A600C332B9 /* WSVCBridge.swift in Sources */,
 				7BEBF91D22B64172005A1C46 /* ControlsController.swift in Sources */,
+				7B51ABB922EFB880006A57B0 /* MusicController.swift in Sources */,
 				7BEBF91B22B64160005A1C46 /* PatternsController.swift in Sources */,
 				7BEBF91522B628F8005A1C46 /* ColorsController.swift in Sources */,
 				7B8431FC22B5DF2800222F47 /* AppDelegate.swift in Sources */,

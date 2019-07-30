@@ -26,9 +26,6 @@ class ControlsController: UIViewController {
     @IBOutlet weak var speedSliderWrap: UIView!
     @IBOutlet weak var speedSlider: UISlider!
     @IBOutlet weak var speedLabel: UILabel!
-    @IBOutlet weak var musicWrapView: UIView!
-    @IBOutlet weak var musicButtonWrapView: UIView!
-    @IBOutlet weak var musicButton: UIButton!
     // ui globals
     var brightness: Int = 100
     var brightlock: Bool = false
@@ -74,17 +71,6 @@ class ControlsController: UIViewController {
         border4.borderWidth = 1.0
         speedSliderWrap.layer.addSublayer(border4)
         speedSliderWrap.layer.masksToBounds = true
-        
-        let border5 = CALayer()
-        border5.borderColor = UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1).cgColor
-        border5.frame = CGRect(x: 0, y: musicWrapView.frame.size.height - 1, width: musicWrapView.frame.size.width, height: 1.0)
-        border5.borderWidth = 1.0
-        musicWrapView.layer.addSublayer(border5)
-        musicWrapView.layer.masksToBounds = true
-        musicButtonWrapView.backgroundColor = buttonBlue
-        musicButtonWrapView.layer.roundCorners(radius: 5)
-        musicButtonWrapView.layer.addShadow(radius: 4, opacity: 0.2, offset: CGSize(width: -1, height: 1), color: UIColor.black)
-        musicButton.roundCorners(corners: [.topLeft, .topRight, .bottomRight, .bottomLeft], radius: 5)
 
         bridge.controlsVC = self
         ws.getCurrentlyPlaying();
@@ -135,9 +121,6 @@ class ControlsController: UIViewController {
                 ws.sendCurrent()
             })
         }
-    }
-    @IBAction func musicButtonClicked(_ sender: UIButton) {
-        ws.playMusic()
     }
     
     // set brightness
