@@ -1,3 +1,4 @@
 nodejs_server_client/node_modules
 ios_client/LEDLights/Pods
 test
+.vscode
