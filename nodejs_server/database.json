@@ -1,0 +1,140 @@
+{
+   "colors": {
+      "kRQJtGtJCh": {
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "d": 1564479457717,
+         "name": "black"
+      },
+      "pmo0Y1Reqj": {
+         "r": 255,
+         "g": 0,
+         "b": 0,
+         "d": 1564479469629,
+         "name": "red"
+      },
+      "YUT0BgaxXh": {
+         "r": 0,
+         "g": 255,
+         "b": 0,
+         "d": 1564479480229,
+         "name": "green"
+      },
+      "oR3tYynM9Q": {
+         "r": 0,
+         "g": 0,
+         "b": 255,
+         "d": 1564632362930,
+         "name": "blue"
+      },
+      "OqIyWWmbiq": {
+         "r": 255,
+         "g": 255,
+         "b": 255,
+         "d": 1564632367639,
+         "name": "white"
+      },
+      "F3tCWwt9I2": {
+         "r": 0,
+         "g": 255,
+         "b": 255,
+         "d": 1564632371409,
+         "name": "cyan"
+      },
+      "1zm1pc71s8": {
+         "r": 255,
+         "g": 0,
+         "b": 255,
+         "d": 1564632374366,
+         "name": "magenta"
+      },
+      "pwGk6yXFQ3": {
+         "r": 255,
+         "g": 255,
+         "b": 0,
+         "d": 1564632382336,
+         "name": "yellow"
+      },
+      "2Kupcvp20p": {
+         "r": 200,
+         "g": 0,
+         "b": 16,
+         "d": 1564636850194,
+         "name": "heartbeat"
+      }
+   },
+   "patterns": {
+      "IQp0n9Dl4M": {
+         "name": "RGB",
+         "list": [
+            {
+               "fade": 500,
+               "r": 255,
+               "g": 0,
+               "b": 0,
+               "time": 0
+            },
+            {
+               "fade": 500,
+               "r": 0,
+               "g": 0,
+               "b": 255,
+               "time": 0
+            },
+            {
+               "fade": 500,
+               "r": 0,
+               "g": 255,
+               "b": 0,
+               "time": 0
+            }
+         ]
+      },
+      "ZHN2TmBIIT": {
+         "name": "Strobe",
+         "list": [
+            {
+               "fade": 0,
+               "r": 0,
+               "g": 0,
+               "b": 0,
+               "time": 100
+            },
+            {
+               "fade": 0,
+               "r": 255,
+               "g": 255,
+               "b": 255,
+               "time": 100
+            }
+         ]
+      }
+   },
+   "devices": {
+      "arduino_device2": {
+         "name": "Bedroom",
+         "last_event": "connected",
+         "last_timestamp": 1564919217603,
+         "current": {
+            "type": "hue",
+            "data": {
+               "left": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "string": "000000000"
+               },
+               "right": {
+                  "r": 200,
+                  "g": 0,
+                  "b": 16,
+                  "string": "200000016"
+               }
+            }
+         },
+         "brightness": 100,
+         "speed": 100
+      }
+   }
+}
