@@ -2,7 +2,7 @@
 #include "SoftwareSerialMod.h"
 
 // debug
-#define DEBUG false
+#define DEBUG true
 
 // LED PWM pins
 #define REDPIN_L 9
@@ -16,25 +16,31 @@
 #define RESETPIN 4
 #define OUTRPIN A6
 #define OUTLPIN A5
-// msgeq7 settings
-#define PREAMP 1.5 // double 1 - 2, 1 (2 for low volume)
-#define POSTAMP 1 // int 1 - 20, 1 (10 if inverted)
-#define NOISE 30 // int 0 - 50, 15
-#define INVERT false // boolean, false
-#define SMOOTHING 94 // int 0 - 99, 0
 
+// msgeq7 settings
+double l_preamp = 1.1; // double 0 - 2, (2 for low volume)
+int l_postamp = 1; // int 1 - 20, (10 if inverted)
+bool l_invert = false; // boolean
+double r_preamp = 1.5;
+int r_postamp = 1;
+bool r_invert = false;
+int noise = 20; // int 0 - 50
+int smoothing = 95; // int 0 - 99
+int l_channel = 0; // int 0 - 7
+int r_channel = 1; // int 0 - 7
 // esp8266 data
 bool ready = false;
 SoftwareSerial ESP8266(7, 8); // ARD 7 => ESP TX, ARD 8 => ESP RX
 unsigned long lastTimestamp = 0;
 // parsing data
 int mb_i = 0;
-char msgbuff[500]; // extra size just in case
+char msgbuff[225]; // sufficient capacity (10 color limit for patterns)
 char tokenbuff[20]; // 5(f) + 3(r) + 3(g) + 3(b) + 5(t) + 1(\0)
 char databuff[6]; // 5(int dig max) + 1(\0)
 // msgeq7 data
 int bands[7];
-int bands_record[7];
+int bands_record_l[7];
+int bands_record_r[7];
 // rgb data
 double r_l = 0; // hue red (left)
 double g_l = 0; // hue green (left)
@@ -53,7 +59,7 @@ double brightness = 100; // brightness
 double speedmult = 100; // speed mult
 int fade = 0; // transition (ms)
 #define PRECISION 5 // 5 millisecond precision for fades
-#define RESET_INTERVAL 5 // reset ESP8266 every 5 minutes
+#define RESET_INTERVAL 15 // check ESP8266 every 5 minutes
 
 void setup() {
   // init hardware and software serials
@@ -98,12 +104,11 @@ void loop() {
   red_r(r_r); green_r(g_r); blue_r(b_r);
 
   // check time interval/reset esp8266
-  unsigned long newTimestamp = millis();
-  unsigned long interval = 60000;
-  interval *= RESET_INTERVAL;
-  if (ready && newTimestamp - lastTimestamp >= interval) {
+  
+  if (resetRequired()) {
+    unsigned long newTimestamp = millis();
     if (lastTimestamp > 0) {
-      Serial.println("[nano] resetting ESP8266");
+      if (DEBUG) Serial.println("[nano] resetting ESP8266");
       ready = false;
       ESP8266.println("reset");
     }
@@ -111,7 +116,7 @@ void loop() {
   }
   
   // read serial
-  if (ESP8266.available() || Serial.available()) {
+  while (ESP8266.available() || Serial.available()) {
     if (mb_i >= 500) {
       msgbuff[499] = '\0';
       if (DEBUG) writeBuffer();
@@ -132,7 +137,13 @@ void loop() {
             if (msgbuff[0] == 'h') {
               if (DEBUG) Serial.print(F("[update] new hue: "));
               if (DEBUG) Serial.println(msgbuff);
+              double bright_prev = brightness;
+              if (msgbuff[1] == 'm') brightness = 0;
               hue(DEBUG);
+              if (msgbuff[1] == 'm') {
+                brightness = bright_prev;
+                music(DEBUG);
+              }
             } else if (msgbuff[0] == 'p') {
               if (DEBUG) Serial.print(F("[update] new pattern: "));
               if (DEBUG) Serial.println(msgbuff);
@@ -150,8 +161,34 @@ void loop() {
               if (DEBUG) Serial.println(msgbuff);
               speedm(DEBUG);
             } else if (msgbuff[0] == 'm') {
-              if (DEBUG) Serial.print(F("[update] music mode"));
+              if (DEBUG) Serial.println(F("[update] music mode"));
               music(DEBUG);
+            } else if (msgbuff[0] == 'o') {
+              smooth(DEBUG);
+            } else if (msgbuff[0] == 'g') {
+              noise_gate(DEBUG);
+            } else if (msgbuff[0] == 'n') {
+              if (DEBUG) Serial.println(F("[update] nil mode"));
+            } else if (msgbuff[0] == 'l') {
+              if (msgbuff[1] == 'p') {
+                if (msgbuff[2] == 'r')
+                  left_preamp(DEBUG);
+                else if (msgbuff[2] == 'o')
+                  left_postamp(DEBUG);
+              } else if (msgbuff[1] == 'c')
+                left_channel(DEBUG);
+              else if (msgbuff[1] == 'i')
+                left_invert(DEBUG);
+            } else if (msgbuff[0] == 'r') {
+              if (msgbuff[1] == 'p') {
+                if (msgbuff[2] == 'r')
+                  right_preamp(DEBUG);
+                else if (msgbuff[2] == 'o')
+                  right_postamp(DEBUG);
+              } else if (msgbuff[1] == 'c')
+                right_channel(DEBUG);
+              else if (msgbuff[1] == 'i')
+                right_invert(DEBUG);
             }
           }
           mb_i = 0;
@@ -208,29 +245,29 @@ void hue(bool v) {
   // parse message data
   int i, j;
   // parse left
-  for (i = 2, j = 0; j < 3; i++, j++)
+  for (i = 1 + 2, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_r = atoi(databuff);
-  for (i = 5, j = 0; j < 3; i++, j++)
+  for (i = 1 + 5, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_g = atoi(databuff);
-  for (i = 8, j = 0; j < 3; i++, j++)
+  for (i = 1 + 8, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_b = atoi(databuff);
   r_l = n_r; g_l = n_g; b_l = n_b;
   // parse right
-  for (i = 2 + 10, j = 0; j < 3; i++, j++)
+  for (i = 1 + 2 + 10, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_r = atoi(databuff);
-  for (i = 5 + 10, j = 0; j < 3; i++, j++)
+  for (i = 1 + 5 + 10, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_g = atoi(databuff);
-  for (i = 8 + 10, j = 0; j < 3; i++, j++)
+  for (i = 1 + 8 + 10, j = 0; j < 3; i++, j++)
     databuff[j] = msgbuff[i];
   databuff[3] = '\0';
   n_b = atoi(databuff);
@@ -314,6 +351,7 @@ void fadeColor() {
 
 // music reactive mode
 void music(bool v) {
+  int 
   while (uninterrupted()) {
     // pulse strobe to cycle bands
     for (int i = 0; i < 7; i++) {
@@ -324,46 +362,163 @@ void music(bool v) {
       bands[i] = analogRead(OUTRPIN) + analogRead(OUTLPIN);
       digitalWrite(STROBEPIN, HIGH);
       delayMicroseconds(1);
-      double level = bands[i];
-      // pre-amplify
-      level *= PREAMP;
-      // correct
-      level /= 2.0;
-      level *= 255.0 / 1023.0;
-      // round
-      level /= 5.0;
-      level = (int) level;
-      level *= 5.0;
-      // post-amplify
-      level *= POSTAMP;
-      // bound
-      if (level <= NOISE) level = 0;
-      if (level > 255) level = 255;
-      // smooth
-      if (SMOOTHING > 0) {
-        double weight = (SMOOTHING / 100.0);
-        level = (level * (1.0 - weight)) + (bands_record[i] * weight);
-      }
-      // save
-      bands_record[i] = level;
-      // invert
-      if (INVERT) level = 255 - level;
-      // display
-      if (i == 0) {
+      double level;
+      if (i == l_channel) {
+        level = bands[i];
+        // pre-amplify
+        level *= l_preamp;
+        // correct
+        level /= 2.0;
+        level *= 255.0 / 1023.0;
+        // round
+        level /= 5.0;
+        level = (int) level;
+        level *= 5.0;
+        // post-amplify
+        level *= l_postamp;
+        // bound
+        if (level <= noise) level = 0;
+        if (level > 255) level = 255;
+        // smooth
+        if (smoothing > 0) {
+          double weight = (smoothing / 100.0);
+          level = (level * (1.0 - weight)) + (bands_record_l[i] * weight);
+        }
+        // save
+        bands_record_l[i] = level;
+        // invert
+        if (l_invert) level = 255 - level;
         level /=  255.0;
         red_l(((double) r_l) * level);
         green_l(((double) g_l) * level);
         blue_l(((double) b_l) * level);
+      }
+      if (i == r_channel) {
+        level = bands[i];
+        level *= r_preamp;
+        level /= 2.0;
+        level *= 255.0 / 1023.0;
+        level /= 5.0;
+        level = (int) level;
+        level *= 5.0;
+        level *= r_postamp;
+        if (level <= noise) level = 0;
+        if (level > 255) level = 255;
+        if (smoothing > 0) {
+          double weight = (smoothing / 100.0);
+          level = (level * (1.0 - weight)) + (bands_record_r[i] * weight);
+        }
+        bands_record_r[i] = level;
+        if (r_invert) level = 255 - level;
+        level /=  255.0;
         red_r(((double) r_r) * level);
         green_r(((double) g_r) * level);
         blue_r(((double) b_r) * level);
-        if (DEBUG) {
-          int l = level;
-          Serial.println(l, DEC);
-        }
       }
     }
   }
+  if (!uninterrupted()) {
+    red_l(0); green_l(0); blue_l(0);
+    red_r(0); green_r(0); blue_r(0);
+  }
+}
+
+// set smoothing
+void smooth(int v) {
+  int i, j;
+  for (i = 1, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  smoothing = atoi(databuff);
+  if (v) { Serial.print("[nano] smoothing – "); Serial.println(smoothing); }
+}
+
+// set noise gate
+void noise_gate(int v) {
+  int i, j;
+  for (i = 1, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  noise = atoi(databuff);
+  if (v) { Serial.print("[nano] noise gate – "); Serial.println(noise); }
+}
+
+// set left channel
+void left_channel(int v) {
+  int i, j;
+  for (i = 2, j = 0; j < 1; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[1] = '\0';
+  l_channel = atoi(databuff);
+  if (v) { Serial.print("[nano] left channel – "); Serial.println(l_channel); }
+}
+// set right channel
+void right_channel(int v) {
+  int i, j;
+  for (i = 2, j = 0; j < 1; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[1] = '\0';
+  r_channel = atoi(databuff);
+  if (v) { Serial.print("[nano] right channel – "); Serial.println(r_channel); }
+}
+
+// set left invert
+void left_invert(int v) {
+  int i, j;
+  for (i = 2, j = 0; j < 1; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[1] = '\0';
+  l_invert = atoi(databuff);
+  if (v) { Serial.print("[nano] left invert – "); Serial.println(l_invert); }
+}
+// set right invert
+void right_invert(int v) {
+  int i, j;
+  for (i = 2, j = 0; j < 1; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[1] = '\0';
+  r_invert = atoi(databuff);
+  if (v) { Serial.print("[nano] right invert – "); Serial.println(r_invert); }
+}
+
+// set left preamp
+void left_preamp(int v) {
+  int i, j;
+  for (i = 3, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  l_preamp = atoi(databuff);
+  l_preamp /= 100.0;
+  if (v) { Serial.print("[nano] left preamp – "); Serial.println(l_preamp); }
+}
+// set right preamp
+void right_preamp(int v) {
+  int i, j;
+  for (i = 3, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  r_preamp = atoi(databuff);
+  r_preamp /= 100;
+  if (v) { Serial.print("[nano] right preamp – "); Serial.println(r_preamp); }
+}
+
+// set left postamp
+void left_postamp(int v) {
+  int i, j;
+  for (i = 3, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  l_postamp = atoi(databuff);
+  if (v) { Serial.print("[nano] left postamp – "); Serial.println(l_postamp); }
+}
+// set right postamp
+void right_postamp(int v) {
+  int i, j;
+  for (i = 3, j = 0; j < 3; i++, j++)
+    databuff[j] = msgbuff[i];
+  databuff[3] = '\0';
+  r_postamp = atoi(databuff);
+  if (v) { Serial.print("[nano] right postamp – "); Serial.println(r_postamp); }
 }
 
 // LED PWM functions

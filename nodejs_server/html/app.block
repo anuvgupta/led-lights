@@ -61,16 +61,18 @@
                     width: 'auto',
                     height: '30px',
                     cursor: 'pointer',
-                    margin: '5px 10px'
+                    margin: '5px 10px',
+                    fontSize: '17px'
                 })
                 .add(Block('block', 'label')
                     .css({
                         display: 'inline-table',
-                        width: '70px',
+                        width: 'auto',
+                        minWidth: '70px',
                         float: 'left',
                         marginRight: '10px',
                         cursor: 'inherit',
-                        fontSize: '17px'
+                        fontSize: 'inherit'
                     })
                     .__child('content')
                         .css('text-align', 'left')
@@ -174,8 +176,11 @@
     load
         {
             data('val', function (val) {
-                block.key('state', (val == 'on'));
-                block.on('modified');
+                var v = (val == 'on');
+                if (block.key('state') != v) {
+                    block.key('state', v);
+                    block.on('modified', { locked: true });
+                }
             });
             data('label', function (label) {
                 block.child('label/text').html('').data(label);
@@ -354,10 +359,11 @@ app
                 {
                     block.css('height', (window.innerHeight - 65) + 'px');
                 }
-            @query window width > 1150
+            // 1150
+            @query window width > 1300
                 css
                     display none
-            @query window width < 1150
+            @query window width < 1300
                 css
                     display table
             div content
@@ -673,6 +679,14 @@ app
                             block.child('trackLeft/switch').on('disable');
                             block.child('trackRight/switch').on('disable');
                         }
+                    #left
+                        {
+                            block.child('trackLeft/switch').data(left === true || left === 'true' ? 'on' : 'off');
+                        }
+                    #right
+                        {
+                            block.child('trackRight/switch').data(right === true || right === 'true' ? 'on' : 'off');
+                        }
                     div trackLeft
                         css
                             width 180px
@@ -684,9 +698,12 @@ app
                         switch switch
                             val off
                             label Live Left
+                            $first yes
                             :modified
                                 {
                                     app.trackLiveUpdates.left = block.key('state') === true;
+                                    if (block.key('first') == 'yes') block.key('first', 'no');
+                                    else app.util.cookie('trackLeft', "" + app.trackLiveUpdates.left);
                                 }
                     div trackRight
                         css
@@ -698,9 +715,12 @@ app
                         switch switch
                             val off
                             label Live Right
+                            $first yes
                             :modified
                                 {
                                     app.trackLiveUpdates.right = block.key('state') === true;
+                                    if (block.key('first') == 'yes') block.key('first', 'no');
+                                    else app.util.cookie('trackRight', "" + app.trackLiveUpdates.right);
                                 }
                 div buttons
                     css
@@ -917,8 +937,7 @@ app
                                                 app.rgb.b = b.key('blue');
                                                 var picker = b.parent().sibling('picker').child('rect').node().jscolor;
                                                 picker.fromRGB(app.rgb.r, app.rgb.g, app.rgb.b);
-                                                app.colorPickerUpdate(picker, app.rgb.id.trim().length > 1 && app.rgb.id.trim() != b.key('id').trim());
-                                                if (app.trackLiveUpdates.left || app.trackLiveUpdates.right) app.testColor(true);
+                                                app.colorPickerUpdate(picker, app.rgb.id.trim().length > 1 && app.rgb.id.trim() != b.key('id').trim(), true);
                                             }
                                         }
                                     }, doubleClickTimeout + 10);
@@ -1795,14 +1814,14 @@ app
                     :enable
                         {
                             block.child('brightslider/slider/input').css({
-                                'opacity': '1',
+                                'opacity': '0.8',
                                 'cursor': 'pointer'
                             }).node().disabled = false;
                         }
                     :disable
                         {
                             block.child('brightslider/slider/input').css({
-                                'opacity': '0.7',
+                                'opacity': '0.5',
                                 'cursor': 'default'
                             }).node().disabled = true;
                         }
@@ -1866,14 +1885,14 @@ app
                     :enable
                         {
                             block.child('speedslider/slider/input').css({
-                                'opacity': '1',
+                                'opacity': '0.8',
                                 'cursor': 'pointer'
                             }).node().disabled = false;
                         }
                     :disable
                         {
                             block.child('speedslider/slider/input').css({
-                                'opacity': '0.7',
+                                'opacity': '0.5',
                                 'cursor': 'default'
                             }).node().disabled = true;
                         }
@@ -1998,7 +2017,9 @@ app
                                     cursor inherit
                             :click
                                 {
-                                    if (block.key('enabled')) app.playMusic();
+                                    if (block.key('enabled')) {
+                                        app.block.child('controlpanel/patterns/area/music').on('show');
+                                    }
                                 }
                         block betalabel
                             css
@@ -2058,6 +2079,8 @@ app
                                 });
                             }
                     selector-menu selector
+                        css
+                            padding 0 37px 0 13px
                         {
                             block.data({ select: 'Schemes' });
                             for (var color in app.colors) {
@@ -2088,7 +2111,10 @@ app
                         display table
                     :show
                         {
-                            block.sibling('editor').css('display', 'none');
+                            var siblings = block.parent().children();
+                            for (var s in siblings) {
+                                if (s != block.mark()) siblings[s].css('display', 'none');
+                            }
                             block.css('display', 'table');
                         }
                     image icon
@@ -2117,6 +2143,748 @@ app
                             margin-bottom 35px
                             cursor default
                             display none
+                div music
+                    css
+                        display none
+                        position absolute
+                        top 0
+                        left 0
+                        width 100%
+                        height 100%
+                    :show
+                        {
+                            var siblings = block.parent().children();
+                            for (var s in siblings) {
+                                if (s != block.mark()) siblings[s].css('display', 'none');
+                            }
+                            block.css('display', 'block');
+                            Block.queries();
+                        }
+                    block enable
+                        $templock unlock
+                        :on
+                            {
+                                var sw = block.child('switch_wrap/switch');
+                                if (!sw.key('state')) sw.data('on');
+                                event.stopPropagation();
+                            }
+                        :off
+                            {
+                                var sw = block.child('switch_wrap/switch');
+                                if (sw.key('state')) sw.data('off');
+                                event.stopPropagation();
+                            }
+                        css
+                            height 90px
+                            //margin-top 40px
+                            margin-top 0
+                            margin-bottom 10px
+                            background-color #f8f8f8
+                            border-bottom 1px solid #f9f9f9
+                        div switch_wrap
+                            css
+                                height 35px
+                                width 250px
+                                margin 0 auto
+                            switch switch
+                                val off
+                                label Music Reactive
+                                css
+                                    font-size 22px
+                                    color #222
+                                :modified
+                                    {
+                                        if (block.parent()) {
+                                            if (block.parent(1).key('templock') == 'lock') 
+                                                block.parent(1).key('templock', 'unlock');   
+                                            else {
+                                                data.locked = data.hasOwnProperty('locked') && (data.locked ? true : false);
+                                                if (!data.locked) {
+                                                    if (block.key('state'))
+                                                        app.playMusic();
+                                                    else app.playNone();
+                                                }
+                                            }
+                                        }
+                                    }
+                    block smoothing
+                        css
+                            height 60px
+                            padding-left 30px
+                            box-sizing border-box
+                            //border-top 1px solid #fafafa
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data(val);
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Smoothing
+                                    css
+                                        font-size 18px
+                            input input
+                                type range
+                                min 0
+                                max 99
+                                value 95
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 99) val = 99;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.smoothing = val;
+                                            app.sendSmoothing(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 95
+                                    css
+                                        font-size 18px
+                    block noise_gate
+                        css
+                            height 60px
+                            padding-left 30px
+                            box-sizing border-box
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data(val);
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Noise Gate
+                                    css
+                                        font-size 18px
+                            input input
+                                type range
+                                min 0
+                                max 50
+                                value 15
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 0) val = 0;
+                                            if (val > 50) val = 50;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.noise_gate = val;
+                                            app.sendNoiseGate(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 15
+                                    css
+                                        font-size 18px
+                    !selector-channel
+                        init
+                            {
+                                return Block('div')
+                                    .css({
+                                        width: '100%',
+                                        height: '30px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0)',
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid #f8f8f8'
+                                    })
+                                    .add(Block('block', 1)
+                                        .add(Block('text', 1)
+                                            .data('title')
+                                            .css({
+                                                fontSize: '15px',
+                                                // paddingLeft: '25px',
+                                                color: '#333',
+                                                letterSpacing: '0.4px'
+                                            })
+                                        )
+                                    )
+                                    .on('mouseover', function (e, b) {
+                                        b.css('background-color', '#f3f3f3');
+                                    })
+                                    .on('mouseout', function (e, b) {
+                                        b.css('background-color', 'rgba(255, 255, 255, 0)');
+                                    })
+                                    .on('click', function (e, b, d) {
+                                        if (b.key('side') == 'left') {
+                                            app.music_settings.l_ch = parseInt(b.key('num')) - 1;
+                                            app.sendLeftChannel();
+                                        } else if (b.key('side') == 'right') {
+                                            app.music_settings.r_ch = parseInt(b.key('num')) - 1;
+                                            app.sendRightChannel();
+                                        }
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    })
+                                ;
+                            }
+                        load
+                            {
+                                data('num', function (num) {
+                                    block.key('num', num);
+                                    block.child('block/text').html('').data(num);
+                                });
+                                data('side', function (side) {
+                                    block.key('side', side);
+                                });
+                            }
+                    block left-bar
+                        css
+                            height 60px
+                            margin-top 20px
+                            margin-bottom 10px
+                            background-color #fafafa
+                            box-sizing border-box
+                        div wrap
+                            css
+                                height 50px
+                                width auto
+                            block title
+                                css
+                                    width auto
+                                    margin 0 auto
+                                text text
+                                    html left &nbsp;
+                                    css
+                                        text-transform uppercase
+                                        font-size 20px
+                                        color #222
+                                        letter-spacing 1px
+                    block left-channel
+                        css
+                            height 50px
+                            padding-left 80px
+                            box-sizing border-box
+                        block ch-lbl
+                            css
+                                width auto
+                                float left
+                                margin-right 20px
+                            text text
+                                val Channel
+                                css
+                                    font-size 16px
+                        block ch-selector
+                            css
+                                width auto
+                                float left
+                            selector-menu selector
+                                css
+                                    background-color white
+                                    width 40px
+                                    height 35px
+                                    padding 0 37px 0 13px
+                                {
+                                    block.data({ select: '1' });
+                                    for (var i = 1; i < 8; i++) {
+                                        var num = "" + i;
+                                        if (i == 0) num += " (bass)";
+                                        block.add(Block('selector-channel', 'ch-' + i)
+                                            .data({
+                                                num: num,
+                                                side: 'left'
+                                            })
+                                        );
+                                    }
+                                }
+                            #select
+                                {
+                                    block.child('selector').data({ select: select + 1 });
+                                }
+                        div spacer
+                            css
+                                width 30px
+                                height 100%
+                                float left
+                        block i-sw
+                            css
+                                width auto
+                                float left
+                            switch switch
+                                label Invert
+                                val on
+                                css
+                                    font-size 16px
+                                {
+                                    block.child('label').css({
+                                        'min-width': '20px',
+                                        'margin-right': '15px'
+                                    });
+                                }
+                                :modified
+                                    {
+                                        data.locked = data.hasOwnProperty('locked') && (data.locked ? true : false);
+                                        if (!data.locked) {
+                                            app.music_settings.l_invert = block.key('state');
+                                            app.sendLeftInvert(app.music_settings.l_invert);
+                                            if (app.music_settings.enabled) {
+                                                setTimeout(function () {
+                                                    app.playMusic();
+                                                }, 75);
+                                            }
+                                        }
+                                    }
+                    block left-preamp
+                        css
+                            height 50px
+                            padding-left 80px
+                            padding-right 35px
+                            box-sizing border-box
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data("" + parseInt(val));
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Pre-Amp
+                                    css
+                                        font-size 16px
+                            input input
+                                type range
+                                min 20
+                                max 200
+                                value 100
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 1) val = 1;
+                                            if (val > 200) val = 200;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.l_preamp = val;
+                                            app.sendLeftPreamp(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 1
+                                    css
+                                        font-size 18px
+                    block left-postamp
+                        css
+                            height 50px
+                            padding-left 80px
+                            padding-right 35px
+                            box-sizing border-box
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data(val);
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Post-Amp
+                                    css
+                                        font-size 16px
+                            input input
+                                type range
+                                min 1
+                                max 10
+                                value 1
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 1) val = 1;
+                                            if (val > 20) val = 20;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.l_postamp = val;
+                                            app.sendLeftPostamp(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 1
+                                    css
+                                        font-size 18px
+                    block right-bar
+                        css
+                            height 60px
+                            margin-top 20px
+                            margin-bottom 10px
+                            background-color #fafafa
+                            box-sizing border-box
+                        div wrap
+                            css
+                                height 50px
+                                width auto
+                            block title
+                                css
+                                    width auto
+                                    margin 0 auto
+                                text text
+                                    html right &nbsp;
+                                    css
+                                        text-transform uppercase
+                                        font-size 20px
+                                        color #222
+                                        letter-spacing 1px
+                    block right-channel
+                        css
+                            height 50px
+                            padding-left 80px
+                            box-sizing border-box
+                        block ch-lbl
+                            css
+                                width auto
+                                float left
+                                margin-right 20px
+                            text text
+                                val Channel
+                                css
+                                    font-size 16px
+                        block ch-selector
+                            css
+                                width auto
+                                float left
+                            selector-menu selector
+                                css
+                                    background-color white
+                                    width 40px
+                                    height 35px
+                                    padding 0 37px 0 13px
+                                {
+                                    block.data({ select: '1' });
+                                    for (var i = 1; i < 8; i++) {
+                                        var num = "" + i;
+                                        if (i == 0) num += " (bass)";
+                                        block.add(Block('selector-channel', 'ch-' + i)
+                                            .data({
+                                                num: num,
+                                                side: 'right'
+                                            })
+                                        );
+                                    }
+                                }
+                            #select
+                                {
+                                    block.child('selector').data({ select: select + 1 });
+                                }
+                        div spacer
+                            css
+                                width 30px
+                                height 100%
+                                float left
+                        block i-sw
+                            css
+                                width auto
+                                float left
+                            switch switch
+                                label Invert
+                                val on
+                                css
+                                    font-size 16px
+                                {
+                                    block.child('label').css({
+                                        'min-width': '20px',
+                                        'margin-right': '15px'
+                                    });
+                                }
+                                :modified
+                                    {
+                                        
+                                        data.locked = data.hasOwnProperty('locked') && (data.locked ? true : false);
+                                        if (!data.locked) {
+                                            app.music_settings.r_invert = block.key('state');
+                                            app.sendRightInvert(app.music_settings.r_invert);
+                                            if (app.music_settings.enabled) {
+                                                setTimeout(function () {
+                                                    app.playMusic();
+                                                }, 75);
+                                            }
+                                        }
+                                    }
+                    block right-preamp
+                        css
+                            height 50px
+                            padding-left 80px
+                            padding-right 35px
+                            box-sizing border-box
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data("" + parseInt(val));
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Pre-Amp
+                                    css
+                                        font-size 16px
+                            input input
+                                type range
+                                min 20
+                                max 200
+                                value 100
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 1) val = 1;
+                                            if (val > 200) val = 200;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.r_preamp = val;
+                                            app.sendRightPreamp(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 1
+                                    css
+                                        font-size 18px
+                    block right-postamp
+                        css
+                            height 50px
+                            padding-left 80px
+                            padding-right 35px
+                            box-sizing border-box
+                            //border-bottom 1px solid #fafafa
+                        #val
+                            {
+                                block.child('wrap/input').$().val(val);
+                                block.child('wrap/value/text').html('').data(val);
+                            }
+                        div wrap
+                            css
+                                height 30px
+                                width auto
+                            block label
+                                css
+                                    width auto
+                                    height 30px
+                                    float left
+                                    margin-right 20px
+                                text text
+                                    val Post-Amp
+                                    css
+                                        font-size 16px
+                            input input
+                                type range
+                                min 1
+                                max 10
+                                value 1
+                                css
+                                    display block
+                                    float left
+                                    height 30px
+                                    margin 0
+                                    cursor pointer
+                                    opacity 0.8
+                                @query window width != 0
+                                    {
+                                        block.css('width', (block.parent().$().width() - 30 - block.sibling('label').$().width() - 70) + 'px');
+                                    }
+                                :input
+                                    {
+                                        var val = parseInt(block.$().val().trim());
+                                        if (!isNaN(val)) {
+                                            if (val < 1) val = 1;
+                                            if (val > 20) val = 20;
+                                            block.sibling('value').child('text').html('' + val);
+                                            app.music_settings.r_postamp = val;
+                                            app.sendRightPostamp(data.latent ? true : false);
+                                        }
+                                    }
+                                :mouseup
+                                    {
+                                        block.on('input', { latent: true });
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 75);
+                                        }
+                                    }
+                            block value
+                                css
+                                    width 30px
+                                    height 30px
+                                    float left
+                                    margin-left 20px
+                                text text
+                                    val 1
+                                    css
+                                        font-size 18px
                 div editor
                     css
                         display none
@@ -2127,7 +2895,10 @@ app
                         height 100%
                     :show
                         {
-                            block.sibling('placeholder').css('display', 'none');
+                            var siblings = block.parent().children();
+                            for (var s in siblings) {
+                                if (s != block.mark()) siblings[s].css('display', 'none');
+                            }
                             block.css('display', 'block');
                         }
                     #name
@@ -2673,7 +3444,8 @@ app
                                     background-color rgba(76, 76, 76, 0.1)
                             :click
                                 {
-                                    app.addPatternColor();
+                                    if (Object.keys(block.siblings()).length - 1 <= 10)
+                                        app.addPatternColor();
                                 }
                             image img
                                 src img/plus_bl.png

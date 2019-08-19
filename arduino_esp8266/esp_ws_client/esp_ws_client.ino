@@ -21,7 +21,7 @@ WebSocketsClient ws;
 
 // parsing data
 int mb_i = 0;
-char msgbuff[500]; // extra size just in case
+char msgbuff[500];
 
 void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
@@ -30,12 +30,13 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
       restartESP();
       break;
     case WStype_CONNECTED:
-       if (DEBUG_MODE) SERIAL.printf("[ws] connected to %s\n", payload);
-       if (DEBUG_MODE) SERIAL.printf("[ws] syncing as arduino\n");
+      if (DEBUG_MODE) SERIAL.printf("[ws] connected to %s\n", payload);
+      if (DEBUG_MODE) SERIAL.printf("[ws] syncing as arduino\n");
       ws.sendTXT(DEVICE_SYNC_JSON);
       break;
     case WStype_TEXT:
       // SERIAL.printf("[ws] received text – %s\n", payload);
+      if (length > 224) payload[224] = '\0';
       if (memcmp(payload, "@arduinosync", 12) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] synced as arduino\n");
         if (DEBUG_MODE) SERIAL.printf("[ws] authenticating\n");
@@ -48,7 +49,10 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
         Serial.printf("p%s\n", payload + 3);
       } else if (memcmp(payload, "@h-", 3) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] new hue - %s\n", payload + 3);
-        Serial.printf("h%s\n", payload + 3);
+        Serial.printf("hh%s\n", payload + 3);
+      } else if (memcmp(payload, "@hm", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new hue (music mode) - %s\n", payload + 3);
+        Serial.printf("hm%s\n", payload + 3);
       } else if (memcmp(payload, "@b-", 3) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] new brightness - %s\n", payload + 3);
         Serial.printf("b%s\n", payload + 3);
@@ -58,9 +62,42 @@ void wsEventHandler(WStype_t type, uint8_t* payload, size_t length) {
       } else if (memcmp(payload, "@hb", 3) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] heartbeat\n");
         ws.sendTXT("{\"event\":\"arduino_heartbeat\"}");
+      } else if (memcmp(payload, "@nil", 4) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] nil mode\n");
+        Serial.printf("nil\n");
       } else if (memcmp(payload, "@music", 6) == 0) {
         if (DEBUG_MODE) SERIAL.printf("[ws] music mode\n");
         Serial.printf("music\n");
+      } else if (memcmp(payload, "@sm", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new smoothing - %s\n", payload + 3);
+        Serial.printf("o%s\n", payload + 3);
+      } else if (memcmp(payload, "@ng", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new noise gate - %s\n", payload + 3);
+        Serial.printf("g%s\n", payload + 3);
+      } else if (memcmp(payload, "@lc", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new left channel - %s\n", payload + 3);
+        Serial.printf("lc%s\n", payload + 3);
+      } else if (memcmp(payload, "@rc", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new right channel - %s\n", payload + 3);
+        Serial.printf("rc%s\n", payload + 3);
+      } else if (memcmp(payload, "@lpr", 4) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new left preamp - %s\n", payload + 3);
+        Serial.printf("lpr%s\n", payload + 4);
+      } else if (memcmp(payload, "@rpr", 4) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new right preamp - %s\n", payload + 3);
+        Serial.printf("rpr%s\n", payload + 4);
+      } else if (memcmp(payload, "@lpo", 4) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new left postamp - %s\n", payload + 3);
+        Serial.printf("lpo%s\n", payload + 4);
+      } else if (memcmp(payload, "@rpo", 4) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new right postamp - %s\n", payload + 3);
+        Serial.printf("rpo%s\n", payload + 4);
+      } else if (memcmp(payload, "@li", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new left invert - %s\n", payload + 3);
+        Serial.printf("li%s\n", payload + 3);
+      } else if (memcmp(payload, "@ri", 3) == 0) {
+        if (DEBUG_MODE) SERIAL.printf("[ws] new right invert - %s\n", payload + 3);
+        Serial.printf("ri%s\n", payload + 3);
       }
       break;
     case WStype_BIN:

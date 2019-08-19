@@ -4,7 +4,7 @@
     "description": "RGB LED strip control panel",
     "main": "rgblights.js",
     "scripts": {
-        "test": "nodemon --ignore 'database.json' rgblights.js debug"
+        "test": "nodemon --ignore 'database.json' --ignore 'html/*' rgblights.js debug"
     },
     "author": "Anuv Gupta",
     "license": "ISC",

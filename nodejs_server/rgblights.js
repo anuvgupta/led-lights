@@ -24,7 +24,7 @@ var util = {
     REP: 3, // repetitive info
     EXT: 4, // extra info
     LEVEL: debug ? 2 : 1,
-    log: function (category, level, message1, message2 = "") {
+    log: (category, level, message1, message2 = "") => {
         if (level <= util.LEVEL) {
             console.log("[" + category + "]", message1, message2);
         }
@@ -34,7 +34,7 @@ var util = {
         output: process.stdout
     }),
     // generate random alphanumeric key
-    rand_id: function (length = 10) {
+    rand_id: (length = 10) => {
         var key = "";
         var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         for (var i = 0; i < length; i++)
@@ -46,20 +46,20 @@ var util = {
         return key;
     },
     // left pad string
-    lpad: function (s, width, char) {
+    lpad: (s, width, char) => {
         return s.length >= width
             ? s
             : (new Array(width).join(char) + s).slice(-width);
     },
     // validate/correct bounded integer
-    validate_int: function (n, l_b, u_b) {
+    validate_int: (n, l_b, u_b) => {
         n = parseInt(Math.round(parseFloat(n)));
         if (n < l_b) n = l_b;
         else if (n > u_b) n = u_b;
         return n;
     },
     // convert RGB values to padded RGB string
-    rgb_string: function (r, g, b) {
+    rgb_string: (r, g, b) => {
         return (
             util.lpad(String(parseInt(r)), 3, "0") +
             util.lpad(String(parseInt(g)), 3, "0") +
@@ -67,10 +67,8 @@ var util = {
         );
     },
     // validate/correct rgb integer
-    rgb_validate: function (n) {
-        return util.validate_int(n, 0, 255);
-    },
-    condense_pattern: function (p) {
+    rgb_validate: (n) => (util.validate_int(n, 0, 255)),
+    condense_pattern: (p) => {
         // condense pattern into fRGBh strings
         var pattern_string = "";
         for (var p_c in p.list) {
@@ -94,7 +92,7 @@ var database = {
         devices: {}
     },
     // save database async (for while running)
-    save: function (pretty = debug) {
+    save: (pretty = debug) => {
         var db_json = pretty ? JSON.stringify(database.data, null, 3) : JSON.stringify(database.data);
         file_system.writeFile("database.json", db_json, function (e) {
             if (e) {
@@ -103,12 +101,12 @@ var database = {
         });
     },
     // save database sync (for on quit)
-    save_sync: function () {
-        var db_json = JSON.stringify(database.data);
+    save_sync: (pretty = debug) => {
+        var db_json = pretty ? JSON.stringify(database.data, null, 3) : JSON.stringify(database.data);
         file_system.writeFileSync("database.json", db_json);
         util.log("db", util.INF, "file saved");
     },
-    load: function () {
+    load: _ => {
         try {
             // load from file
             file_system.readFile("database.json", function (err, data) {
@@ -146,14 +144,14 @@ var wss = {
     clients: {}, // client sockets
     events: {}, // event handlers
     // encode event+data to JSON
-    encode_msg: function (e, d) {
+    encode_msg: (e, d) => {
         return JSON.stringify({
             event: e,
             data: d
         });
     },
     // decode event+data from JSON
-    decode_msg: function (m) {
+    decode_msg: (m) => {
         try {
             m = JSON.parse(m);
         } catch (e) {
@@ -163,11 +161,11 @@ var wss = {
         return m;
     },
     // send data to specific authenticated non-arduino client
-    send_to_client: function (event, data, client) {
+    send_to_client: (event, data, client) => {
         client.socket.send(wss.encode_msg(event, data));
     },
     // send data to all authenticated non-arduino clients
-    send_to_clients: function (event, data) {
+    send_to_clients: (event, data) => {
         for (var c_id in wss.clients) {
             if (
                 wss.clients.hasOwnProperty(c_id) &&
@@ -180,7 +178,7 @@ var wss = {
         }
     },
     // send data to almost all authenticated non-arduino clients (excluding one)
-    send_to_clients_but: function (event, data, client) {
+    send_to_clients_but: (event, data, client) => {
         for (var c_id in wss.clients) {
             if (
                 wss.clients.hasOwnProperty(c_id) &&
@@ -194,12 +192,12 @@ var wss = {
         }
     },
     // send color palette to client
-    send_color_palette: function (client) {
+    send_color_palette: (client) => {
         wss.send_to_client("color_palette", database.data.colors, client);
         util.log("ws", util.INF, `color palette update sent to client ${client.id}`);
     },
     // send pattern list to client
-    send_pattern_list: function (client) {
+    send_pattern_list: (client) => {
         var patterns = database.data.patterns;
         var pattern_list = [];
         // summarize pattern IDs and names
@@ -215,19 +213,19 @@ var wss = {
         util.log("ws", util.INF, `pattern list update sent to client ${client.id}`);
     },
     // send data to arduino client
-    send_to_arduino: function (device_id, data) {
+    send_to_arduino: (device_id, data) => {
         if (
             wss.clients.hasOwnProperty(device_id) &&
             wss.clients[device_id] !== null
         )
             wss.clients[device_id].socket.send(data);
     },
-    test_color: function (device_id, color, latent = true) {
+    test_color: (device_id, color, latent = true, music = false) => {
         var db = database.data;
         if (db.devices.hasOwnProperty(device_id)) {
             // convert color RGB values to RGB string
             if (!color.hasOwnProperty('left')) {
-                if (db.devices[device_id].current.type == "hue") {
+                if (db.devices[device_id].current.type == "hue" || db.devices[device_id].current.type == "music") {
                     color.left = db.devices[device_id].current.data.left;
                 } else {
                     color.left = {
@@ -242,7 +240,7 @@ var wss = {
                 color.left.string = util.rgb_string(color.left.r, color.left.g, color.left.b);
             }
             if (!color.hasOwnProperty('right')) {
-                if (db.devices[device_id].current.type == "hue") {
+                if (db.devices[device_id].current.type == "hue" || db.devices[device_id].current.type == "music") {
                     color.right = db.devices[device_id].current.data.right;
                 } else {
                     color.right = {
@@ -264,7 +262,7 @@ var wss = {
                 right: color.right
             };
             // send RGB string to arduino
-            wss.play_current(device_id);
+            wss.play_current(device_id, music);
             // send currently playing to all
             wss.send_to_clients("current", {
                 device_id: device_id,
@@ -272,9 +270,15 @@ var wss = {
             });
             // save database if update is latent
             if (latent) database.save();
+            // play music if desired
+            if (music) {
+                setTimeout(_ => {
+                    wss.play_music(device_id);
+                }, 300);
+            }
         }
     },
-    play_pattern: function (device_id, pattern_id) {
+    play_pattern: (device_id, pattern_id) => {
         var db = database.data;
         if (db.devices.hasOwnProperty(device_id) && db.patterns.hasOwnProperty(pattern_id)) {
             // update current pattern
@@ -294,15 +298,42 @@ var wss = {
             database.save();
         }
     },
-    play_current: function (device_id) {
+    play_music: (device_id) => {
+        var db = database.data;
+        if (db.devices.hasOwnProperty(device_id)) {
+            if (db.devices[device_id].current.type != "hue" && db.devices[device_id].current.type != "music") {
+                db.devices[device_id].current.data = {
+                    left: {
+                        r: 0, g: 0, b: 0,
+                        string: "000000000"
+                    },
+                    right: {
+                        r: 0, g: 0, b: 0,
+                        string: "000000000"
+                    },
+                };
+            }
+            db.devices[device_id].current.type = "music";
+            // send currently playing to all
+            wss.send_to_clients("current", {
+                device_id: device_id,
+                data: db.devices[device_id].current
+            });
+            // send to arduino
+            wss.send_to_arduino(device_id, "@music");
+        }
+    },
+    play_current: (device_id, music = false) => {
         if (database.data.devices.hasOwnProperty(device_id)) {
             var current = database.data.devices[device_id].current;
             if (current.type == "pattern")
                 wss.send_to_arduino(device_id, "@p-" + util.condense_pattern(database.data.patterns[current.data.id]));
             else if (current.type == "hue")
-                wss.send_to_arduino(device_id, "@h-" + "l" + current.data.left.string + "r" + current.data.right.string);
+                wss.send_to_arduino(device_id, "@h" + (music ? "m" : "-") + "l" + current.data.left.string + "r" + current.data.right.string);
             else if (current.type == 'music')
                 wss.send_to_arduino(device_id, "@music");
+            else if (current.type == 'none')
+                wss.send_to_arduino(device_id, "@nil");
         }
     },
     // arduino status tracking
@@ -310,7 +341,7 @@ var wss = {
         heartbeat_interval: 2700, // how often to send heartbeats
         heartbeat_monitor_interval: 1000, // how often to check arduino statuses
         heartbeat_monitor_threshold: 4000, // how much time arduinos have to respond to heartbeat
-        log: function (device_id, event_name) {
+        log: (device_id, event_name) => {
             if (!database.data.devices.hasOwnProperty(device_id)) {
                 wss.create_device(device_id);
             }
@@ -321,7 +352,7 @@ var wss = {
             else util.log("ws", util.INF, "ARDUINO: " + device_id, event_name);
             wss.send_to_clients("device_list", database.data.devices);
         },
-        loop: function () {
+        loop: _ => {
             for (var d in database.data.devices) {
                 if (database.data.devices.hasOwnProperty(d)) {
                     if (
@@ -335,13 +366,13 @@ var wss = {
             }
             wss.arduino_tracker.reloop();
         },
-        reloop: function () {
-            setTimeout(function () {
+        reloop: _ => {
+            setTimeout(_ => {
                 wss.arduino_tracker.loop();
             }, wss.arduino_tracker.heartbeat_monitor_interval);
         }
     },
-    create_device: function (device_id) {
+    create_device: (device_id) => {
         if (!database.data.devices.hasOwnProperty(device_id)) {
             database.data.devices[device_id] = {
                 name: device_id,
@@ -352,21 +383,33 @@ var wss = {
                     data: null
                 },
                 brightness: 100,
-                speed: 100
+                speed: 100,
+                music_settings: {
+                    smoothing: 95,
+                    noise_gate: 20,
+                    l_ch: 0,
+                    l_invert: false,
+                    l_preamp: 100,
+                    l_postamp: 1,
+                    r_ch: 1,
+                    r_invert: false,
+                    r_preamp: 100,
+                    r_postamp: 1
+                }
             };
         }
     },
     // bind handler to client event
-    bind: function (event, handler, auth_req = true) {
-        wss.events[event] = function (client, req, db) {
+    bind: (event, handler, auth_req = true) => {
+        wss.events[event] = (client, req, db) => {
             if (!auth_req || client.auth)
                 handler(client, req, db);
         };
     },
     // initialize & attach events
-    initialize: function () {
+    initialize: _ => {
         // attach server socket events
-        wss.socket.on("connection", function (client_socket) {
+        wss.socket.on("connection", (client_socket) => {
             // create client object on new connection
             var client = {
                 socket: client_socket,
@@ -376,7 +419,7 @@ var wss = {
             };
             util.log("ws", util.INF, `client ${client.id} – connected`);
             // client socket event handlers
-            client.socket.addEventListener("message", function (m) {
+            client.socket.addEventListener("message", (m) => {
                 var d = wss.decode_msg(m.data); // parse message
                 if (d != null) {
                     // console.log('    ', d.event, d.data);
@@ -389,10 +432,10 @@ var wss = {
                     util.log("ws", util.ERR, `client ${client.id} – invalid message: `, m.data);
                 }
             });
-            client.socket.addEventListener("error", function (e) {
+            client.socket.addEventListener("error", (e) => {
                 util.log("ws", util.ERR, "client " + client.id + " – error", e);
             });
-            client.socket.addEventListener("close", function (c, r) {
+            client.socket.addEventListener("close", (c, r) => {
                 util.log("ws", util.INF, `client ${client.id} – disconnected`);
                 if (client.id.substring(0, 7) == "arduino")
                     wss.arduino_tracker.log(client.id, "disconnected");
@@ -401,22 +444,22 @@ var wss = {
             // add client object to client object list
             wss.clients[client.id] = client;
         });
-        wss.socket.on("listening", function () {
+        wss.socket.on("listening", _ => {
             util.log("ws", util.IMP, "listening on", wss_port);
             wss.online = true;
             wss.arduino_tracker.reloop();
         });
-        wss.socket.on("error", function (e) {
+        wss.socket.on("error", (e) => {
             util.log("ws", util.ERR, "server error", e);
             wss.online = false;
         });
-        wss.socket.on("close", function () {
+        wss.socket.on("close", _ => {
             util.log("ws", util.IMP, "server closed");
             wss.online = false;
         });
 
         // attach client socket events
-        wss.bind('auth', function (client, req, db) {
+        wss.bind('auth', (client, req, db) => {
             // validate password
             if (req.password == password) {
                 util.log("ws", util.INF, `client ${client.id} – authenticated`);
@@ -429,11 +472,11 @@ var wss = {
                     // send current brightness & speed
                     client.socket.send("@b-" + util.lpad(db.devices[client.id].brightness, 3, "0"));
                     client.socket.send("@s-" + util.lpad(db.devices[client.id].speed, 3, "0"));
-                    setTimeout(function () {
+                    setTimeout(_ => {
                         // send currently playing pattern or hue, if any
                         wss.play_current(client.id);
                         // begin heartbeat
-                        setTimeout(function () {
+                        setTimeout(_ => {
                             client.socket.send("@hb");
                         }, 1000);
                     }, 500);
@@ -449,10 +492,10 @@ var wss = {
             }
         }, false);
         // [color]
-        wss.bind('get_color_palette', function (client, req, db) {
+        wss.bind('get_color_palette', (client, req, db) => {
             wss.send_color_palette(client);
         });
-        wss.bind('color_new', function (client, req, db) {
+        wss.bind('color_new', (client, req, db) => {
             // generate color ID
             var color_id = util.rand_id();
             while (db.colors.hasOwnProperty(color_id))
@@ -484,7 +527,7 @@ var wss = {
             }, client);
             database.save();
         });
-        wss.bind('color_name', function (client, req, db) {
+        wss.bind('color_name', (client, req, db) => {
             req.name = ("" + req.name).trim();
             if (req.name != "") {
                 util.log("ws", util.INF, `client ${client.id} naming color ${req.id}, to ${req.name}`);
@@ -499,7 +542,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('color_delete', function (client, req, db) {
+        wss.bind('color_delete', (client, req, db) => {
             util.log("ws", util.INF, `client ${client.id} deleting color ${req.id}`);
             // remove color preset from database
             db.colors[req.id] = null;
@@ -508,7 +551,7 @@ var wss = {
             wss.send_to_clients("color_delete", { id: req.id });
             database.save();
         });
-        wss.bind('color_update', function (client, req, db) {
+        wss.bind('color_update', (client, req, db) => {
             req.r = util.rgb_validate(req.r);
             req.g = util.rgb_validate(req.g);
             req.b = util.rgb_validate(req.b);
@@ -527,18 +570,18 @@ var wss = {
             // (latent = not part of a heavy series of immediate realtime updates)
             if (req.latent) database.save();
         });
-        wss.bind('color_test', function (client, req, db) {
+        wss.bind('color_test', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 req.latent = req.latent ? true : false;
                 util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} testing color`);
-                wss.test_color(req.device_id, req.color, req.latent);
+                wss.test_color(req.device_id, req.color, req.latent, req.music && req.latent);
             }
         });
         // [pattern]
-        wss.bind('get_pattern_list', function (client, req, db) {
+        wss.bind('get_pattern_list', (client, req, db) => {
             wss.send_pattern_list(client);
         });
-        wss.bind('pattern_new', function (client, req, db) {
+        wss.bind('pattern_new', (client, req, db) => {
             // generate new pattern ID
             var pattern_id = util.rand_id();
             while (db.patterns.hasOwnProperty(pattern_id))
@@ -570,7 +613,7 @@ var wss = {
             );
             database.save();
         });
-        wss.bind('pattern_name', function (client, req, db) {
+        wss.bind('pattern_name', (client, req, db) => {
             // check database for pattern
             if (db.patterns.hasOwnProperty(req.id)) {
                 req.name = ("" + req.name).trim();
@@ -585,7 +628,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_delete', function (client, req, db) {
+        wss.bind('pattern_delete', (client, req, db) => {
             // check database for pattern
             if (db.patterns.hasOwnProperty(req.id)) {
                 util.log("ws", util.INF, `client ${client.id} deleting pattern ${req.id}`);
@@ -613,7 +656,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_add_color', function (client, req, db) {
+        wss.bind('pattern_add_color', (client, req, db) => {
             if (db.patterns.hasOwnProperty(req.id)) {
                 util.log("ws", util.INF, `client ${client.id} adding color to pattern ${req.id}`);
                 // add fRGBh color object to pattern in database
@@ -630,7 +673,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_update_color', function (client, req, db) {
+        wss.bind('pattern_update_color', (client, req, db) => {
             var color_id = parseInt(req.color.id);
             if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
                 util.log("ws", util.INF, `client ${client.id} updating color ${color_id} of pattern ${req.id}`);
@@ -648,7 +691,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_move_color', function (client, req, db) {
+        wss.bind('pattern_move_color', (client, req, db) => {
             var color_id = parseInt(req.color.id);
             var new_pos = parseInt(req.new_pos);
             if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
@@ -666,7 +709,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_delete_color', function (client, req, db) {
+        wss.bind('pattern_delete_color', (client, req, db) => {
             var color_id = parseInt(req.color.id);
             if (db.patterns.hasOwnProperty(req.id) && color_id >= 0 && color_id < db.patterns[req.id].list.length) {
                 util.log("ws", util.INF, `client ${client.id} deleting color ${color_id} of pattern ${req.id}`);
@@ -680,7 +723,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('pattern_load', function (client, req, db) {
+        wss.bind('pattern_load', (client, req, db) => {
             // check database for pattern
             if (db.patterns.hasOwnProperty(req.id)) {
                 // send pattern data to client
@@ -691,7 +734,7 @@ var wss = {
                 }, client)
             }
         });
-        wss.bind('pattern_play', function (client, req, db) {
+        wss.bind('pattern_play', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 // check database for pattern
                 if (db.patterns.hasOwnProperty(req.id)) {
@@ -701,7 +744,7 @@ var wss = {
             }
         });
         // [arduino]
-        wss.bind('arduino_sync', function (client, req, db) {
+        wss.bind('arduino_sync', (client, req, db) => {
             var device_id = "arduino_" + ("" + req).trim();
             util.log("ws", util.INF, `client ${client.id} – identified as ARDUINO: ${device_id}`);
             // rename client in client list
@@ -717,23 +760,23 @@ var wss = {
             wss.arduino_tracker.log(device_id, "connected")
             database.save();
         }, false);
-        wss.bind('arduino_heartbeat', function (client, req, db) {
+        wss.bind('arduino_heartbeat', (client, req, db) => {
             wss.arduino_tracker.log(client.id, "online");
-            setTimeout(function () {
+            setTimeout(_ => {
                 wss.send_to_arduino(client.id, "@hb");
             }, wss.arduino_tracker.heartbeat_interval);
         });
-        wss.bind('arduino_direct', function (client, req, db) {
+        wss.bind('arduino_direct', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 util.log("ws", req.silent === true ? util.REQ : util.INF, `direct to ${req.device_id}: ${req.data}`);
                 wss.send_to_arduino(req.device_id, req.data);
             }
         });
         // [control]
-        wss.bind('get_device_list', function (client, req, db) {
+        wss.bind('get_device_list', (client, req, db) => {
             wss.send_to_client("device_list", db.devices, client);
         });
-        wss.bind('get_device_data', function (client, req, db) {
+        wss.bind('get_device_data', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 // send currently playing
                 wss.send_to_client("current", {
@@ -749,9 +792,50 @@ var wss = {
                     device_id: req.device_id,
                     level: db.devices[req.device_id].speed,
                 }, client);
+                // send music settings
+                wss.send_to_client("smoothing", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.smoothing,
+                }, client);
+                wss.send_to_client("noise_gate", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.noise_gate,
+                }, client);
+                wss.send_to_client("left_channel", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_ch,
+                }, client);
+                wss.send_to_client("left_invert", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_invert,
+                }, client);
+                wss.send_to_client("left_preamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_preamp,
+                }, client);
+                wss.send_to_client("left_postamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_postamp,
+                }, client);
+                wss.send_to_client("right_channel", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_ch,
+                }, client);
+                wss.send_to_client("right_invert", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_invert,
+                }, client);
+                wss.send_to_client("right_preamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_preamp,
+                }, client);
+                wss.send_to_client("right_postamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_postamp,
+                }, client);
             }
         });
-        wss.bind('device_name', function (client, req, db) {
+        wss.bind('device_name', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 req.name = ("" + req.name).trim();
                 if (req != "") {
@@ -761,7 +845,7 @@ var wss = {
                 }
             }
         });
-        wss.bind('device_delete', function (client, req, db) {
+        wss.bind('device_delete', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 db.devices[req.device_id] = null;
                 delete db.devices[req.device_id];
@@ -769,7 +853,7 @@ var wss = {
                 database.save();
             }
         });
-        wss.bind('get_brightness', function (client, req, db) {
+        wss.bind('get_brightness', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 wss.send_to_client("brightness", {
                     device_id: req.device_id,
@@ -777,7 +861,7 @@ var wss = {
                 }, client);
             }
         });
-        wss.bind('set_brightness', function (client, req, db) {
+        wss.bind('set_brightness', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting brightness to ${req.brightness} for device ${req.device_id}`);
                 // correct brightness
@@ -795,7 +879,7 @@ var wss = {
                 if (req.latent) database.save();
             }
         });
-        wss.bind('get_speed', function (client, req, db) {
+        wss.bind('get_speed', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 wss.send_to_client("speed", {
                     device_id: req.device_id,
@@ -803,7 +887,7 @@ var wss = {
                 }, client);
             }
         });
-        wss.bind('set_speed', function (client, req, db) {
+        wss.bind('set_speed', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting speed to ${req.speed} for device ${req.device_id}`);
                 // correct speed
@@ -821,7 +905,7 @@ var wss = {
                 if (req.latent) database.save();
             }
         });
-        wss.bind('get_current', function (client, req, db) {
+        wss.bind('get_current', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 wss.send_to_clients("current", {
                     device_id: req.device_id,
@@ -829,24 +913,179 @@ var wss = {
                 });
             }
         });
-        wss.bind('play_current', function (client, req, db) {
+        wss.bind('play_current', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 wss.play_current(req.device_id);
             }
         });
-        // [music]
-        wss.bind('music', function (client, req, db) {
+        wss.bind('play_none', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
-                util.log('ws', util.INF, `music reactive mode (beta) for device ${req.device_id}`);
-                db.devices[req.device_id].current.type = "music";
-                db.devices[req.device_id].current.data = true;
-                // send currently playing to all
+                db.devices[req.device_id].current.type = "none";
+                db.devices[req.device_id].current.data = null;
+                wss.play_current(req.device_id);
                 wss.send_to_clients("current", {
                     device_id: req.device_id,
                     data: db.devices[req.device_id].current
                 });
-                // send to arduino
-                wss.send_to_arduino(req.device_id, "@music");
+            }
+        });
+        // [music]
+        wss.bind('music', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                util.log('ws', util.INF, `music reactive mode for device ${req.device_id}`);
+                wss.play_music(req.device_id);
+            }
+        });
+        wss.bind('set_smoothing', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.smoothing = parseInt(req.smoothing);
+                if (isNaN(req.smoothing)) req.smoothing = 95;
+                req.smoothing = util.validate_int(req.smoothing, 0, 99);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting smoothing to ${req.smoothing} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.smoothing = req.smoothing;
+                wss.send_to_clients_but("smoothing", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.smoothing,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@sm" + util.lpad(db.devices[req.device_id].music_settings.smoothing, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('set_noise_gate', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.noise_gate = parseInt(req.noise_gate);
+                if (isNaN(req.noise_gate)) req.noise_gate = 20;
+                req.noise_gate = util.validate_int(req.noise_gate, 0, 50);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting noise gate to ${req.noise_gate} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.noise_gate = req.noise_gate;
+                wss.send_to_clients_but("noise_gate", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.noise_gate,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@ng" + util.lpad(db.devices[req.device_id].music_settings.noise_gate, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('set_left_channel', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.left_channel = parseInt(req.left_channel);
+                if (isNaN(req.left_channel)) req.left_channel = 0;
+                req.left_channel = util.validate_int(req.left_channel, 0, 6);
+                util.log("ws", util.INF, `client ${client.id} setting left channel to ${req.left_channel} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.l_ch = req.left_channel;
+                wss.send_to_clients("left_channel", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_ch
+                });
+                wss.send_to_arduino(req.device_id, "@lc" + util.lpad(db.devices[req.device_id].music_settings.l_ch, 1, "0"));
+                database.save();
+            }
+        });
+        wss.bind('set_left_invert', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                // correct speed
+                req.left_invert = req.left_invert ? 1 : 0;
+                if (isNaN(req.left_invert)) req.left_invert = 0;
+                req.left_invert = util.validate_int(req.left_invert, 0, 1);
+                util.log("ws", util.INF, `client ${client.id} setting left invert to ${req.left_invert} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.l_invert = req.left_invert;
+                wss.send_to_clients("left_invert", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_invert
+                });
+                wss.send_to_arduino(req.device_id, "@li" + util.lpad(db.devices[req.device_id].music_settings.l_invert, 1, "0"));
+                database.save();
+            }
+        });
+        wss.bind('set_left_preamp', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.left_preamp = parseInt(req.left_preamp);
+                if (isNaN(req.left_preamp)) req.left_preamp = 100;
+                req.left_preamp = util.validate_int(req.left_preamp, 1, 200);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting left pre-amp to ${req.left_preamp} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.l_preamp = req.left_preamp;
+                wss.send_to_clients_but("left_preamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_preamp,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@lpr" + util.lpad(db.devices[req.device_id].music_settings.l_preamp, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('set_left_postamp', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.left_postamp = parseInt(req.left_postamp);
+                if (isNaN(req.left_postamp)) req.left_postamp = 1;
+                req.left_postamp = util.validate_int(req.left_postamp, 1, 20);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting left post-amp to ${req.left_postamp} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.l_postamp = req.left_postamp;
+                wss.send_to_clients_but("left_postamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.l_postamp,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@lpo" + util.lpad(db.devices[req.device_id].music_settings.l_postamp, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('set_right_channel', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.right_channel = parseInt(req.right_channel);
+                if (isNaN(req.right_channel)) req.right_channel = 0;
+                req.right_channel = util.validate_int(req.right_channel, 0, 6);
+                util.log("ws", util.INF, `client ${client.id} setting right channel to ${req.right_channel} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.r_ch = req.right_channel;
+                wss.send_to_clients("right_channel", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_ch
+                });
+                wss.send_to_arduino(req.device_id, "@rc" + util.lpad(db.devices[req.device_id].music_settings.r_ch, 1, "0"));
+                database.save();
+            }
+        });
+        wss.bind('set_right_invert', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                // correct speed
+                req.right_invert = req.right_invert ? 1 : 0;
+                if (isNaN(req.right_invert)) req.right_invert = 0;
+                req.right_invert = util.validate_int(req.right_invert, 0, 1);
+                util.log("ws", util.INF, `client ${client.id} setting right invert to ${req.right_invert} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.r_invert = req.right_invert;
+                wss.send_to_clients("right_invert", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_invert
+                });
+                wss.send_to_arduino(req.device_id, "@ri" + util.lpad(db.devices[req.device_id].music_settings.r_invert, 1, "0"));
+                database.save();
+            }
+        });
+        wss.bind('set_right_preamp', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.right_preamp = parseInt(req.right_preamp);
+                if (isNaN(req.right_preamp)) req.right_preamp = 100;
+                req.right_preamp = util.validate_int(req.right_preamp, 1, 200);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting right pre-amp to ${req.right_preamp} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.r_preamp = req.right_preamp;
+                wss.send_to_clients_but("right_preamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_preamp,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@rpr" + util.lpad(db.devices[req.device_id].music_settings.r_preamp, 3, "0"));
+                if (req.latent) database.save();
+            }
+        });
+        wss.bind('set_right_postamp', (client, req, db) => {
+            if (db.devices.hasOwnProperty(req.device_id)) {
+                req.right_postamp = parseInt(req.right_postamp);
+                if (isNaN(req.right_postamp)) req.right_postamp = 1;
+                req.right_postamp = util.validate_int(req.right_postamp, 1, 20);
+                util.log("ws", req.latent ? util.INF : util.REP, `client ${client.id} setting right post-amp to ${req.right_postamp} for device ${req.device_id}`);
+                db.devices[req.device_id].music_settings.r_postamp = req.right_postamp;
+                wss.send_to_clients_but("right_postamp", {
+                    device_id: req.device_id,
+                    level: db.devices[req.device_id].music_settings.r_postamp,
+                }, client);
+                wss.send_to_arduino(req.device_id, "@rpo" + util.lpad(db.devices[req.device_id].music_settings.r_postamp, 3, "0"));
+                if (req.latent) database.save();
             }
         });
     }
@@ -861,7 +1100,7 @@ app.use(
         extended: true
     })
 );
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
         "Access-Control-Allow-Headers",
@@ -870,12 +1109,12 @@ app.use(function (req, res, next) {
     next();
 });
 app.use(express.static("html"));
-app.get("/", function (req, res) {
+app.get("/", (req, res) => {
     res.sendFile(__dirname + "/html/index.html");
 });
 /*
 var api = {
-    auth: function (req, res, next) {
+    auth: (req, res, next) => {
         if (
             req.headers.authorization &&
             req.headers.authorization.trim() == password
@@ -1384,7 +1623,7 @@ app.post("/api/speed", function (req, res) {
 */
 
 /* CLI */
-util.input.on('line', function (line) {
+util.input.on('line', (line) => {
     line = line.trim();
     if (line != '') {
         line = line.split(' ');
@@ -1400,6 +1639,6 @@ util.input.on('line', function (line) {
 console.log("RGB Lights Control");
 database.load();
 wss.initialize();
-server.listen(http_port, function () {
+server.listen(http_port, _ => {
     util.log("http", util.IMP, "listening on", http_port);
 });
