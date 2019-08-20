@@ -919,9 +919,14 @@ app
                                 var lastclicked = b.key('lastclicked');
                                 b.key('lastclicked', newclicked)
                                 if (newclicked - lastclicked < doubleClickTimeout) {
-                                    if (b.key('selected'))
+                                    if (b.key('selected')) {
                                         b.on('deselect');
-                                    else b.on('select');
+                                        if (app.music_settings.enabled) {
+                                            setTimeout(function () {
+                                                app.playMusic();
+                                            }, 100);
+                                        }
+                                    } else b.on('select');
                                 } else {
                                     setTimeout(function () {
                                         if (b.key('lastclicked') == newclicked) {
@@ -1717,8 +1722,7 @@ app
                     #current
                         {
                             block.on('hidechildren');
-                            if (current.type == 'hue') {
-                                console.log(current);
+                            if (current.type == 'hue' || current.type == 'music') {
                                 var colorLeft = current.data.left;
                                 var colorRight = current.data.right;
                                 block.child('hue/color/views')
@@ -1728,11 +1732,13 @@ app
                                         .css('background-color', app.util.rgbcss(colorRight.r, colorRight.g, colorRight.b))
                                 ;
                                 block.child('hue').css('display', 'block');
+                                if (current.type == 'hue')
+                                    block.child('hue/label/text').html('').data('Hue');
+                                else if (current.type == 'music')
+                                    block.child('hue/label/text').html('').data('Audio');
                             } else if (current.type == 'pattern') {
                                 block.child('pattern/text').html('').data(current.data.name);
                                 block.child('pattern').css('display', 'block');
-                            } else if (current.type == 'music') {
-                                block.child('music').css('display', 'block');
                             } else if (current.type == 'none') {
                                 block.child('pattern/text').html('<span style="font-size:17px;font-style:italic;font-color:#333;">None</span>');
                                 block.child('pattern').css('display', 'block');
@@ -1799,7 +1805,7 @@ app
                         css
                             display none
                         text text
-                            val Music Reactive
+                            val Audio Reactive
                             css
                                 font-size 16px
                                 letter-spacing 0.55px
@@ -2009,7 +2015,7 @@ app
                                     if (block.key('enabled')) block.css('background-color', app.colors[app.scheme].button[event.type]);
                                 }
                             text text
-                                val music react
+                                val audio react
                                 css
                                     font-size 22px
                                     letter-spacing 1.5px
@@ -2188,7 +2194,7 @@ app
                                 margin 0 auto
                             switch switch
                                 val off
-                                label Music Reactive
+                                label Audio Reactive
                                 css
                                     font-size 22px
                                     color #222

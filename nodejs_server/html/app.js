@@ -296,7 +296,10 @@ var app = {
                             var type = current ? current.type : "none";
                             if (type == 'music') {
                                 app.currentItem.type = 'music';
-                                app.currentItem.data = null;
+                                app.currentItem.data = {
+                                    left: current.data.left,
+                                    right: current.data.right
+                                };
                                 app.music_settings.enabled = true;
                                 app.block.child('controlpanel/patterns/area/music/enable').on('on');
                             } else if (type == 'pattern') {

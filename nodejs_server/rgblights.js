@@ -212,6 +212,23 @@ var wss = {
         wss.send_to_client("pattern_list", pattern_list, client);
         util.log("ws", util.INF, `pattern list update sent to client ${client.id}`);
     },
+    // send device list to client
+    send_device_list: (client = null) => {
+        var summary = {};
+        var db = database.data;
+        for (var d in db.devices) {
+            if (db.devices.hasOwnProperty(d)) {
+                summary[d] = {
+                    name: db.devices[d].name,
+                    last_event: db.devices[d].last_event,
+                    last_timestamp: db.devices[d].last_timestamp,
+                };
+            }
+        }
+        if (client === null) {
+            wss.send_to_clients("device_list", summary);
+        } else wss.send_to_client("device_list", summary, client);
+    },
     // send data to arduino client
     send_to_arduino: (device_id, data) => {
         if (
@@ -350,7 +367,7 @@ var wss = {
             database.data.devices[device_id].last_timestamp = Date.now();
             if (rep_ol) util.log("ws", util.REP, "ARDUINO: " + device_id, event_name);
             else util.log("ws", util.INF, "ARDUINO: " + device_id, event_name);
-            wss.send_to_clients("device_list", database.data.devices);
+            wss.send_device_list();
         },
         loop: _ => {
             for (var d in database.data.devices) {
@@ -481,8 +498,8 @@ var wss = {
                     client.socket.send("@rpr" + util.lpad(db.devices[client.id].music_settings.r_preamp, 3, "0"));
                     client.socket.send("@lpo" + util.lpad(db.devices[client.id].music_settings.l_postamp, 3, "0"));
                     client.socket.send("@rpo" + util.lpad(db.devices[client.id].music_settings.r_postamp, 3, "0"));
-                    client.socket.send("@li" + util.lpad(db.devices[client.id].music_settings.l_invert, 1, "0"));
-                    client.socket.send("@ri" + util.lpad(db.devices[client.id].music_settings.r_invert, 1, "0"));
+                    client.socket.send("@li" + util.lpad(db.devices[client.id].music_settings.l_invert ? 1 : 0, 1, "0"));
+                    client.socket.send("@ri" + util.lpad(db.devices[client.id].music_settings.r_invert ? 1 : 0, 1, "0"));
                     setTimeout(_ => {
                         // send currently playing pattern or hue, if any
                         wss.play_current(client.id);
@@ -498,7 +515,7 @@ var wss = {
                     wss.send_color_palette(client);
                     wss.send_pattern_list(client);
                     // send device list
-                    wss.send_to_client("device_list", db.devices, client);
+                    wss.send_device_list(client);
                 }
             }
         }, false);
@@ -785,7 +802,7 @@ var wss = {
         });
         // [control]
         wss.bind('get_device_list', (client, req, db) => {
-            wss.send_to_client("device_list", db.devices, client);
+            wss.send_device_list(client);
         });
         wss.bind('get_device_data', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
@@ -851,7 +868,7 @@ var wss = {
                 req.name = ("" + req.name).trim();
                 if (req != "") {
                     db.devices[req.device_id].name = req.name;
-                    wss.send_to_clients("device_list", db.devices);
+                    wss.send_device_list();
                     database.save();
                 }
             }
@@ -860,7 +877,7 @@ var wss = {
             if (db.devices.hasOwnProperty(req.device_id)) {
                 db.devices[req.device_id] = null;
                 delete db.devices[req.device_id];
-                wss.send_to_clients("device_list", db.devices);
+                wss.send_device_list();
                 database.save();
             }
         });
@@ -931,8 +948,12 @@ var wss = {
         });
         wss.bind('play_none', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
-                db.devices[req.device_id].current.type = "none";
-                db.devices[req.device_id].current.data = null;
+                if (db.devices[req.device_id].current.type == "music") {
+                    db.devices[req.device_id].current.type = "hue";
+                } else {
+                    db.devices[req.device_id].current.type = "none";
+                    db.devices[req.device_id].current.data = null;
+                }
                 wss.play_current(req.device_id);
                 wss.send_to_clients("current", {
                     device_id: req.device_id,
