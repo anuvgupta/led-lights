@@ -731,6 +731,7 @@ var app = {
     },
     playNone: function () {
         if (app.device_id !== null) {
+            app.music_settings.enabled = false;
             app.socket.send(app.encode_msg('play_none', {
                 device_id: app.device_id
             }));
