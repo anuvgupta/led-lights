@@ -472,6 +472,17 @@ var wss = {
                     // send current brightness & speed
                     client.socket.send("@b-" + util.lpad(db.devices[client.id].brightness, 3, "0"));
                     client.socket.send("@s-" + util.lpad(db.devices[client.id].speed, 3, "0"));
+                    // send music settings
+                    client.socket.send("@sm" + util.lpad(db.devices[client.id].music_settings.smoothing, 3, "0"));
+                    client.socket.send("@ng" + util.lpad(db.devices[client.id].music_settings.noise_gate, 3, "0"));
+                    client.socket.send("@lc" + util.lpad(db.devices[client.id].music_settings.l_ch, 1, "0"));
+                    client.socket.send("@rc" + util.lpad(db.devices[client.id].music_settings.r_ch, 1, "0"));
+                    client.socket.send("@lpr" + util.lpad(db.devices[client.id].music_settings.l_preamp, 3, "0"));
+                    client.socket.send("@rpr" + util.lpad(db.devices[client.id].music_settings.r_preamp, 3, "0"));
+                    client.socket.send("@lpo" + util.lpad(db.devices[client.id].music_settings.l_postamp, 3, "0"));
+                    client.socket.send("@rpo" + util.lpad(db.devices[client.id].music_settings.r_postamp, 3, "0"));
+                    client.socket.send("@li" + util.lpad(db.devices[client.id].music_settings.l_invert, 1, "0"));
+                    client.socket.send("@ri" + util.lpad(db.devices[client.id].music_settings.r_invert, 1, "0"));
                     setTimeout(_ => {
                         // send currently playing pattern or hue, if any
                         wss.play_current(client.id);
