@@ -1249,6 +1249,9 @@ app
                             // add new/update existing devices
                             for (var id in device_list) {
                                 if (device_list.hasOwnProperty(id)) {
+                                    if (device_list[id].hasOwnProperty('last_event') && device_list[id].last_event == "online") {
+                                        device_list[id].last_timestamp = "now";
+                                    }
                                     if (device_blocks.hasOwnProperty(id)) {
                                         block.child('menu/' + id).data(device_list[id]);
                                     } else {
@@ -1268,8 +1271,14 @@ app
                         }
                     :updatetime
                         {
-                            var lTS = parseInt(block.key('lastTimestamp'));
-                            var time_string = app.util.duration_desc(lTS);
+                            var lTS = block.key('lastTimestamp');
+                            var time_string = "";
+                            if (lTS == "now") {
+                                time_string = "now";
+                            } else {
+                                lTS = parseInt(lTS);
+                                time_string = app.util.duration_desc(lTS);
+                            }
                             block.child('menu').__child('content/block/content/status/time').html('').data(time_string);
                             event.stopPropagation();
                         }
@@ -1470,8 +1479,14 @@ app
                                         b.css('background-color', 'rgba(255, 255, 255, 0)');
                                     })
                                     .on('updatetime', function (e, b, d) {
-                                        var lTS = parseInt(b.key('lastTimestamp'));
-                                        var time_string = app.util.duration_desc(lTS);
+                                        var lTS = b.key('lastTimestamp');
+                                        var time_string = "";
+                                        if (lTS == "now") {
+                                            time_string = "now";
+                                        } else {
+                                            lTS = parseInt(lTS);
+                                            time_string = app.util.duration_desc(lTS);
+                                        }
                                         b.child('block/status/time').html('').data(time_string);
                                         e.stopPropagation();
                                     })

@@ -366,8 +366,10 @@ var wss = {
             database.data.devices[device_id].last_event = event_name;
             database.data.devices[device_id].last_timestamp = Date.now();
             if (rep_ol) util.log("ws", util.REP, "ARDUINO: " + device_id, event_name);
-            else util.log("ws", util.INF, "ARDUINO: " + device_id, event_name);
-            wss.send_device_list();
+            else {
+                util.log("ws", util.INF, "ARDUINO: " + device_id, event_name);
+                wss.send_device_list();
+            }
         },
         loop: _ => {
             for (var d in database.data.devices) {
