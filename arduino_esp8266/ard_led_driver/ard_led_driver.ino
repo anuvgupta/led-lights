@@ -21,7 +21,7 @@
 double l_preamp = 1.1; // double 0 - 2, (2 for low volume)
 int l_postamp = 1; // int 1 - 20, (10 if inverted)
 bool l_invert = false; // boolean
-double r_preamp = 1.5;
+double r_preamp = 1.1;
 int r_postamp = 1;
 bool r_invert = false;
 int noise = 20; // int 0 - 50
@@ -95,6 +95,7 @@ void setup() {
 
   // init esp8266
   if (DEBUG) Serial.println(F("[nano] connecting to ESP8266"));
+  ESP8266.println("reset");
   lastTimestamp = millis();
 }
 
@@ -351,7 +352,6 @@ void fadeColor() {
 
 // music reactive mode
 void music(bool v) {
-  int 
   while (uninterrupted()) {
     // pulse strobe to cycle bands
     for (int i = 0; i < 7; i++) {

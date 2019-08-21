@@ -14,10 +14,10 @@ WebSocketsClient ws;
 #define SERIAL Serial
 #define ESP_DEBUG_V false
 #define DEBUG_MODE false
-#define SERVER "10.0.1.40"
-#define PORT 30003
-//#define SERVER "leds.anuv.me"
-//#define PORT 3003
+//#define SERVER "10.0.1.40"
+//#define PORT 30003
+#define SERVER "leds.anuv.me"
+#define PORT 3003
 
 // parsing data
 int mb_i = 0;
