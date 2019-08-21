@@ -316,8 +316,10 @@ var app = {
                                     left: current.data.left,
                                     right: current.data.right
                                 };
-                                if (d.data.hasOwnProperty('music') && d.data.music == "off")
+                                if (d.data.hasOwnProperty('music') && d.data.music == "off") {
                                     app.music_settings.enabled = false;
+                                    app.block.child('controlpanel/patterns/area/music/enable').key('templock', 'lock').on('off');
+                                }
                             } else {
                                 app.currentItem.type = 'none';
                                 app.currentItem.data = null;
