@@ -1,10 +1,10 @@
 {
     "name": "rgblights",
     "version": "1.0.0",
-    "description": "RGB LED strip control panel",
-    "main": "rgblights.js",
+    "description": "LED strip control panel",
+    "main": "ledlights.js",
     "scripts": {
-        "test": "nodemon --ignore 'database.json' --ignore 'html/*' rgblights.js debug"
+        "test": "nodemon --ignore 'database.json' --ignore 'html/*' ledlights.js debug"
     },
     "author": "Anuv Gupta",
     "license": "ISC",
