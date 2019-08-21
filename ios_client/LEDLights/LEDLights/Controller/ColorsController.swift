@@ -19,10 +19,13 @@ class ColorsController: UIViewController {
     @IBOutlet weak var colorHexLabel: UILabel!
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var scrollContentView: UIView!
-    @IBOutlet weak var liveTrackingSwitch: UISwitch!
+    @IBOutlet weak var syncButtonWrap: UIView!
+    @IBOutlet weak var liveTrackLeftLabel: UILabel!
+    @IBOutlet weak var liveTrackRightLabel: UILabel!
+    @IBOutlet weak var liveTrackLeftSwitch: UISwitch!
+    @IBOutlet weak var liveTrackRightSwitch: UISwitch!
     @IBOutlet weak var newPresetButton: UIButton!
     @IBOutlet weak var deletePresetButton: UIButton!
-    @IBOutlet weak var pushPresetButton: UIButton!
     @IBOutlet weak var colorListToolbar: UIView!
     // code ui elements
     let rightBarButton: UIButton = UIButton()
@@ -43,19 +46,27 @@ class ColorsController: UIViewController {
         
         scrollContentView.frame = CGRect(x: scrollContentView.frame.minX, y: scrollContentView.frame.minY, width: scrollView.frame.width, height: scrollContentView.frame.height)
         
-        liveTrackingSwitch.setOn(false, animated: false)
+        liveTrackLeftSwitch.setOn(false, animated: false)
+        liveTrackRightSwitch.setOn(false, animated: false)
         scrollView.contentSize = scrollContentView.frame.size
-        pushPresetButton.layer.cornerRadius = 10
         // colorIndicatorView.roundCorners(corners: [.topLeft, .topRight], radius: 8.0)
         colorIndicatorView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(colorIndicatorClicked)))
         
-        let saved_livetrack = UserDefaults.standard.string(forKey: "livetracking") ?? "false"
-        if saved_livetrack == "true" {
-            liveTrackingSwitch.isOn = true
-            liveTracking = true
+        let saved_livetrack_left = UserDefaults.standard.string(forKey: "trackleft") ?? "false"
+        let saved_livetrack_right = UserDefaults.standard.string(forKey: "trackright") ?? "false"
+        if saved_livetrack_left == "true" {
+            liveTrackLeftSwitch.isOn = true
+            trackLeft = true
         } else {
-            liveTrackingSwitch.isOn = false
-            liveTracking = false
+            liveTrackLeftSwitch.isOn = false
+            trackLeft = false
+        }
+        if saved_livetrack_right == "true" {
+            liveTrackRightSwitch.isOn = true
+            trackRight = true
+        } else {
+            liveTrackRightSwitch.isOn = false
+            trackRight = false
         }
         
         if let image = UIImage(named: "edit_bl.png") {
@@ -74,6 +85,10 @@ class ColorsController: UIViewController {
         border1.borderWidth = 1.0
         colorListToolbar.layer.addSublayer(border1)
         colorListToolbar.layer.masksToBounds = true
+        
+        if deviceData == nil {
+            hideSyncButtons()
+        }
         
         bridge.colorsVC = self
         ws.requestColorPalette()
@@ -97,27 +112,24 @@ class ColorsController: UIViewController {
         }
     }
     @IBAction func colorSquareUp(_ sender: ColorSquarePicker) {
-        if liveTracking {
-            ws.testColor(interval: false)
-        }
+        ws.testColor(interval: false)
         if editingColor != "" {
             ws.updateColor(id: editingColor, interval: false)
         }
     }
     @IBAction func colorBarUp(_ sender: ColorBarPicker) {
-        if liveTracking {
-            ws.testColor(interval: false)
-        }
+        ws.testColor(interval: false)
         if editingColor != "" {
             ws.updateColor(id: editingColor, interval: false)
         }
     }
-    @IBAction func pushButtonPressed(_ sender: UIButton) {
-        ws.testColor(interval: false)
+    @IBAction func liveTrackLeftChanged(_ sender: UISwitch) {
+        trackLeft = sender.isOn
+        UserDefaults.standard.set(String(trackLeft), forKey: "trackleft")
     }
-    @IBAction func liveTrackValueChanged(_ sender: UISwitch) {
-        liveTracking = sender.isOn
-        UserDefaults.standard.set(String(liveTracking), forKey: "livetracking")
+    @IBAction func liveTrackRightChanged(_ sender: UISwitch) {
+        trackRight = sender.isOn
+        UserDefaults.standard.set(String(trackRight), forKey: "trackright")
     }
     @IBAction func newPresetClicked(_ sender: UIButton) {
         ws.newPreset(red: r, green: g, blue: b)
@@ -156,7 +168,9 @@ class ColorsController: UIViewController {
         alert.addAction(colorAction)
         alert.preferredAction = colorAction
         bridge.currentAlertVC = alert
-        self.present(alert, animated: true, completion: nil)
+        self.present(alert, animated: true, completion:  { () -> Void in
+            alert.textFields![0].selectAll(nil)
+        })
     }
     @objc func colorPresetLoad(_ sender: UIButton) {
         setColor(sender.backgroundColor ?? UIColor.black)
@@ -226,7 +240,9 @@ class ColorsController: UIViewController {
             alert.addAction(renameAction)
             alert.preferredAction = renameAction
             bridge.currentAlertVC = alert
-            self.present(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion:  { () -> Void in
+                alert.textFields![0].selectAll(nil)
+            })
         }
     }
     
@@ -241,9 +257,7 @@ class ColorsController: UIViewController {
         } else {
             colorHexLabel.textColor = UIColor.white
         }
-        if liveTracking {
-            ws.testColor(interval: interval)
-        }
+        ws.testColor(interval: interval)
         if editingColor != "" {
             ws.updateColor(id: editingColor, interval: interval)
         }
@@ -313,7 +327,11 @@ class ColorsController: UIViewController {
             //}
             colorView.setTitle(preset.name, for: .normal)
             if editingColor == preset.id {
-                self.title = preset.name
+                if preset.name != "" {
+                    self.title =  preset.name
+                } else {
+                    self.title = "untitled"
+                }
             }
         }
     }
@@ -335,6 +353,20 @@ class ColorsController: UIViewController {
         }
         colorView.imageView?.contentMode = .scaleAspectFit
         colorView.imageEdgeInsets = UIEdgeInsets(top: 25, left: 0, bottom: 25, right: 0)
+    }
+    // show/hide live sync buttons
+    func showSyncButtons() {
+        liveTrackLeftSwitch.isEnabled = true
+        liveTrackRightSwitch.isEnabled = true
+        liveTrackLeftLabel.textColor = UIColor.black
+        liveTrackRightLabel.textColor = UIColor.black
+    }
+    func hideSyncButtons() {
+        liveTrackLeftSwitch.isEnabled = false
+        liveTrackRightSwitch.isEnabled = false
+        let c: UIColor = getUIColor(red: 100, green: 100, blue: 100)
+        liveTrackLeftLabel.textColor = c
+        liveTrackRightLabel.textColor = c
     }
     
 }

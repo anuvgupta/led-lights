@@ -61,6 +61,7 @@ class PatternEditorController: UIViewController {
         playButtonWrapView.backgroundColor = buttonBlue
         playButtonWrapView.layer.roundCorners(radius: 40)
         playButtonWrapView.layer.addShadow(radius: 3, opacity: 0.25, offset: CGSize(width: 1, height: 2), color: UIColor.black)
+        playButtonWrapView.isHidden = deviceData == nil
         
         scrollView.contentSize = contentView.frame.size
     }
@@ -94,7 +95,9 @@ class PatternEditorController: UIViewController {
             alert.addAction(renameAction)
             alert.preferredAction = renameAction
             bridge.currentAlertVC = alert
-            self.present(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion:  { () -> Void in
+                alert.textFields![0].selectAll(nil)
+            })
         }
     }
     @objc func patternColorSwiped(gesture: UISwipeGestureRecognizer) {
@@ -232,7 +235,9 @@ class PatternEditorController: UIViewController {
             alert.addAction(setAction)
             alert.preferredAction = setAction
             bridge.currentAlertVC = alert
-            self.present(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion:  { () -> Void in
+                alert.textFields![0].selectAll(nil)
+            })
         }
     }
     // display hold modal
@@ -257,7 +262,9 @@ class PatternEditorController: UIViewController {
             alert.addAction(setAction)
             alert.preferredAction = setAction
             bridge.currentAlertVC = alert
-            self.present(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion:  { () -> Void in
+                alert.textFields![0].selectAll(nil)
+            })
         }
     }
     // display color picker view
@@ -298,11 +305,16 @@ class PatternEditorController: UIViewController {
             sV.setContentOffset(scroll, animated: animated)
         }
     }
+    func showPlayButton() {
+        playButtonWrapView.isHidden = false
+    }
+    func hidePlayButton() {
+        playButtonWrapView.isHidden = true
+    }
     // swap two colors
     private func moveColor(colorView: PatternColorView, newPos: Int) {
         if (newPos >= 0 && newPos < currentPatternColorViewIndex) {
             if newPos * patternColorHeight != Int(colorView.frame.minY) {
-                print(newPos)
                 var colorViewToReplace: PatternColorView? = nil // patternColorViews[newPos]
                 for pcv in patternColorViews {
                     if pcv.ordinalPosition == newPos {

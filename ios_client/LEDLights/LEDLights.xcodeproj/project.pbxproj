@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7B33BEA1230D150500BB66E4 /* DevicesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B33BEA0230D150400BB66E4 /* DevicesController.swift */; };
+		7B33BEA3230D206C00BB66E4 /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B33BEA2230D206C00BB66E4 /* DeviceView.swift */; };
 		7B3597A722C1EDE300823845 /* PatternColorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3597A622C1EDE300823845 /* PatternColorView.swift */; };
 		7B3A3C0E22BD5FC600D245F8 /* PatternView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3A3C0D22BD5FC600D245F8 /* PatternView.swift */; };
 		7B3A3C1022BD951000D245F8 /* PatternEditorController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */; };
@@ -30,6 +32,8 @@
 
 /* Begin PBXFileReference section */
 		3C930AEE51C0196046FE249C /* Pods-LEDLights.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LEDLights.release.xcconfig"; path = "Target Support Files/Pods-LEDLights/Pods-LEDLights.release.xcconfig"; sourceTree = "<group>"; };
+		7B33BEA0230D150400BB66E4 /* DevicesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesController.swift; sourceTree = "<group>"; };
+		7B33BEA2230D206C00BB66E4 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeviceView.swift; path = LEDLights/View/DeviceView.swift; sourceTree = SOURCE_ROOT; };
 		7B3597A622C1EDE300823845 /* PatternColorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternColorView.swift; sourceTree = "<group>"; };
 		7B3A3C0D22BD5FC600D245F8 /* PatternView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternView.swift; sourceTree = "<group>"; };
 		7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternEditorController.swift; sourceTree = "<group>"; };
@@ -111,6 +115,7 @@
 		7BBD3D1F22C68BD40070631E /* View */ = {
 			isa = PBXGroup;
 			children = (
+				7B33BEA2230D206C00BB66E4 /* DeviceView.swift */,
 				7B3A3C0D22BD5FC600D245F8 /* PatternView.swift */,
 				7B3597A622C1EDE300823845 /* PatternColorView.swift */,
 				7B64E2C822CC194100558F24 /* Buttons.swift */,
@@ -128,6 +133,7 @@
 				7B3A3C0F22BD951000D245F8 /* PatternEditorController.swift */,
 				7B5B71AE22D07F5C00AA329B /* ColorPickerController.swift */,
 				7BEBF91C22B64172005A1C46 /* ControlsController.swift */,
+				7B33BEA0230D150400BB66E4 /* DevicesController.swift */,
 				7B51ABB822EFB880006A57B0 /* MusicController.swift */,
 			);
 			path = Controller;
@@ -275,12 +281,14 @@
 				7BEBF91922B63A18005A1C46 /* WebSocketWrapper.swift in Sources */,
 				7B3A3C1022BD951000D245F8 /* PatternEditorController.swift in Sources */,
 				7BFB662D22B7A4D600C332B9 /* AppMain.swift in Sources */,
+				7B33BEA1230D150500BB66E4 /* DevicesController.swift in Sources */,
 				7BFB662F22B8D3A600C332B9 /* WSVCBridge.swift in Sources */,
 				7BEBF91D22B64172005A1C46 /* ControlsController.swift in Sources */,
 				7B51ABB922EFB880006A57B0 /* MusicController.swift in Sources */,
 				7BEBF91B22B64160005A1C46 /* PatternsController.swift in Sources */,
 				7BEBF91522B628F8005A1C46 /* ColorsController.swift in Sources */,
 				7B8431FC22B5DF2800222F47 /* AppDelegate.swift in Sources */,
+				7B33BEA3230D206C00BB66E4 /* DeviceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

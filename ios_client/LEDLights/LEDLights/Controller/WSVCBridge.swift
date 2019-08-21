@@ -16,6 +16,8 @@ class WSVCBridge {
     public var musicVC: MusicController?
     public var colorsVC: ColorsController?
     public var controlsVC: ControlsController?
+    public var controlsNavVC: ControlsNavController?
+    public var devicesVC: DevicesController?
     public var patternsVC: PatternsController?
     public var patternsNavVC: PatternsNavController?
     public var patternEditVC: PatternEditorController?

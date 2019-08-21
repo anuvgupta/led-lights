@@ -78,7 +78,7 @@ class PatternsController: UIViewController {
             alert.addAction(deleteAction)
             alert.preferredAction = cancelAction
             bridge.currentAlertVC = alert
-            self.present(alert, animated: true, completion: nil)
+            self.present(alert, animated: true, completion:  nil)
         }
     }
     @objc func newPatternClicked(_ sender: UIButton) {

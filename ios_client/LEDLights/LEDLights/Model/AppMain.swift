@@ -14,16 +14,16 @@ let application = UIApplication.shared
 // global bridge to ViewControllers for WebSocket interface
 let bridge: WSVCBridge = WSVCBridge()
 // WebSocket client interface
-//let serverURL: String = "ws://10.0.1.40:30003"
-//let serverURL: String = "ws://10.204.204.168:30003"
-let serverURL: String = "ws://leds.anuv.me:3003"
+let serverURL: String = "ws://10.0.1.40:30003"
+//let serverURL: String = "ws://leds.anuv.me:3003"
 let ws: WSWrapper = WSWrapper()
 
 // global info/settings
 let colorsPerRow: Int = 3 // # color presets per row
 let colorsAspectRatio: CGFloat = 1.75 // width-height aspect ratio
 let bwThreshold: Int = 200 // foreground color contrast threshold
-var liveTracking: Bool = false // live tracking
+var trackLeft: Bool = false // live tracking left
+var trackRight: Bool = false // live tracking right
 var lastPassword: String = "" // saved password
 // color editor data
 var r: Int = 0
@@ -31,13 +31,14 @@ var g: Int = 0
 var b: Int = 0
 // pattern editor data
 var editingPattern: Pattern? // currently editing pattern
+// device data
+var deviceData: Device? = nil
+var deviceList: [String: Device] = [:]
 // currently playing data
 var currentItemType: String = "" // currently playing type (pattern/hue/music)
-var currentItemPData: (String, String)? = nil // if pattern currently playing, pattern ID
-var currentItemCData: (Int, Int, Int)? = nil // if color currently playing, color RGB
-// arduino status data
-var arduinoStatusEvent: String = ""
-var arduinoStatusTime: Int = 0
+var currentItemPData: (String, String)? = nil // if pattern currently playing, pattern ID/name
+var currentItemCData: ((Int, Int, Int), (Int, Int, Int))? = nil // if color currently playing, color RGB
+var musicEnabled: Bool = false
 
 // extensions
 extension UIColor {
@@ -202,6 +203,37 @@ func lpad(string: String, width: Int, pString: String?) -> String {
 func rgbstring(r: Int, g: Int, b: Int) -> String {
     return lpad(string: String(r), width: 3, pString: "0") + lpad(string: String(g), width: 3, pString: "0") + lpad(string: String(b), width: 3, pString: "0")
 }
+// get duration description from timestamp
+func durationDesc(lastTimestamp: Int) -> String {
+    if lastTimestamp == 0 {
+        return ""
+    }
+    var deltaSec: Int = Int(NSDate().timeIntervalSince1970) - Int(lastTimestamp / 1000)
+    if deltaSec < 0 {
+        deltaSec = 0
+    }
+    var outputString: String = "";
+    if deltaSec < 5 {
+        outputString += "now"
+    } else if deltaSec < 60 {
+        outputString += String(Int(round(Double(deltaSec) / 5.0) * 5.0)) + " seconds ago"
+    } else if deltaSec < 3600 {
+        let mins: Int = Int(deltaSec / 60)
+        if mins == 1 {
+            outputString += String(mins) + " minute ago"
+        } else {
+            outputString += String(mins) + " minutes ago"
+        }
+    } else {
+        let hrs: Int = Int(deltaSec / 3600)
+        if hrs == 1 {
+            outputString += String(hrs) + " hour ago"
+        } else {
+            outputString += String(hrs) + " hours ago"
+        }
+    }
+    return outputString
+}
 // dismiss all alerts
 func dismissAlerts(callback: (() -> Void)? = nil) {
     if let currentAlertVC = bridge.currentAlertVC {
@@ -223,7 +255,6 @@ func loadColor(color: UIColor) {
     r = Int(red * 255)
     g = Int(green * 255)
     b = Int(blue * 255)
-    print(r, g, b)
 }
 // create UIColor from RGB values
 func getUIColor(red: Int, green: Int, blue: Int) -> UIColor {

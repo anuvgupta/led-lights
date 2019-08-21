@@ -8,6 +8,20 @@
 
 import Foundation
 
+// device object
+class Device {
+    public var id: String
+    public var name: String
+    public var lastEvent: String
+    public var lastTimestamp: Int
+    init(id: String, name: String) {
+        self.id = id
+        self.name = name
+        self.lastEvent = ""
+        self.lastTimestamp = 0
+    }
+}
+
 // color preset data object
 class ColorPreset {
     public var red: Int = 0
