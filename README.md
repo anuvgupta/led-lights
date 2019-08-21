@@ -40,7 +40,7 @@ Audio reactive mode – recommended settings:
 
 -   Channel: `1`
 -   Invert: `on`
--   Pre-Amp: `70-120`
+-   Pre-Amp: `60-90`
 -   Post-Amp: `5-7`
 
 ## components
