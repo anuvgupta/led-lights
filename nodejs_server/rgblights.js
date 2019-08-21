@@ -283,7 +283,8 @@ var wss = {
             // send currently playing to all
             wss.send_to_clients("current", {
                 device_id: device_id,
-                data: db.devices[device_id].current
+                data: db.devices[device_id].current,
+                music: music ? "on" : "off"
             });
             // save database if update is latent
             if (latent) database.save();
@@ -808,6 +809,8 @@ var wss = {
         });
         wss.bind('get_device_data', (client, req, db) => {
             if (db.devices.hasOwnProperty(req.device_id)) {
+                // send device status through device list
+                wss.send_device_list(client);
                 // send currently playing
                 wss.send_to_client("current", {
                     data: db.devices[req.device_id].current,
@@ -959,7 +962,8 @@ var wss = {
                 wss.play_current(req.device_id);
                 wss.send_to_clients("current", {
                     device_id: req.device_id,
-                    data: db.devices[req.device_id].current
+                    data: db.devices[req.device_id].current,
+                    music: "off"
                 });
             }
         });
