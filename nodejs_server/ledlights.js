@@ -1674,7 +1674,7 @@ util.input.on('line', (line) => {
 });
 
 /* MAIN */
-console.log("RGB Lights Control");
+console.log("LED Lights");
 database.load();
 wss.initialize();
 server.listen(http_port, _ => {
