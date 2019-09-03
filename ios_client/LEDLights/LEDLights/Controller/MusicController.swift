@@ -246,6 +246,7 @@ class MusicController: UIViewController, UIPickerViewDelegate, UIPickerViewDataS
     }
     func setLeftChannel(_ l: Int) {
         leftChannelInput.text = String(l)
+        leftChannelPicker.selectRow(l - 1, inComponent: 0, animated: true)
     }
     func setLeftInvert(_ l: Bool) {
         leftInvertSwitch.setOn(l, animated: true)
@@ -260,6 +261,7 @@ class MusicController: UIViewController, UIPickerViewDelegate, UIPickerViewDataS
     }
     func setRightChannel(_ l: Int) {
         rightChannelInput.text = String(l)
+        rightChannelPicker.selectRow(l - 1, inComponent: 0, animated: true)
     }
     func setRightInvert(_ l: Bool) {
         rightInvertSwitch.setOn(l, animated: true)

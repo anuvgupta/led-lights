@@ -14,8 +14,8 @@ let application = UIApplication.shared
 // global bridge to ViewControllers for WebSocket interface
 let bridge: WSVCBridge = WSVCBridge()
 // WebSocket client interface
-let serverURL: String = "ws://10.0.1.40:30003"
-//let serverURL: String = "ws://leds.anuv.me:3003"
+//let serverURL: String = "ws://10.0.1.40:30003"
+let serverURL: String = "ws://leds.anuv.me:3003"
 let ws: WSWrapper = WSWrapper()
 
 // global info/settings
