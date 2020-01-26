@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Light Switch</title>
+        <meta charset="utf-8" />
+        <meta name="author" content="Anuv Gupta" />
+        <meta name="copyright" content="Copyright (c) 2020 Anuv Gupta" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no"
+        />
+        <link
+            rel="apple-touch-icon"
+            sizes="128x128"
+            href="img/appicon_switch.png"
+        />
+        <link rel="icon" href="img/icon_switch.png" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <style type="text/css">
+            @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300italic,600italic,300,600');
+            @font-face {
+                font-family: ModernSansRegular;
+                src: url(assets/modernsans_regular.ttf);
+            }
+            @font-face {
+                font-family: ModernSansLight;
+                src: url(assets/modernsans_light.otf);
+            }
+            * {
+                font-family: 'Source Sans Pro', Trebuchet, Verdana, Helvetica,
+                    Arial, sans-serif;
+            }
+            html,
+            body {
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                background-color: #fff;
+                overflow: hidden;
+            }
+            .select-disabled {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+        </style>
+        <script
+            type="text/javascript"
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"
+        ></script>
+        <script
+            type="text/javascript"
+            src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js"
+        ></script>
+        <script type="text/javascript" src="block.js"></script>
+        <script type="text/javascript">
+            var app = {
+                block: Block('div', 'switch'),
+                load: _ => {
+                    setTimeout(_ => {
+                        app.block.load(
+                            _ => {
+                                app.block.fill(document.body);
+                            },
+                            'switch',
+                            'jQuery'
+                        );
+                    }, 10);
+                },
+                send_on: _ => {
+                    console.log('requesting – on');
+                    $.ajax('/switch/on', {
+                        method: 'POST',
+                        success: (data, status, xhr) => {
+                            console.log(status);
+                            console.log(data);
+                        },
+                        error: (xhr, status, error) => {
+                            console.log(status);
+                            console.log(error);
+                        }
+                    });
+                },
+                send_off: _ => {
+                    console.log('requesting – off');
+                    $.ajax('/switch/off', {
+                        method: 'POST',
+                        success: (data, status, xhr) => {
+                            console.log(status);
+                            console.log(data);
+                        },
+                        error: (xhr, status, error) => {
+                            console.log(status);
+                            console.log(error);
+                        }
+                    });
+                }
+            };
+            $(document).ready(app.load);
+        </script>
+    </head>
+    <body></body>
+</html>

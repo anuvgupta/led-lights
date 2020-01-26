@@ -1150,515 +1150,60 @@ app.use(express.static("html"));
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/html/index.html");
 });
-/*
-var api = {
-    auth: (req, res, next) => {
-        if (
-            req.headers.authorization &&
-            req.headers.authorization.trim() == password
-        ) {
-            next(req, res);
-        } else {
-            res.send({
-                success: false,
-                message: "incorrect password",
-                payload: {}
-            });
-        }
-    },
-    ws_server.online: function(req, res, next) {
-        if (ws_server.online) {
-            next(req, res);
-        } else {
-            res.send({
-                success: false,
-                message: "websocket service offline",
-                payload: {}
-            });
-        }
-    },
-    require: function (param_name, req, res, next, fail = null) {
-        var param_val = ("" + req.body[param_name]).trim();
-        if (
-            req.body.hasOwnProperty(param_name) &&
-            param_val &&
-            param_val != ""
-        ) {
-            next(param_val, req, res);
-        } else {
-            if (fail) fail(req, res);
-            else {
-                res.send({
-                    success: false,
-                    message: "parameter '" + param_name + "' required",
-                    payload: {}
-                });
+app.get("/switch", (req, res) => {
+    res.sendFile(__dirname + "/html/switch.html");
+});
+app.post("/switch/on", function (req, res) {
+    var b = 100;
+    if (wss.online) {
+        for (var device_id in database.data.devices) {
+            if (database.data.devices.hasOwnProperty(device_id)) {
+                database.data.devices[device_id].brightness = b;
             }
+            wss.send_to_clients("brightness", {
+                device_id: device_id,
+                level: b,
+            });
+            wss.send_to_arduino(device_id, "@b-" + util.lpad("" + b, 3, "0"));
         }
-    },
-    fade_time: 750,
-    fade_interval: 50
-};
+        database.save();
+        res.send({
+            success: true,
+            message: "devices turned off"
+        });
+    } else {
+        res.send({
+            success: false,
+            message: "websocket offline"
+        });
+    }
+});
+app.post("/switch/off", function (req, res) {
+    var b = 0;
+    if (wss.online) {
+        for (var device_id in database.data.devices) {
+            if (database.data.devices.hasOwnProperty(device_id)) {
+                database.data.devices[device_id].brightness = b;
+            }
+            wss.send_to_clients("brightness", {
+                device_id: device_id,
+                level: b,
+            });
+            wss.send_to_arduino(device_id, "@b-" + util.lpad("" + b, 3, "0"));
+        }
+        database.save();
+        res.send({
+            success: true,
+            message: "devices turned off"
+        });
+    } else {
+        res.send({
+            success: false,
+            message: "websocket offline"
+        });
+    }
+});
 
-app.get("/api", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        res.send({
-            success: true,
-            message: "led-lights api",
-            payload: {}
-        });
-    });
-});
-app.get("/api/arduinostatus", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            var lastEvent = arduinoTracker.data.lastEvent;
-            var lastTimestamp = arduinoTracker.data.lastTimestamp;
-            var deltaSec =
-                parseInt(Date.now() / 1000) - parseInt(lastTimestamp / 1000);
-            if (deltaSec < 0) deltaSec = 0;
-            var humanReadableTime = "";
-            if (deltaSec < 5) humanReadableTime += "now";
-            else if (deltaSec < 60)
-                humanReadableTime +=
-                    "" +
-                    parseInt(Math.floor(parseFloat(deltaSec) / 5.0) * 5.0) +
-                    " seconds ago";
-            else if (deltaSec < 3600) {
-                var mins = parseInt(deltaSec / 60);
-                if (mins == 1) {
-                    humanReadableTime += "" + mins + " minute ago";
-                } else {
-                    humanReadableTime += "" + mins + " minutes ago";
-                }
-            } else {
-                var hrs = parseInt(deltaSec / 3600);
-                if (hrs == 1) {
-                    humanReadableTime += "" + hrs + " hour ago";
-                } else {
-                    humanReadableTime += "" + hrs + " hours ago";
-                }
-            }
-            res.send({
-                success: true,
-                message: "arduino status retrieved",
-                payload: {
-                    status: {
-                        event: lastEvent,
-                        timestamp: lastTimestamp,
-                        humantime: humanReadableTime
-                    }
-                }
-            });
-        });
-    });
-});
-app.get("/api/colorlist", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        var colors = [];
-        for (var c in database.colors) {
-            if (database.colors.hasOwnProperty(c)) {
-                colors.push({
-                    id: c,
-                    name: database.colors[c].name
-                });
-            }
-        }
-        res.send({
-            success: true,
-            message: "color list retrieved",
-            payload: { colors: colors }
-        });
-    });
-});
-app.post("/api/testcolor", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            api.require("name", req, res, function (name, req, res) {
-                var id = "";
-                for (var c in database.colors) {
-                    if (database.colors[c].name == name) {
-                        id = c;
-                        break;
-                    }
-                }
-                if (id != "") {
-                    var color = database.colors[id];
-                    // convert color RGB values to RGB string
-                    var colorstring = rgb_string(color.r, color.g, color.b);
-                    log("http", "alexa client testing color " + colorstring);
-                    // update current hue
-                    database.currentPattern = null;
-                    database.currentHue = {
-                        r: color.r,
-                        g: color.g,
-                        b: color.b,
-                        colorstring: colorstring
-                    };
-                    database.currentMusic = false;
-                    // send RGB string to arduino
-                    sendToArduino("@h-" + colorstring);
-                    // send currently playing to all
-                    send_to_clients("current", get_currently_playing());
-                    database.save();
-                    res.send({
-                        success: true,
-                        message: "testing color " + name + " (" + id + ")",
-                        payload: {
-                            id: id,
-                            name: name,
-                            rgb: colorstring
-                        }
-                    });
-                } else {
-                    res.send({
-                        success: false,
-                        message: "color '" + name + "' does not exist",
-                        payload: {}
-                    });
-                }
-            });
-        });
-    });
-});
-app.get("/api/patternlist", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        var patterns = [];
-        for (var p in database.patterns) {
-            if (database.patterns.hasOwnProperty(p)) {
-                patterns.push({
-                    id: p,
-                    name: database.patterns[p].name
-                });
-            }
-        }
-        res.send({
-            success: true,
-            message: "pattern list retrieved",
-            payload: {
-                patterns: patterns
-            }
-        });
-    });
-});
-app.post("/api/playpattern", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            api.require("name", req, res, function (name, req, res) {
-                var id = "";
-                var realName = "";
-                for (var p in database.patterns) {
-                    if (
-                        database.patterns[p].name.toLowerCase() ==
-                        name.toLowerCase()
-                    ) {
-                        id = p;
-                        realName = database.patterns[p].name;
-                        break;
-                    }
-                }
-                if (id != "") {
-                    log("http", "alexa client playing pattern " + id);
-                    // update current pattern
-                    database.currentHue = null;
-                    database.currentPattern = {
-                        id: id,
-                        name: database.patterns[p].name
-                    };
-                    database.currentMusic = false;
-                    // summarize and send current pattern to arduino
-                    play_current_pattern();
-                    // send currently playing
-                    send_to_clients("current", get_currently_playing());
-                    database.save();
-                    res.send({
-                        success: true,
-                        message:
-                            "playing pattern " + realName + " (" + id + ")",
-                        payload: {
-                            id: id,
-                            name: realName
-                        }
-                    });
-                } else {
-                    res.send({
-                        success: false,
-                        message: "pattern '" + name + "' does not exist",
-                        payload: {}
-                    });
-                }
-            });
-        });
-    });
-});
-app.post("/api/playcurrent", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            var current = get_currently_playing();
-            if (current.type == "pattern") play_current_pattern();
-            else if (current.type == "hue")
-                sendToArduino("@h-" + current.data.colorstring);
-            res.send({
-                success: true,
-                message: "playing current",
-                payload: { current: current }
-            });
-        });
-    });
-});
-app.get("/api/brightness", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        res.send({
-            success: true,
-            message: "brightness retrieved",
-            payload: { level: database.brightness }
-        });
-    });
-});
-app.post("/api/brightness", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            api.require(
-                "level",
-                req,
-                res,
-                function (level, req, res) {
-                    log("http", "alexa client setting brightness to " + level);
-                    // correct brightness
-                    level = parseInt(level);
-                    if (isNaN(level)) level = 100;
-                    if (level < 0) level = 0;
-                    if (level > 100) level = 100;
-                    var fade_val = ("" + req.body["fade"]).trim();
-                    if (
-                        req.body.hasOwnProperty("fade") &&
-                        fade_val &&
-                        fade_val != "" &&
-                        fade_val == "true"
-                    ) {
-                        var fadeFuncTemp;
-                        var delta = level - database.brightness;
-                        var interval = 50;
-                        var step = delta / (api.fade_time / api.fade_interval);
-                        var brightness_float = parseFloat(database.brightness);
-                        fadeFuncTemp = function () {
-                            brightness_float += step;
-                            database.brightness = parseInt(brightness_float);
-                            if (
-                                delta == 0 ||
-                                (delta < 0 && database.brightness < level) ||
-                                (delta > 0 && database.brightness > level)
-                            ) {
-                                database.brightness = level;
-                            }
-                            send_to_clients("brightness", database.brightness);
-                            sendToArduino(
-                                "@b-" + lpad(database.brightness, 3, "0")
-                            );
-                            if (database.brightness != level)
-                                setTimeout(fadeFuncTemp, api.fade_interval);
-                            else database.save();
-                        };
-                        fadeFuncTemp();
-                    } else {
-                        // send brightness to all clients
-                        database.brightness = level;
-                        send_to_clients("brightness", database.brightness);
-                        // send brightness to arduino
-                        sendToArduino(
-                            "@b-" + lpad(database.brightness, 3, "0")
-                        );
-                        database.save();
-                    }
-                    res.send({
-                        success: true,
-                        message: "brightness updated",
-                        payload: { level: level }
-                    });
-                },
-                function (req, res) {
-                    api.require(
-                        "increment",
-                        req,
-                        res,
-                        function (increment, req, res) {
-                            if (increment == "up") {
-                                increment = 5;
-                            } else if (increment == "down") {
-                                increment = -5;
-                            }
-                            increment = parseInt(increment);
-                            if (isNaN(increment)) increment = 5;
-                            var newbrightness = database.brightness + increment;
-                            if (newbrightness < 0) newbrightness = 0;
-                            if (newbrightness > 100) newbrightness = 100;
-                            log(
-                                "http",
-                                "alexa client setting brightness to " +
-                                newbrightness
-                            );
-
-                            var fade_val = ("" + req.body["fade"]).trim();
-                            if (
-                                req.body.hasOwnProperty("fade") &&
-                                fade_val &&
-                                fade_val != "" &&
-                                fade_val == "true"
-                            ) {
-                                var fadeFuncTemp;
-                                var delta = newbrightness - database.brightness;
-                                var step =
-                                    delta / (api.fade_time / api.fade_interval);
-                                var brightness_float = parseFloat(
-                                    database.brightness
-                                );
-                                fadeFuncTemp = function () {
-                                    brightness_float += step;
-                                    database.brightness = parseInt(
-                                        brightness_float
-                                    );
-                                    if (
-                                        delta == 0 ||
-                                        (delta < 0 &&
-                                            database.brightess <
-                                            newbrightness) ||
-                                        (delta > 0 &&
-                                            database.brightess > newbrightness)
-                                    ) {
-                                        database.brightness = newbrightness;
-                                    }
-                                    send_to_clients(
-                                        "brightness",
-                                        database.brightness
-                                    );
-                                    sendToArduino(
-                                        "@b-" +
-                                        lpad(database.brightness, 3, "0")
-                                    );
-                                    if (database.brightness != newbrightness)
-                                        setTimeout(
-                                            fadeFuncTemp,
-                                            api.fade_interval
-                                        );
-                                    else database.save();
-                                };
-                                fadeFuncTemp();
-                            } else {
-                                // send brightness to all clients
-                                database.brightness = newbrightness;
-                                send_to_clients("brightness", database.brightness);
-                                // send brightness to arduino
-                                sendToArduino(
-                                    "@b-" + lpad(database.brightness, 3, "0")
-                                );
-                                database.save();
-                            }
-                            res.send({
-                                success: true,
-                                message: "brightness updated",
-                                payload: {
-                                    level: database.brightness
-                                }
-                            });
-                        },
-                        function (req, res) {
-                            res.send({
-                                success: false,
-                                message:
-                                    "parameter 'level' or 'increment' required",
-                                payload: {}
-                            });
-                        }
-                    );
-                }
-            );
-        });
-    });
-});
-app.get("/api/speed", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        res.send({
-            success: true,
-            message: "speed retrieved",
-            payload: { level: database.speed }
-        });
-    });
-});
-app.post("/api/speed", function (req, res) {
-    api.auth(req, res, function (req, res) {
-        api.ws_server.online(req, res, function (req, res) {
-            api.require(
-                "level",
-                req,
-                res,
-                function (level, req, res) {
-                    log("http", "alexa client setting speed to " + level);
-                    // correct speed
-                    level = parseInt(level);
-                    if (isNaN(level)) level = 500;
-                    if (level < 0) level = 0;
-                    if (level > 500) level = 500;
-                    // send speed to all clients
-                    database.speed = level;
-                    send_to_clients("speed", database.speed);
-                    // send speed to arduino
-                    sendToArduino("@s-" + lpad(database.speed, 3, "0"));
-                    database.save();
-                    res.send({
-                        success: true,
-                        message: "speed updated",
-                        payload: {
-                            level: database.speed
-                        }
-                    });
-                },
-                function (req, res) {
-                    api.require(
-                        "increment",
-                        req,
-                        res,
-                        function (increment, req, res) {
-                            if (increment == "up") {
-                                increment = 20;
-                            } else if (increment == "down") {
-                                increment = -20;
-                            }
-                            increment = parseInt(increment);
-                            if (isNaN(increment)) increment = 10;
-                            var newspeed = database.speed + increment;
-                            if (newspeed < 0) newspeed = 0;
-                            if (newspeed > 500) newspeed = 500;
-                            log(
-                                "http",
-                                "alexa client setting speed to " + newspeed
-                            );
-                            database.speed = newspeed;
-                            send_to_clients("speed", database.speed);
-                            sendToArduino("@s-" + lpad(database.speed, 3, "0"));
-                            database.save();
-                            res.send({
-                                success: true,
-                                message: "speed updated",
-                                payload: {
-                                    level: database.speed
-                                }
-                            });
-                        },
-                        function (req, res) {
-                            res.send({
-                                success: true,
-                                message:
-                                    "parameter 'level' or 'increment' required",
-                                payload: {}
-                            });
-                        }
-                    );
-                }
-            );
-        });
-    });
-});
-*/
 
 /* CLI */
 util.input.on('line', (line) => {
