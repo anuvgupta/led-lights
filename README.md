@@ -1,6 +1,6 @@
 # led-lights
 
-IoT audio-reactive LED strip lights driven by Arduino, ESP8266 WebSockets, &amp; MSGEQ7 beat detection, with web & iOS control panels.
+IoT audio-reactive LED strip lights driven by Node.js, Arduino, NodeMCU/ESP8266 WebSockets, &amp; MSGEQ7 beat detection, with custmo hardware and web &amp; iOS control panels.
 
 ## overview
 
