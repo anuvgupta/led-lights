@@ -3,10 +3,12 @@ var app = {
     block: Block('div', 'app'),
     socket: null,
     wsurl:
-        'ws://' +
+        (location.protocol === 'https:'
+            ? 'wss://'
+            : 'ws://') +
         document.domain +
-        ':' +
-        (document.domain == 'leds.anuv.me' ? 3003 : 30003),
+        (location.protocol === 'https:' ? ':443' : ':80') +
+        '/socket',
     password: '',
     rgb: {
         r: 0,
