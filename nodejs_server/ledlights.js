@@ -11,8 +11,8 @@ const secrets = require("./secrets");
 
 /* CONSTANTS */
 const debug = process.argv.slice(2)[0] == "debug";
-const wss_port = debug ? 30003 : 3003;
-const http_port = debug ? 30002 : 3002;
+const wss_port = debug ? 30004 : 3004;
+const http_port = debug ? 30003 : 3003;
 const password = secrets.password;
 
 /* UTILITIES */
